@@ -1,5 +1,7 @@
 add_executable(${PROJECT_NAME}
     main.cpp
+    ui/Application.cpp
+    ui/Application.hpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -12,14 +14,14 @@ elseif(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
 endif()
 
-add_subdirectory(core)
-add_subdirectory(ui)
+target_include_directories(${PROJECT_NAME}
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-    ${PROJECT_NAME}_core
-    ${PROJECT_NAME}_ui
-    SDL3::SDL3-static
+    ${PROJECT_DEPENDENCIES}
 )
 
 install(TARGETS ${PROJECT_NAME}

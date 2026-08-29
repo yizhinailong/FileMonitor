@@ -53,3 +53,8 @@ target_link_libraries(imgui
     PUBLIC
     SDL3::SDL3-static
 )
+
+set(PROJECT_DEPENDENCIES
+    imgui::imgui
+    SDL3::SDL3-static
+)
