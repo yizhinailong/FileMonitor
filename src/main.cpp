@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection
     );
-    engine.loadFromModule("untitled", "Main");
+    engine.loadFromModule("FileMonitor", "Main");
 
     return QGuiApplication::exec();
 }

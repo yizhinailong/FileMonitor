@@ -6,4 +6,4 @@ build profile="debug":
     cmake --build --preset "{{profile}}"
 
 run profile="debug": (build profile)
-    ./build/{{profile}}/appuntitled.exe
+    ./build/{{profile}}/FileMonitor.exe

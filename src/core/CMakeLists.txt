@@ -1,7 +1,6 @@
-add_library(untitled_core INTERFACE)
-add_library(untitled::core ALIAS untitled_core)
+add_library(${PROJECT_NAME}_core INTERFACE)
 
-target_link_libraries(untitled_core
+target_link_libraries(${PROJECT_NAME}_core
     INTERFACE
     spdlog::spdlog
 )
