@@ -18,11 +18,56 @@ else()
 endif()
 
 # Expand relative path. This is important if the provided path contains a tilde (~)
-get_filename_component(CPM_DOWNLOAD_LOCATION ${CPM_DOWNLOAD_LOCATION} ABSOLUTE)
+get_filename_component(CPM_DOWNLOAD_LOCATION "${CPM_DOWNLOAD_LOCATION}" ABSOLUTE)
+get_filename_component(CPM_DOWNLOAD_DIRECTORY "${CPM_DOWNLOAD_LOCATION}" DIRECTORY)
+file(MAKE_DIRECTORY "${CPM_DOWNLOAD_DIRECTORY}")
 
-file(DOWNLOAD
-    https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
-    ${CPM_DOWNLOAD_LOCATION} EXPECTED_HASH SHA256=${CPM_HASH_SUM}
-)
+set(CPM_DOWNLOAD_REQUIRED TRUE)
 
-include(${CPM_DOWNLOAD_LOCATION})
+if(EXISTS "${CPM_DOWNLOAD_LOCATION}")
+    file(SHA256 "${CPM_DOWNLOAD_LOCATION}" CPM_EXISTING_HASH)
+    if(CPM_EXISTING_HASH STREQUAL CPM_HASH_SUM)
+        set(CPM_DOWNLOAD_REQUIRED FALSE)
+    else()
+        file(REMOVE "${CPM_DOWNLOAD_LOCATION}")
+    endif()
+endif()
+
+if(CPM_DOWNLOAD_REQUIRED)
+    if(NOT DEFINED ENV{HTTPS_PROXY})
+        find_program(CPM_GIT_EXECUTABLE git)
+        if(CPM_GIT_EXECUTABLE)
+            execute_process(
+                COMMAND "${CPM_GIT_EXECUTABLE}" config --get https.proxy
+                OUTPUT_VARIABLE CPM_HTTPS_PROXY
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+            if(CPM_HTTPS_PROXY)
+                set(ENV{HTTPS_PROXY} "${CPM_HTTPS_PROXY}")
+            endif()
+        endif()
+    endif()
+
+    file(DOWNLOAD
+        https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
+        "${CPM_DOWNLOAD_LOCATION}"
+        STATUS CPM_DOWNLOAD_STATUS
+        TLS_VERIFY ON
+    )
+
+    list(GET CPM_DOWNLOAD_STATUS 0 CPM_DOWNLOAD_ERROR_CODE)
+    list(GET CPM_DOWNLOAD_STATUS 1 CPM_DOWNLOAD_ERROR_MESSAGE)
+    if(CPM_DOWNLOAD_ERROR_CODE)
+        file(REMOVE "${CPM_DOWNLOAD_LOCATION}")
+        message(FATAL_ERROR "Failed to download CPM.cmake: ${CPM_DOWNLOAD_ERROR_MESSAGE}")
+    endif()
+
+    file(SHA256 "${CPM_DOWNLOAD_LOCATION}" CPM_DOWNLOADED_HASH)
+    if(NOT CPM_DOWNLOADED_HASH STREQUAL CPM_HASH_SUM)
+        file(REMOVE "${CPM_DOWNLOAD_LOCATION}")
+        message(FATAL_ERROR "CPM.cmake checksum verification failed")
+    endif()
+endif()
+
+include("${CPM_DOWNLOAD_LOCATION}")
