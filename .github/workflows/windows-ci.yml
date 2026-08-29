@@ -1,0 +1,143 @@
+name: Windows CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Windows x64 Release
+    runs-on: windows-2025
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      archive: ${{ steps.package.outputs.archive }}
+      checksum: ${{ steps.package.outputs.checksum }}
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/cpm
+      SCCACHE_GHA_ENABLED: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: amd64
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@v4.3.2
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+        with:
+          just-version: "1.58.0"
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
+
+      - name: Cache CPM dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: windows-cpm-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Build and install
+        run: just install
+
+      - name: Verify installation
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem ./dist -Recurse -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne "FileMonitor.exe") {
+              throw "Expected dist to contain only FileMonitor.exe"
+          }
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $versionMatch = Select-String ./build/release/CMakeCache.txt `
+              -Pattern '^CMAKE_PROJECT_VERSION:STATIC=(\d+\.\d+\.\d+)$'
+          if ($null -eq $versionMatch) {
+              throw "CMAKE_PROJECT_VERSION must use the X.Y.Z format"
+          }
+
+          $version = $versionMatch.Matches[0].Groups[1].Value
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$version") {
+              throw "Release tag '$env:GITHUB_REF_NAME' must match project version 'v$version'"
+          }
+
+          $archive = "FileMonitor-$version-windows-x64.zip"
+          $checksum = "$archive.sha256"
+
+          Push-Location ./dist
+          cmake -E tar cf "../$archive" --format=zip -- FileMonitor.exe
+          Pop-Location
+
+          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path $checksum -Value $hash -Encoding ascii -NoNewline
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "archive=$archive" >> $env:GITHUB_OUTPUT
+          "checksum=$checksum" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: FileMonitor-${{ steps.package.outputs.version }}-windows-x64
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.checksum }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release files
+        uses: actions/download-artifact@v8
+        with:
+          name: FileMonitor-${{ needs.build.outputs.version }}-windows-x64
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_ARCHIVE: ${{ needs.build.outputs.archive }}
+          RELEASE_CHECKSUM: ${{ needs.build.outputs.checksum }}
+        run: |
+          gh release view "$env:RELEASE_TAG" *> $null
+          if ($LASTEXITCODE -eq 0) {
+              gh release upload "$env:RELEASE_TAG" `
+                  "$env:RELEASE_ARCHIVE" `
+                  "$env:RELEASE_CHECKSUM" `
+                  --clobber
+          } else {
+              gh release create "$env:RELEASE_TAG" `
+                  "$env:RELEASE_ARCHIVE" `
+                  "$env:RELEASE_CHECKSUM" `
+                  --verify-tag `
+                  --generate-notes `
+                  --title "FileMonitor $env:RELEASE_VERSION"
+          }
