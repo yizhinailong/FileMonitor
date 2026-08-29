@@ -21,7 +21,6 @@
       },
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang-cl",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
         "CMAKE_C_COMPILER_LAUNCHER": "sccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
@@ -31,7 +30,7 @@
     {
       "name": "debug",
       "displayName": "Debug",
-      "description": "Debug build with Ninja, vcpkg, Qt, and sccache",
+      "description": "Debug build with Ninja, Qt, and sccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -40,7 +39,7 @@
     {
       "name": "release",
       "displayName": "Release",
-      "description": "Optimized release build with Ninja, vcpkg, Qt, and sccache",
+      "description": "Optimized release build with Ninja, Qt, and sccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
