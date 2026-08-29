@@ -1,18 +1,7 @@
-#include <QGuiApplication>
-#include <QQmlApplicationEngine>
+#include <SDL3/SDL_main.h>
+
+#include "Application.hpp"
 
 int main(int argc, char* argv[]) {
-    QGuiApplication app(argc, argv);
-
-    QQmlApplicationEngine engine;
-    QObject::connect(
-        &engine,
-        &QQmlApplicationEngine::objectCreationFailed,
-        &app,
-        []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection
-    );
-    engine.loadFromModule("FileMonitor", "Main");
-
-    return QGuiApplication::exec();
+    return file_monitor::ui::run(argc, argv);
 }

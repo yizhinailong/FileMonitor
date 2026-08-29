@@ -20,17 +20,17 @@
         "CPM_SOURCE_CACHE": "$penv{CPM_SOURCE_CACHE}"
       },
       "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
         "CMAKE_C_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_PREFIX_PATH": "$env{QT_MSVC_ROOT}"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
       }
     },
     {
       "name": "debug",
       "displayName": "Debug",
-      "description": "Debug build with Ninja, Qt, and sccache",
+      "description": "Debug build with Ninja, SDL3, Dear ImGui, and sccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -39,7 +39,7 @@
     {
       "name": "release",
       "displayName": "Release",
-      "description": "Optimized release build with Ninja, Qt, and sccache",
+      "description": "Optimized release build with Ninja, SDL3, Dear ImGui, and sccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
