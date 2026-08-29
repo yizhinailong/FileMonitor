@@ -4,6 +4,7 @@ default:
 build profile="debug":
     cmake --preset "{{profile}}"
     cmake --build --preset "{{profile}}"
+    cmake -E copy_if_different "./build/{{profile}}/compile_commands.json" "./build/compile_commands.json"
 
 run profile="debug": (build profile)
     ./build/{{profile}}/FileMonitor.exe
