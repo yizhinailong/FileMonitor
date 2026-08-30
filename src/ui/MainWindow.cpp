@@ -65,7 +65,9 @@ namespace file_monitor::ui {
         ImGui::PopStyleVar();
 
         auto const available{ ImGui::GetContentRegionAvail() };
-        auto const directory_panel_height{ available.y * 0.15F };
+        auto const directory_panel_height{
+            ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y * 2.0F
+        };
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0.0F, 0.0F });
         renderDirectoryPanel(available.x, directory_panel_height);
@@ -116,14 +118,15 @@ namespace file_monitor::ui {
     auto MainWindow::renderDirectoryPanel(float width, float height) -> void {
         if (ImGui::BeginChild("DirectoryPanel", { width, height }, true)) {
             ImGui::BeginDisabled(m_dialog_open);
-            auto const select_directory{ ImGui::Button("Select directory") };
+            auto const select_directory{
+                ImGui::Button("Select directory", ImGui::GetContentRegionAvail())
+            };
             ImGui::EndDisabled();
 
             if (select_directory) {
                 openDirectoryDialog();
             }
 
-            ImGui::SameLine();
             if (!m_selected_directory.empty() && ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", m_selected_directory.c_str());
             }
