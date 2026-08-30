@@ -1,15 +1,21 @@
 #pragma once
 
-#include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
+
+#include "core/FileSystem.hpp"
 
 struct SDL_Window;
 
 namespace file_monitor::ui {
-
-    struct DirectoryDialogState;
+    struct DirectoryDialogState {
+        std::mutex                           mutex;
+        std::optional<std::filesystem::path> selected_directory;
+        std::string                          error_message;
+        bool                                 completed{ false };
+    };
 
     class MainWindow final {
     public:
@@ -19,19 +25,12 @@ namespace file_monitor::ui {
         auto Render() -> void;
 
     private:
-        struct FileInfo {
-            std::string modified_time;
-            std::string size;
-            std::string absolute_path;
-        };
-
         auto consumeDirectorySelection() -> void;
-        auto loadFiles(std::filesystem::path const& directory) -> void;
         auto openDirectoryDialog() -> void;
         auto renderDirectoryPanel(float width, float height) -> void;
         auto renderFileListPanel(float width, float height) -> void;
 
-        std::vector<FileInfo> m_files;
+        std::vector<core::FileInfo> m_files;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
         SDL_Window*                           m_parent_window{ nullptr };

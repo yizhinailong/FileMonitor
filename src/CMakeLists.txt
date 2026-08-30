@@ -1,4 +1,6 @@
 add_executable(${PROJECT_NAME}
+    core/FileSystem.cpp
+    core/FileSystem.hpp
     main.cpp
     ui/Application.cpp
     ui/Application.hpp
