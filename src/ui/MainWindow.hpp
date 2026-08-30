@@ -1,9 +1,7 @@
 #pragma once
 
-#include <cstddef>
 #include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -21,16 +19,21 @@ namespace file_monitor::ui {
         auto Render() -> void;
 
     private:
+        struct FileInfo {
+            std::string modified_time;
+            std::string size;
+            std::string absolute_path;
+        };
+
         auto consumeDirectorySelection() -> void;
         auto loadFiles(std::filesystem::path const& directory) -> void;
         auto openDirectoryDialog() -> void;
         auto renderDirectoryPanel(float width, float height) -> void;
         auto renderFileListPanel(float width, float height) -> void;
 
-        std::string                m_directory_status{ "No directory selected" };
-        std::string                m_file_summary{ "Select a directory to list its files" };
-        std::vector<std::string>   m_files;
-        std::optional<std::size_t> m_selected_file_index;
+        std::string           m_directory_status{ "No directory selected" };
+        std::string           m_file_summary{ "Select a directory to list its files" };
+        std::vector<FileInfo> m_files;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
         SDL_Window*                           m_parent_window{ nullptr };

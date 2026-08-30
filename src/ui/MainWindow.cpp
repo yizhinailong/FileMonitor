@@ -31,42 +31,32 @@ namespace file_monitor::ui {
             return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
         }
 
-        auto relative_path_to_utf8(std::filesystem::path const& path) -> std::string {
-            auto const utf8_path{ path.generic_u8string() };
-            return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
-        }
-
-        auto format_file_info(
-            std::filesystem::directory_entry const& entry,
-            std::filesystem::path const&            root
-        ) -> std::string {
-            auto const relative_path{ entry.path().lexically_relative(root) };
-
+        auto format_file_size(std::filesystem::directory_entry const& entry) -> std::string {
             std::error_code size_error;
             auto const      size{ entry.file_size(size_error) };
-            auto const      size_text{
-                size_error ? std::string{ "unknown size" } : std::format("{} bytes", size)
-            };
+            return size_error ? "Unknown" : std::format("{}", size);
+        }
 
+        auto format_modified_time(std::filesystem::directory_entry const& entry) -> std::string {
             std::error_code time_error;
             auto const      file_time{ entry.last_write_time(time_error) };
-            auto            time_text{ std::string{ "unknown modification time" } };
-            if (!time_error) {
-                auto const system_time{ std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-                    file_time - decltype(file_time)::clock::now() + std::chrono::system_clock::now()
-                ) };
-                time_text = std::format(
-                    "{:%Y-%m-%d %H:%M:%S}",
-                    std::chrono::floor<std::chrono::seconds>(system_time)
-                );
+            if (time_error) {
+                return "Unknown";
             }
 
+            auto const system_time{ std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                file_time - decltype(file_time)::clock::now() + std::chrono::system_clock::now()
+            ) };
             return std::format(
-                "{} | {} | {}",
-                relative_path_to_utf8(relative_path),
-                size_text,
-                time_text
+                "{:%Y-%m-%d %H:%M:%S}",
+                std::chrono::floor<std::chrono::seconds>(system_time)
             );
+        }
+
+        auto absolute_path_to_utf8(std::filesystem::path const& path) -> std::string {
+            std::error_code absolute_error;
+            auto const      absolute_path{ std::filesystem::absolute(path, absolute_error) };
+            return path_to_utf8(absolute_error ? path : absolute_path);
         }
 
         auto SDLCALL directory_dialog_callback(
@@ -162,9 +152,9 @@ namespace file_monitor::ui {
     }
 
     auto MainWindow::loadFiles(std::filesystem::path const& directory) -> void {
-        std::vector<std::string> files;
-        std::error_code          iteration_error;
-        auto                     iterator{
+        std::vector<FileInfo> files;
+        std::error_code       iteration_error;
+        auto                  iterator{
             std::filesystem::recursive_directory_iterator{
                                                           directory,
                                                           std::filesystem::directory_options::skip_permission_denied,
@@ -175,14 +165,13 @@ namespace file_monitor::ui {
         while (!iteration_error && iterator != end) {
             std::error_code type_error;
             if (iterator->is_regular_file(type_error) && !type_error) {
-                files.emplace_back(format_file_info(*iterator, directory));
+                files.emplace_back(FileInfo{ format_modified_time(*iterator), format_file_size(*iterator), absolute_path_to_utf8(iterator->path()) });
             }
             iterator.increment(iteration_error);
         }
 
-        std::ranges::sort(files);
+        std::ranges::sort(files, {}, &FileInfo::absolute_path);
         m_files = std::move(files);
-        m_selected_file_index.reset();
 
         auto const directory_text{ path_to_utf8(directory) };
         if (iteration_error) {
@@ -237,30 +226,46 @@ namespace file_monitor::ui {
     auto MainWindow::renderFileListPanel(float width, float height) -> void {
         if (ImGui::BeginChild("FileListPanel", { width, height }, true)) {
             ImGui::TextUnformatted(m_file_summary.c_str());
-            auto const available{ ImGui::GetContentRegionAvail() };
-            if (ImGui::BeginListBox("##Files", available)) {
+            auto const     available{ ImGui::GetContentRegionAvail() };
+            constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
+                                         ImGuiTableFlags_RowBg |
+                                         ImGuiTableFlags_Resizable |
+                                         ImGuiTableFlags_ScrollY |
+                                         ImGuiTableFlags_SizingStretchProp;
+            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available)) {
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableSetupColumn(
+                    "No.",
+                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide,
+                    56.0F
+                );
+                ImGui::TableSetupColumn("Modified time", ImGuiTableColumnFlags_WidthFixed, 160.0F);
+                ImGui::TableSetupColumn("Size (bytes)", ImGuiTableColumnFlags_WidthFixed, 110.0F);
+                ImGui::TableSetupColumn("Absolute path", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
                 ImGuiListClipper clipper;
                 clipper.Begin(static_cast<int>(m_files.size()));
                 while (clipper.Step()) {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
-                        auto const index{ static_cast<std::size_t>(item_index) };
-                        ImGui::PushID(item_index);
+                        auto const  index{ static_cast<std::size_t>(item_index) };
+                        auto const& file{ m_files[index] };
 
-                        auto is_selected{ m_selected_file_index == index };
-                        if (ImGui::Selectable(m_files[index].c_str(), is_selected)) {
-                            m_selected_file_index = index;
-                            is_selected           = true;
-                        }
-                        if (is_selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-
-                        ImGui::PopID();
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("%zu", index + 1);
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextUnformatted(file.modified_time.c_str());
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(file.size.c_str());
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TextUnformatted(file.absolute_path.c_str());
+                        ImGui::SetItemTooltip("%s", file.absolute_path.c_str());
                     }
                 }
-                ImGui::EndListBox();
+                ImGui::EndTable();
             }
         }
         ImGui::EndChild();
