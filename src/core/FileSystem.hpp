@@ -35,7 +35,6 @@ namespace file_monitor::core {
     };
 
     auto read_file_state(std::filesystem::path const& path) -> FileState;
-    auto scan_files(std::span<std::filesystem::path const> directories) -> std::vector<FileState>;
     auto scan_files(
         std::span<std::filesystem::path const> directories,
         std::stop_token                        stop_token

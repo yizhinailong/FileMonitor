@@ -248,11 +248,6 @@ namespace file_monitor::core {
         return files;
     }
 
-    auto scan_files(std::span<std::filesystem::path const> directories)
-        -> std::vector<FileState> {
-        return scan_files(directories, {});
-    }
-
     auto detect_file_changes(
         std::span<FileState const> previous_files,
         std::span<FileState const> current_files
