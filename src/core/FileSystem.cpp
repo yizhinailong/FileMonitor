@@ -79,20 +79,31 @@ namespace file_monitor::core {
 
         auto add_file_change(
             std::vector<FileChange>& changes,
-            std::string const&       event_time,
             FileChangeStatus         status,
             FileState const&         file
         ) -> void {
-            changes.emplace_back(
-                FileChange{
-                    .time          = event_time,
-                    .status        = status,
-                    .size          = format_file_size(file.size),
-                    .absolute_path = file.absolute_path }
-            );
+            changes.emplace_back(make_file_change(status, file));
         }
 
     } // namespace
+
+    auto read_file_state(std::filesystem::path const& path) -> FileState {
+        std::error_code                  entry_error;
+        std::filesystem::directory_entry entry{ path, entry_error };
+        if (entry_error) {
+            return FileState{
+                .modified_time = std::nullopt,
+                .size          = std::nullopt,
+                .absolute_path = absolute_path_to_utf8(path)
+            };
+        }
+
+        return FileState{
+            .modified_time = read_modified_time(entry),
+            .size          = read_file_size(entry),
+            .absolute_path = absolute_path_to_utf8(path)
+        };
+    }
 
     auto scan_files(std::span<std::filesystem::path const> directories)
         -> std::vector<FileState> {
@@ -112,12 +123,7 @@ namespace file_monitor::core {
             while (!iteration_error && iterator != end) {
                 std::error_code type_error;
                 if (iterator->is_regular_file(type_error) && !type_error) {
-                    files.emplace_back(
-                        FileState{
-                            .modified_time = read_modified_time(*iterator),
-                            .size          = read_file_size(*iterator),
-                            .absolute_path = absolute_path_to_utf8(iterator->path()) }
-                    );
+                    files.emplace_back(read_file_state(iterator->path()));
                 }
                 iterator.increment(iteration_error);
             }
@@ -134,7 +140,6 @@ namespace file_monitor::core {
         std::span<FileState const> current_files
     ) -> std::vector<FileChange> {
         std::vector<FileChange> changes;
-        auto const              event_time{ format_event_time(std::chrono::system_clock::now()) };
         auto                    previous_index{ std::size_t{ 0 } };
         auto                    current_index{ std::size_t{ 0 } };
 
@@ -143,17 +148,17 @@ namespace file_monitor::core {
             auto const& current{ current_files[current_index] };
 
             if (previous.absolute_path < current.absolute_path) {
-                add_file_change(changes, event_time, FileChangeStatus::Removed, previous);
+                add_file_change(changes, FileChangeStatus::Removed, previous);
                 ++previous_index;
                 continue;
             }
             if (current.absolute_path < previous.absolute_path) {
-                add_file_change(changes, event_time, FileChangeStatus::Added, current);
+                add_file_change(changes, FileChangeStatus::Added, current);
                 ++current_index;
                 continue;
             }
             if (previous.modified_time != current.modified_time || previous.size != current.size) {
-                add_file_change(changes, event_time, FileChangeStatus::Modified, current);
+                add_file_change(changes, FileChangeStatus::Modified, current);
             }
             ++previous_index;
             ++current_index;
@@ -162,7 +167,6 @@ namespace file_monitor::core {
         for (; previous_index < previous_files.size(); ++previous_index) {
             add_file_change(
                 changes,
-                event_time,
                 FileChangeStatus::Removed,
                 previous_files[previous_index]
             );
@@ -170,12 +174,25 @@ namespace file_monitor::core {
         for (; current_index < current_files.size(); ++current_index) {
             add_file_change(
                 changes,
-                event_time,
                 FileChangeStatus::Added,
                 current_files[current_index]
             );
         }
         return changes;
+    }
+
+    auto make_file_change(
+        FileChangeStatus status,
+        FileState const& file,
+        std::string      previous_absolute_path
+    ) -> FileChange {
+        return FileChange{
+            .time                   = format_event_time(std::chrono::system_clock::now()),
+            .status                 = status,
+            .size                   = format_file_size(file.size),
+            .absolute_path          = file.absolute_path,
+            .previous_absolute_path = std::move(previous_absolute_path)
+        };
     }
 
     auto file_change_status_text(FileChangeStatus status) -> std::string_view {
@@ -186,6 +203,8 @@ namespace file_monitor::core {
                 return "删除";
             case FileChangeStatus::Modified:
                 return "修改";
+            case FileChangeStatus::Renamed:
+                return "重命名";
         }
         return "未知";
     }

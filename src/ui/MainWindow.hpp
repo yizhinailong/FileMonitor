@@ -1,13 +1,12 @@
 #pragma once
 
-#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include "core/FileSystem.hpp"
+#include "core/DirectoryMonitor.hpp"
 
 struct SDL_Window;
 
@@ -37,13 +36,13 @@ namespace file_monitor::ui {
 
         std::vector<std::filesystem::path> m_directories;
         std::vector<std::filesystem::path> m_pending_directories;
-        std::vector<core::FileState>       m_file_snapshot;
         std::vector<core::FileChange>      m_file_changes;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
+        core::DirectoryMonitor                m_file_monitor;
         SDL_Window*                           m_parent_window{ nullptr };
-        std::chrono::steady_clock::time_point m_next_file_scan;
         std::string                           m_dialog_error_message;
+        std::string                           m_monitor_error_message;
         bool                                  m_dialog_open{ false };
     };
 

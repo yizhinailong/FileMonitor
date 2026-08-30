@@ -1,7 +1,6 @@
 #include "MainWindow.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <filesystem>
 #include <optional>
 #include <utility>
@@ -12,8 +11,6 @@
 namespace file_monitor::ui {
 
     namespace {
-
-        constexpr auto FILE_SCAN_INTERVAL{ std::chrono::milliseconds{ 500 } };
 
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
@@ -26,6 +23,8 @@ namespace file_monitor::ui {
                 case core::FileChangeStatus::Removed:
                     return { 1.0F, 0.35F, 0.35F, 1.0F };
                 case core::FileChangeStatus::Modified:
+                    return { 1.0F, 0.80F, 0.25F, 1.0F };
+                case core::FileChangeStatus::Renamed:
                     return { 1.0F, 0.80F, 0.25F, 1.0F };
             }
             return ImGui::GetStyleColorVec4(ImGuiCol_Text);
@@ -149,8 +148,8 @@ namespace file_monitor::ui {
 
     auto MainWindow::resetFileMonitor() -> void {
         m_file_changes.clear();
-        m_file_snapshot  = core::scan_files(m_directories);
-        m_next_file_scan = std::chrono::steady_clock::now() + FILE_SCAN_INTERVAL;
+        m_monitor_error_message.clear();
+        m_file_monitor.Start(m_directories);
     }
 
     auto MainWindow::renderSettingsPanel(float width, float height) -> void {
@@ -218,8 +217,21 @@ namespace file_monitor::ui {
                         ImGui::TableSetColumnIndex(3);
                         ImGui::TextUnformatted(change.size.c_str());
                         ImGui::TableSetColumnIndex(4);
-                        ImGui::TextUnformatted(change.absolute_path.c_str());
-                        ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
+                        if (change.previous_absolute_path.empty()) {
+                            ImGui::TextUnformatted(change.absolute_path.c_str());
+                            ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
+                        } else {
+                            ImGui::Text(
+                                "%s -> %s",
+                                change.previous_absolute_path.c_str(),
+                                change.absolute_path.c_str()
+                            );
+                            ImGui::SetItemTooltip(
+                                "%s -> %s",
+                                change.previous_absolute_path.c_str(),
+                                change.absolute_path.c_str()
+                            );
+                        }
                     }
                 }
                 ImGui::EndTable();
@@ -229,17 +241,15 @@ namespace file_monitor::ui {
     }
 
     auto MainWindow::updateFileMonitor() -> void {
-        if (m_directories.empty() || std::chrono::steady_clock::now() < m_next_file_scan) {
-            return;
-        }
-
-        auto current_snapshot{ core::scan_files(m_directories) };
-        auto changes{ core::detect_file_changes(m_file_snapshot, current_snapshot) };
+        auto changes{ m_file_monitor.TakeChanges() };
         for (auto& change : changes) {
             m_file_changes.emplace_back(std::move(change));
         }
-        m_file_snapshot  = std::move(current_snapshot);
-        m_next_file_scan = std::chrono::steady_clock::now() + FILE_SCAN_INTERVAL;
+
+        auto monitor_error{ m_file_monitor.TakeError() };
+        if (!monitor_error.empty()) {
+            m_monitor_error_message = std::move(monitor_error);
+        }
     }
 
     auto MainWindow::renderSettingsWindow() -> void {
@@ -281,6 +291,14 @@ namespace file_monitor::ui {
                 ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
                 "选择文件夹失败：%s",
                 m_dialog_error_message.c_str()
+            );
+        }
+
+        if (!m_monitor_error_message.empty()) {
+            ImGui::TextColored(
+                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                "监控失败：%s",
+                m_monitor_error_message.c_str()
             );
         }
 
