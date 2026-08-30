@@ -2,6 +2,18 @@ add_executable(${PROJECT_NAME}
     main.cpp
     ui/Application.cpp
     ui/Application.hpp
+    ui/MainWindows.cpp
+    ui/MainWindows.hpp
+    ui/SdlImGuiBackend.cpp
+    ui/SdlImGuiBackend.hpp
+    ui/utils/Text.cpp
+    ui/utils/Text.hpp
+    ui/windows/DirectoryWindow.cpp
+    ui/windows/DirectoryWindow.hpp
+    ui/windows/LogWindow.cpp
+    ui/windows/LogWindow.hpp
+    ui/windows/Window.cpp
+    ui/windows/Window.hpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
