@@ -20,6 +20,7 @@ namespace file_monitor::core {
         std::optional<std::filesystem::file_time_type> modified_time;
         std::optional<std::uintmax_t>                  size;
         std::string                                    absolute_path;
+        bool                                           is_directory{ false };
     };
 
     struct FileChange {

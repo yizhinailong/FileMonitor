@@ -50,6 +50,56 @@ namespace file_monitor::core {
             return std::filesystem::is_regular_file(path, type_error) && !type_error;
         }
 
+        auto utf8_to_path(std::string_view path) -> std::filesystem::path {
+            auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
+            return std::filesystem::path{ std::u8string{ begin, begin + path.size() } };
+        }
+
+        auto path_is_descendant(
+            std::filesystem::path const& path,
+            std::filesystem::path const& directory
+        ) -> bool {
+            auto const relative_path{ path.lexically_relative(directory) };
+            return !relative_path.empty() && relative_path != "." &&
+                   !relative_path.is_absolute() && *relative_path.begin() != "..";
+        }
+
+        auto erase_descendants(FileCache& files, std::filesystem::path const& directory) -> void {
+            for (auto file{ files.begin() }; file != files.end();) {
+                if (path_is_descendant(utf8_to_path(file->first), directory)) {
+                    file = files.erase(file);
+                } else {
+                    ++file;
+                }
+            }
+        }
+
+        auto remap_descendants(
+            FileCache&                   files,
+            std::filesystem::path const& previous_directory,
+            std::filesystem::path const& current_directory
+        ) -> void {
+            std::vector<FileState> remapped_files;
+            for (auto file{ files.begin() }; file != files.end();) {
+                auto const file_path{ utf8_to_path(file->first) };
+                if (!path_is_descendant(file_path, previous_directory)) {
+                    ++file;
+                    continue;
+                }
+
+                auto remapped_file{ std::move(file->second) };
+                auto const relative_path{ file_path.lexically_relative(previous_directory) };
+                remapped_file.absolute_path = path_to_utf8(current_directory / relative_path);
+                remapped_files.emplace_back(std::move(remapped_file));
+                file = files.erase(file);
+            }
+
+            for (auto& file : remapped_files) {
+                auto const file_path{ file.absolute_path };
+                files.insert_or_assign(file_path, std::move(file));
+            }
+        }
+
         auto report_error(
             std::shared_ptr<MonitorState> const& state,
             std::string                          message
@@ -94,8 +144,13 @@ namespace file_monitor::core {
             if (file == state->files.end()) {
                 return;
             }
-            state->changes.emplace_back(make_file_change(FileChangeStatus::Removed, file->second));
+
+            auto const removed_file{ file->second };
             state->files.erase(file);
+            if (removed_file.is_directory) {
+                erase_descendants(state->files, utf8_to_path(removed_file.absolute_path));
+            }
+            state->changes.emplace_back(make_file_change(FileChangeStatus::Removed, removed_file));
         }
 
         auto record_modified(
@@ -134,11 +189,19 @@ namespace file_monitor::core {
                 return;
             }
             if (previous != state->files.end()) {
+                current_file.is_directory = previous->second.is_directory;
                 if (!current_file.modified_time) {
                     current_file.modified_time = previous->second.modified_time;
                 }
                 if (!current_file.size) {
                     current_file.size = previous->second.size;
+                }
+                if (current_file.is_directory) {
+                    remap_descendants(
+                        state->files,
+                        utf8_to_path(previous->second.absolute_path),
+                        utf8_to_path(current_file.absolute_path)
+                    );
                 }
                 state->files.erase(previous);
             }
@@ -396,8 +459,8 @@ namespace file_monitor::core {
                             buffer.data(),
                             static_cast<DWORD>(buffer.size()),
                             TRUE,
-                            FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
-                                FILE_NOTIFY_CHANGE_LAST_WRITE,
+                            FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
+                                FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
                             &ignored_bytes,
                             &overlapped,
                             nullptr

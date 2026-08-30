@@ -77,6 +77,13 @@ namespace file_monitor::core {
             return path_to_utf8(absolute_error ? path : absolute_path);
         }
 
+        auto format_change_path(std::string path, bool is_directory) -> std::string {
+            if (is_directory && !path.empty() && !path.ends_with('/')) {
+                path += '/';
+            }
+            return path;
+        }
+
         auto add_file_change(
             std::vector<FileChange>& changes,
             FileChangeStatus         status,
@@ -94,14 +101,19 @@ namespace file_monitor::core {
             return FileState{
                 .modified_time = std::nullopt,
                 .size          = std::nullopt,
-                .absolute_path = absolute_path_to_utf8(path)
+                .absolute_path = absolute_path_to_utf8(path),
+                .is_directory  = false
             };
         }
 
+        std::error_code type_error;
+        auto const      is_directory{ entry.is_directory(type_error) && !type_error };
+
         return FileState{
             .modified_time = read_modified_time(entry),
-            .size          = read_file_size(entry),
-            .absolute_path = absolute_path_to_utf8(path)
+            .size          = is_directory ? std::nullopt : read_file_size(entry),
+            .absolute_path = absolute_path_to_utf8(path),
+            .is_directory  = is_directory
         };
     }
 
@@ -122,8 +134,12 @@ namespace file_monitor::core {
 
             while (!iteration_error && iterator != end) {
                 std::error_code type_error;
-                if (iterator->is_regular_file(type_error) && !type_error) {
-                    files.emplace_back(read_file_state(iterator->path()));
+                auto const      is_regular_file{ iterator->is_regular_file(type_error) };
+                if (!type_error) {
+                    auto const is_directory{ iterator->is_directory(type_error) };
+                    if (!type_error && (is_regular_file || is_directory)) {
+                        files.emplace_back(read_file_state(iterator->path()));
+                    }
                 }
                 iterator.increment(iteration_error);
             }
@@ -157,7 +173,10 @@ namespace file_monitor::core {
                 ++current_index;
                 continue;
             }
-            if (previous.modified_time != current.modified_time || previous.size != current.size) {
+            if (!current.is_directory &&
+                (previous.is_directory != current.is_directory ||
+                 previous.modified_time != current.modified_time ||
+                 previous.size != current.size)) {
                 add_file_change(changes, FileChangeStatus::Modified, current);
             }
             ++previous_index;
@@ -189,9 +208,12 @@ namespace file_monitor::core {
         return FileChange{
             .time                   = format_event_time(std::chrono::system_clock::now()),
             .status                 = status,
-            .size                   = format_file_size(file.size),
-            .absolute_path          = file.absolute_path,
-            .previous_absolute_path = std::move(previous_absolute_path)
+            .size                   = file.is_directory ? "-" : format_file_size(file.size),
+            .absolute_path          = format_change_path(file.absolute_path, file.is_directory),
+            .previous_absolute_path = format_change_path(
+                std::move(previous_absolute_path),
+                file.is_directory
+            )
         };
     }
 
