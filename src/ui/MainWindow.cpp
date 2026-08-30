@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <format>
 #include <mutex>
@@ -34,7 +35,31 @@ namespace file_monitor::ui {
         auto format_file_size(std::filesystem::directory_entry const& entry) -> std::string {
             std::error_code size_error;
             auto const      size{ entry.file_size(size_error) };
-            return size_error ? "Unknown" : std::format("{}", size);
+            if (size_error) {
+                return "Unknown";
+            }
+
+            constexpr std::array UNITS{ "B", "KB", "MB", "GB", "TB", "PB" };
+            constexpr auto       UNIT_SIZE{ 1024.0 };
+
+            auto       display_size{ static_cast<double>(size) };
+            auto       unit_index{ std::size_t{ 0 } };
+            auto const last_unit_index{ UNITS.size() - 1 };
+            while (display_size >= UNIT_SIZE && unit_index < last_unit_index) {
+                display_size /= UNIT_SIZE;
+                ++unit_index;
+            }
+
+            if (unit_index == 0) {
+                return std::format("{} {}", size, UNITS[unit_index]);
+            }
+            if (display_size >= 100.0) {
+                return std::format("{:.0f} {}", display_size, UNITS[unit_index]);
+            }
+            if (display_size >= 10.0) {
+                return std::format("{:.1f} {}", display_size, UNITS[unit_index]);
+            }
+            return std::format("{:.2f} {}", display_size, UNITS[unit_index]);
         }
 
         auto format_modified_time(std::filesystem::directory_entry const& entry) -> std::string {
@@ -222,7 +247,7 @@ namespace file_monitor::ui {
                     56.0F
                 );
                 ImGui::TableSetupColumn("Modified time", ImGuiTableColumnFlags_WidthFixed, 160.0F);
-                ImGui::TableSetupColumn("Size (bytes)", ImGuiTableColumnFlags_WidthFixed, 110.0F);
+                ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 110.0F);
                 ImGui::TableSetupColumn("Absolute path", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableHeadersRow();
 
