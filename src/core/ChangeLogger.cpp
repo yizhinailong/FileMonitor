@@ -112,12 +112,8 @@ namespace file_monitor::core {
 
     ChangeLogger::~ChangeLogger() = default;
 
-    auto ChangeLogger::Write(
-        std::span<FileChange const> changes,
-        std::uint64_t               first_record_number
-    )
+    auto ChangeLogger::Write(std::span<FileChange const> changes)
         -> std::expected<void, std::string> {
-        auto record_number{ first_record_number };
         for (auto const& change : changes) {
             auto const date{ change_event_date(change.time) };
             auto const logger_result{ m_impl->ensureLogger(date) };
@@ -128,8 +124,7 @@ namespace file_monitor::core {
             m_impl->error_message.clear();
             try {
                 m_impl->logger->info(
-                    "{} | {} | {} | {} | {}",
-                    record_number,
+                    "{} | {} | {} | {}",
                     change.time,
                     file_change_status_text(change.status),
                     change.size,
@@ -145,7 +140,6 @@ namespace file_monitor::core {
                     std::format("写入日志失败：{}", m_impl->error_message)
                 };
             }
-            ++record_number;
         }
         return {};
     }

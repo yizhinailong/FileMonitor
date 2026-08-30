@@ -164,8 +164,7 @@ namespace file_monitor::ui {
     auto MainWindow::resetFileMonitor() -> void {
         m_file_changes.clear();
         m_monitor_error_message.clear();
-        m_first_record_number = m_next_record_number;
-        m_scroll_to_latest    = false;
+        m_scroll_to_latest = false;
         m_file_monitor.Start(m_directories);
     }
 
@@ -195,13 +194,8 @@ namespace file_monitor::ui {
                                          ImGuiTableFlags_Resizable |
                                          ImGuiTableFlags_ScrollY |
                                          ImGuiTableFlags_SizingStretchProp;
-            if (ImGui::BeginTable("Files", 5, TABLE_FLAGS, available)) {
+            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available)) {
                 ImGui::TableSetupScrollFreeze(0, 1);
-                ImGui::TableSetupColumn(
-                    "序号",
-                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide,
-                    88.0F
-                );
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
@@ -214,30 +208,25 @@ namespace file_monitor::ui {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
-                        auto const index{ static_cast<std::size_t>(item_index) };
-                        auto const record_number{
-                            m_first_record_number + static_cast<std::uint64_t>(index)
-                        };
+                        auto const  index{ static_cast<std::size_t>(item_index) };
                         auto const& change{ m_file_changes[index] };
                         auto const  status_text{ core::file_change_status_text(change.status) };
                         auto const  status_color{ file_change_status_color(change.status) };
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("%llu", static_cast<unsigned long long>(record_number));
-                        ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(change.time.c_str());
                         ImGui::SetItemTooltip("%s", change.time.c_str());
-                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TableSetColumnIndex(1);
                         ImGui::TextColored(
                             status_color,
                             "%.*s",
                             static_cast<int>(status_text.size()),
                             status_text.data()
                         );
-                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TableSetColumnIndex(2);
                         ImGui::TextUnformatted(change.size.c_str());
-                        ImGui::TableSetColumnIndex(4);
+                        ImGui::TableSetColumnIndex(3);
                         if (change.previous_absolute_path.empty()) {
                             ImGui::TextUnformatted(change.absolute_path.c_str());
                             ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
@@ -268,23 +257,19 @@ namespace file_monitor::ui {
     auto MainWindow::updateFileMonitor() -> void {
         auto changes{ m_file_monitor.TakeChanges() };
         if (!changes.empty()) {
-            auto const log_result{
-                m_change_logger.Write(changes, m_next_record_number)
-            };
+            auto const log_result{ m_change_logger.Write(changes) };
             if (!log_result) {
                 m_log_error_message = log_result.error();
             } else {
                 m_log_error_message.clear();
             }
 
-            m_next_record_number += static_cast<std::uint64_t>(changes.size());
             for (auto& change : changes) {
                 m_file_changes.emplace_back(std::move(change));
             }
 
             if (m_file_changes.size() > MAX_FILE_CHANGES) {
                 auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
-                m_first_record_number += static_cast<std::uint64_t>(excess_count);
                 m_file_changes.erase(
                     m_file_changes.begin(),
                     m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)

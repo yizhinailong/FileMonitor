@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <memory>
@@ -21,10 +20,8 @@ namespace file_monitor::core {
         auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
         auto operator=(ChangeLogger&&) -> ChangeLogger&      = delete;
 
-        auto Write(
-            std::span<FileChange const> changes,
-            std::uint64_t               first_record_number
-        ) -> std::expected<void, std::string>;
+        auto Write(std::span<FileChange const> changes)
+            -> std::expected<void, std::string>;
 
     private:
         struct Impl;
