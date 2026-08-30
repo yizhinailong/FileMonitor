@@ -8,6 +8,8 @@ add_executable(${PROJECT_NAME}
     ui/SdlImGuiBackend.hpp
     ui/utils/Button.cpp
     ui/utils/Button.hpp
+    ui/utils/List.cpp
+    ui/utils/List.hpp
     ui/utils/Text.cpp
     ui/utils/Text.hpp
     ui/windows/DirectoryWindow.cpp
