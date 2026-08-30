@@ -19,6 +19,18 @@ namespace file_monitor::ui {
             std::shared_ptr<DirectoryDialogState> state;
         };
 
+        auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
+            switch (status) {
+                case core::FileChangeStatus::Added:
+                    return { 0.30F, 0.85F, 0.40F, 1.0F };
+                case core::FileChangeStatus::Removed:
+                    return { 1.0F, 0.35F, 0.35F, 1.0F };
+                case core::FileChangeStatus::Modified:
+                    return { 1.0F, 0.80F, 0.25F, 1.0F };
+            }
+            return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        }
+
         auto SDLCALL directory_dialog_callback(
             void*              userdata,
             char const* const* file_list,
@@ -189,6 +201,7 @@ namespace file_monitor::ui {
                         auto const  index{ static_cast<std::size_t>(item_index) };
                         auto const& change{ m_file_changes[index] };
                         auto const  status_text{ core::file_change_status_text(change.status) };
+                        auto const  status_color{ file_change_status_color(change.status) };
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
@@ -196,9 +209,11 @@ namespace file_monitor::ui {
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(change.time.c_str());
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::TextUnformatted(
-                            status_text.data(),
-                            status_text.data() + status_text.size()
+                        ImGui::TextColored(
+                            status_color,
+                            "%.*s",
+                            static_cast<int>(status_text.size()),
+                            status_text.data()
                         );
                         ImGui::TableSetColumnIndex(3);
                         ImGui::TextUnformatted(change.size.c_str());

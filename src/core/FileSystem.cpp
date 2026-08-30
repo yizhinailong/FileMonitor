@@ -181,7 +181,7 @@ namespace file_monitor::core {
     auto file_change_status_text(FileChangeStatus status) -> std::string_view {
         switch (status) {
             case FileChangeStatus::Added:
-                return "增加";
+                return "创建";
             case FileChangeStatus::Removed:
                 return "删除";
             case FileChangeStatus::Modified:
