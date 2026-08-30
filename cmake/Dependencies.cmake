@@ -65,4 +65,5 @@ set(PROJECT_DEPENDENCIES
     imgui::imgui
     nlohmann_json::nlohmann_json
     SDL3::SDL3-static
+    spdlog::spdlog
 )

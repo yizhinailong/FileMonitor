@@ -1,4 +1,6 @@
 add_executable(${PROJECT_NAME}
+    core/ChangeLogger.cpp
+    core/ChangeLogger.hpp
     core/Configuration.cpp
     core/Configuration.hpp
     core/DirectoryMonitor.cpp

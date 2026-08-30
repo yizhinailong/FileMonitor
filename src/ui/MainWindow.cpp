@@ -16,7 +16,8 @@ namespace file_monitor::ui {
     namespace {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
-        auto const     CONFIG_PATH{ std::filesystem::path{ "data" } / "config.json" };
+        auto const     DATA_DIRECTORY{ std::filesystem::path{ "data" } };
+        auto const     CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
 
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
@@ -64,7 +65,8 @@ namespace file_monitor::ui {
     } // namespace
 
     MainWindow::MainWindow()
-        : m_dialog_state{ std::make_shared<DirectoryDialogState>() } {
+        : m_dialog_state{ std::make_shared<DirectoryDialogState>() },
+          m_change_logger{ DATA_DIRECTORY } {
         auto configuration{ core::load_configuration(CONFIG_PATH) };
         if (!configuration) {
             m_configuration_error_message = std::move(configuration.error());
@@ -266,6 +268,15 @@ namespace file_monitor::ui {
     auto MainWindow::updateFileMonitor() -> void {
         auto changes{ m_file_monitor.TakeChanges() };
         if (!changes.empty()) {
+            auto const log_result{
+                m_change_logger.Write(changes, m_next_record_number)
+            };
+            if (!log_result) {
+                m_log_error_message = log_result.error();
+            } else {
+                m_log_error_message.clear();
+            }
+
             m_next_record_number += static_cast<std::uint64_t>(changes.size());
             for (auto& change : changes) {
                 m_file_changes.emplace_back(std::move(change));
@@ -343,6 +354,14 @@ namespace file_monitor::ui {
                 ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
                 "配置失败：%s",
                 m_configuration_error_message.c_str()
+            );
+        }
+
+        if (!m_log_error_message.empty()) {
+            ImGui::TextColored(
+                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                "日志失败：%s",
+                m_log_error_message.c_str()
             );
         }
 
