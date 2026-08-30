@@ -190,7 +190,7 @@ namespace file_monitor::ui {
                     ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide,
                     88.0F
                 );
-                ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 180.0F);
+                ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
                 ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch);
@@ -215,6 +215,7 @@ namespace file_monitor::ui {
                         ImGui::Text("%llu", static_cast<unsigned long long>(record_number));
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(change.time.c_str());
+                        ImGui::SetItemTooltip("%s", change.time.c_str());
                         ImGui::TableSetColumnIndex(2);
                         ImGui::TextColored(
                             status_color,

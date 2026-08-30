@@ -180,6 +180,9 @@ namespace file_monitor::core {
             auto       file{ read_file_state(path) };
             auto       lock{ wait_for_initialization(state) };
             auto const previous{ state->files.find(file.absolute_path) };
+            if (previous != state->files.end() && !file.creation_time) {
+                file.creation_time = previous->second.creation_time;
+            }
             if (previous != state->files.end() &&
                 previous->second.modified_time == file.modified_time &&
                 previous->second.size == file.size) {
@@ -206,6 +209,9 @@ namespace file_monitor::core {
             }
             if (previous != state->files.end()) {
                 current_file.is_directory = previous->second.is_directory;
+                if (!current_file.creation_time) {
+                    current_file.creation_time = previous->second.creation_time;
+                }
                 if (!current_file.modified_time) {
                     current_file.modified_time = previous->second.modified_time;
                 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
 #include <optional>
 #include <span>
@@ -17,6 +18,7 @@ namespace file_monitor::core {
     };
 
     struct FileState {
+        std::optional<std::chrono::system_clock::time_point> creation_time;
         std::optional<std::filesystem::file_time_type> modified_time;
         std::optional<std::uintmax_t>                  size;
         std::string                                    absolute_path;

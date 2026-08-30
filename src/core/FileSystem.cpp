@@ -3,12 +3,60 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstdint>
+#include <ctime>
 #include <format>
 #include <optional>
 #include <system_error>
 
+#if defined(_WIN32)
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <Windows.h>
+#endif
+
 namespace file_monitor::core {
     namespace {
+
+        using SystemTime = std::chrono::system_clock::time_point;
+
+        auto read_creation_time(std::filesystem::path const& path)
+            -> std::optional<SystemTime> {
+#if defined(_WIN32)
+            WIN32_FILE_ATTRIBUTE_DATA attributes{};
+            if (!GetFileAttributesExW(
+                    path.c_str(),
+                    GetFileExInfoStandard,
+                    &attributes
+                )) {
+                return std::nullopt;
+            }
+
+            ULARGE_INTEGER windows_time{};
+            windows_time.LowPart  = attributes.ftCreationTime.dwLowDateTime;
+            windows_time.HighPart = attributes.ftCreationTime.dwHighDateTime;
+
+            constexpr auto WINDOWS_EPOCH_OFFSET_TICKS{
+                std::int64_t{ 116'444'736'000'000'000 }
+            };
+            using WindowsDuration = std::chrono::duration<std::int64_t, std::ratio<1, 10'000'000>>;
+            auto const unix_ticks{
+                static_cast<std::int64_t>(windows_time.QuadPart) - WINDOWS_EPOCH_OFFSET_TICKS
+            };
+            return SystemTime{
+                std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                    WindowsDuration{ unix_ticks }
+                )
+            };
+#else
+            static_cast<void>(path);
+            return std::nullopt;
+#endif
+        }
 
         auto read_file_size(std::filesystem::directory_entry const& entry)
             -> std::optional<std::uintmax_t> {
@@ -58,16 +106,49 @@ namespace file_monitor::core {
             return std::format("{:.2f} {}", display_size, UNITS[unit_index]);
         }
 
-        auto format_event_time(std::chrono::system_clock::time_point time) -> std::string {
+        auto format_event_time(SystemTime time) -> std::string {
             auto const whole_seconds{ std::chrono::floor<std::chrono::seconds>(time) };
             auto const milliseconds{
                 std::chrono::duration_cast<std::chrono::milliseconds>(time - whole_seconds)
                     .count()
             };
+            auto const time_value{ std::chrono::system_clock::to_time_t(whole_seconds) };
+            std::tm    local_time{};
+#if defined(_WIN32)
+            auto const conversion_failed{ localtime_s(&local_time, &time_value) != 0 };
+#else
+            auto const conversion_failed{ localtime_r(&time_value, &local_time) == nullptr };
+#endif
+            std::array<char, 20> local_time_text{};
+            if (conversion_failed ||
+                std::strftime(
+                    local_time_text.data(),
+                    local_time_text.size(),
+                    "%Y-%m-%d %H:%M:%S",
+                    &local_time
+                ) == 0) {
+                return std::format(
+                    "{:%Y-%m-%d %H:%M:%S}.{:03}",
+                    whole_seconds,
+                    milliseconds
+                );
+            }
+            return std::format("{}.{:03}", local_time_text.data(), milliseconds);
+        }
+
+        auto format_change_time(
+            FileChangeStatus          status,
+            std::optional<SystemTime> creation_time,
+            SystemTime                event_time
+        ) -> std::string {
+            auto event_time_text{ format_event_time(event_time) };
+            if (status != FileChangeStatus::Removed || !creation_time) {
+                return event_time_text;
+            }
             return std::format(
-                "{:%Y-%m-%d %H:%M:%S}.{:03}",
-                whole_seconds,
-                milliseconds
+                "{} -> {}",
+                format_event_time(*creation_time),
+                event_time_text
             );
         }
 
@@ -103,6 +184,7 @@ namespace file_monitor::core {
         std::filesystem::directory_entry entry{ path, entry_error };
         if (entry_error) {
             return FileState{
+                .creation_time = std::nullopt,
                 .modified_time = std::nullopt,
                 .size          = std::nullopt,
                 .absolute_path = absolute_path_to_utf8(path),
@@ -114,6 +196,7 @@ namespace file_monitor::core {
         auto const      is_directory{ entry.is_directory(type_error) && !type_error };
 
         return FileState{
+            .creation_time = read_creation_time(path),
             .modified_time = read_modified_time(entry),
             .size          = is_directory ? std::nullopt : read_file_size(entry),
             .absolute_path = absolute_path_to_utf8(path),
@@ -209,8 +292,9 @@ namespace file_monitor::core {
         FileState const& file,
         std::string      previous_absolute_path
     ) -> FileChange {
+        auto const event_time{ std::chrono::system_clock::now() };
         return FileChange{
-            .time                   = format_event_time(std::chrono::system_clock::now()),
+            .time                   = format_change_time(status, file.creation_time, event_time),
             .status                 = status,
             .size                   = file.is_directory ? "-" : format_file_size(file.size),
             .absolute_path          = format_change_path(file.absolute_path, file.is_directory),
