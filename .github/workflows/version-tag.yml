@@ -1,0 +1,91 @@
+name: Create Version Tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - CMakeLists.txt
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: create-version-tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag CMake project version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Read CMake project version
+        id: version
+        shell: pwsh
+        run: |
+          $cmake = Get-Content -Raw -LiteralPath ./CMakeLists.txt
+          $pattern = '(?im)^[\t ]*project[\t\r\n ]*\([\t\r\n ]*FileMonitor[\t\r\n ]+VERSION[\t\r\n ]+([0-9]+\.[0-9]+\.[0-9]+)(?=[\t\r\n )])'
+          $matches = [regex]::Matches($cmake, $pattern)
+          if ($matches.Count -ne 1) {
+              throw "Expected exactly one FileMonitor project version in X.Y.Z format"
+          }
+
+          $version = $matches[0].Groups[1].Value
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Check remote tag
+        id: remote_tag
+        shell: pwsh
+        env:
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $remoteTag = git ls-remote --tags origin "refs/tags/$env:VERSION_TAG"
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to query remote tags"
+          }
+
+          $exists = -not [string]::IsNullOrWhiteSpace(($remoteTag -join "`n"))
+          "exists=$($exists.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          if ($exists) {
+              Write-Output "Tag $env:VERSION_TAG already exists; nothing to create"
+          }
+
+      - name: Create and push tag
+        if: steps.remote_tag.outputs.exists == 'false'
+        shell: pwsh
+        env:
+          PROJECT_VERSION: ${{ steps.version.outputs.version }}
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $expectedRef = "refs/heads/${{ github.event.repository.default_branch }}"
+          if ($env:GITHUB_REF -ne $expectedRef) {
+              throw "Version tags may only be created from $expectedRef"
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate $env:VERSION_TAG `
+              --message "FileMonitor $env:PROJECT_VERSION" `
+              $env:GITHUB_SHA
+          git push origin "refs/tags/$env:VERSION_TAG"
+
+      - name: Start release workflow
+        if: steps.remote_tag.outputs.exists == 'false'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh workflow run windows-ci.yml `
+              --repo $env:GITHUB_REPOSITORY `
+              --ref $env:VERSION_TAG
