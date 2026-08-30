@@ -13,6 +13,7 @@ namespace file_monitor::ui {
         if (!m_backend.Initialize(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT)) {
             return 1;
         }
+        m_main_windows.SetParentWindow(m_backend.NativeWindow());
 
         while (m_backend.ProcessEvents()) {
             if (!m_backend.BeginFrame()) {

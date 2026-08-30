@@ -132,6 +132,10 @@ namespace file_monitor::ui {
         return true;
     }
 
+    auto SdlImGuiBackend::NativeWindow() const -> SDL_Window* {
+        return m_window;
+    }
+
     auto SdlImGuiBackend::initializeGpu() -> bool {
         m_gpu_device = SDL_CreateGPUDevice(SHADER_FORMATS, false, nullptr);
         if (m_gpu_device == nullptr) {

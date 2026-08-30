@@ -17,10 +17,11 @@ namespace file_monitor::ui {
         SdlImGuiBackend(SdlImGuiBackend&&)                         = delete;
         auto operator=(SdlImGuiBackend&&) -> SdlImGuiBackend&      = delete;
 
-        auto Initialize(std::string_view title, int width, int height) -> bool;
-        auto ProcessEvents() -> bool;
-        auto BeginFrame() -> bool;
-        auto EndFrame() -> bool;
+        auto               Initialize(std::string_view title, int width, int height) -> bool;
+        auto               ProcessEvents() -> bool;
+        auto               BeginFrame() -> bool;
+        auto               EndFrame() -> bool;
+        [[nodiscard]] auto NativeWindow() const -> SDL_Window*;
 
     private:
         auto initializeGpu() -> bool;

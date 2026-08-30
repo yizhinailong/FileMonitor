@@ -3,10 +3,13 @@
 #include "windows/DirectoryWindow.hpp"
 #include "windows/LogWindow.hpp"
 
+struct SDL_Window;
+
 namespace file_monitor::ui {
 
     class MainWindows final {
     public:
+        auto SetParentWindow(SDL_Window* window) -> void;
         auto Render() -> void;
 
     private:

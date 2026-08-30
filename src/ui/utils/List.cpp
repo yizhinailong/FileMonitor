@@ -37,21 +37,27 @@ namespace file_monitor::ui::utils {
             return false;
         }
 
-        auto selection_changed{ false };
-        for (std::size_t index{ 0 }; index < m_items.size(); ++index) {
-            ImGui::PushID(static_cast<int>(index));
+        auto             selection_changed{ false };
+        ImGuiListClipper clipper;
+        clipper.Begin(static_cast<int>(m_items.size()));
+        while (clipper.Step()) {
+            for (auto item_index{ clipper.DisplayStart }; item_index < clipper.DisplayEnd;
+                 ++item_index) {
+                auto const index{ static_cast<std::size_t>(item_index) };
+                ImGui::PushID(item_index);
 
-            auto is_selected{ m_selected_index == index };
-            if (ImGui::Selectable(m_items[index].c_str(), is_selected)) {
-                selection_changed = !is_selected;
-                m_selected_index  = index;
-                is_selected       = true;
-            }
-            if (is_selected) {
-                ImGui::SetItemDefaultFocus();
-            }
+                auto is_selected{ m_selected_index == index };
+                if (ImGui::Selectable(m_items[index].c_str(), is_selected)) {
+                    selection_changed = !is_selected;
+                    m_selected_index  = index;
+                    is_selected       = true;
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
 
-            ImGui::PopID();
+                ImGui::PopID();
+            }
         }
 
         ImGui::EndListBox();

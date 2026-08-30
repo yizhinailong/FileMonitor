@@ -9,6 +9,7 @@ namespace file_monitor::ui::utils {
     public:
         explicit Text(std::string_view content);
 
+        auto SetContent(std::string_view content) -> void;
         auto Render() const -> void;
 
     private:
