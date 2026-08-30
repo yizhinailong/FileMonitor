@@ -1,5 +1,6 @@
 #include "SdlImGuiBackend.hpp"
 
+#include <array>
 #include <cstdio>
 #include <string>
 
@@ -18,6 +19,33 @@ namespace file_monitor::ui {
 
         auto log_sdl_error(char const* message) -> void {
             std::fprintf(stderr, "%s: %s\n", message, SDL_GetError());
+        }
+
+        auto load_chinese_font(ImGuiIO& io) -> bool {
+#if defined(_WIN32)
+            constexpr std::array FONT_PATHS{
+                "C:/Windows/Fonts/msyh.ttc",
+                "C:/Windows/Fonts/simhei.ttf"
+            };
+#elif defined(__APPLE__)
+            constexpr std::array FONT_PATHS{
+                "/System/Library/Fonts/PingFang.ttc",
+                "/System/Library/Fonts/STHeiti Light.ttc"
+            };
+#else
+            constexpr std::array FONT_PATHS{
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
+            };
+#endif
+
+            for (auto const* font_path : FONT_PATHS) {
+                if (auto* font{ io.Fonts->AddFontFromFileTTF(font_path, 18.0F) }) {
+                    io.FontDefault = font;
+                    return true;
+                }
+            }
+            return false;
         }
 
     } // namespace
@@ -169,6 +197,10 @@ namespace file_monitor::ui {
         auto& io{ ImGui::GetIO() };
         io.IniFilename  = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        if (!load_chinese_font(io)) {
+            std::fprintf(stderr, "Chinese font loading failed\n");
+            return false;
+        }
 
         if (!ImGui_ImplSDL3_InitForSDLGPU(m_window)) {
             std::fprintf(stderr, "ImGui SDL3 backend initialization failed\n");

@@ -13,7 +13,7 @@ namespace file_monitor::core {
             std::error_code size_error;
             auto const      size{ entry.file_size(size_error) };
             if (size_error) {
-                return "Unknown";
+                return "未知";
             }
 
             constexpr std::array UNITS{ "B", "KB", "MB", "GB", "TB", "PB" };
@@ -43,7 +43,7 @@ namespace file_monitor::core {
             std::error_code time_error;
             auto const      file_time{ entry.last_write_time(time_error) };
             if (time_error) {
-                return "Unknown";
+                return "未知";
             }
 
             auto const system_time{ std::chrono::time_point_cast<std::chrono::system_clock::duration>(
@@ -69,32 +69,36 @@ namespace file_monitor::core {
 
     } // namespace
 
-    auto load_files(std::filesystem::path const& directory) -> std::vector<FileInfo> {
+    auto load_files(std::span<std::filesystem::path const> directories) -> std::vector<FileInfo> {
         std::vector<FileInfo> files;
-        std::error_code       iteration_error;
-        auto                  iterator{
-            std::filesystem::
-                recursive_directory_iterator{
-                                             directory,
-                                             std::filesystem::directory_options::skip_permission_denied,
-                                             iteration_error }
-        };
-        auto const end{ std::filesystem::recursive_directory_iterator{} };
 
-        while (!iteration_error && iterator != end) {
-            std::error_code type_error;
-            if (iterator->is_regular_file(type_error) && !type_error) {
-                files.emplace_back(
-                    FileInfo{
-                        .modified_time = format_modified_time(*iterator),
-                        .size          = format_file_size(*iterator),
-                        .absolute_path = absolute_path_to_utf8(iterator->path()) }
-                );
+        for (auto const& directory : directories) {
+            std::error_code iteration_error;
+            auto            iterator{
+                std::filesystem::recursive_directory_iterator{
+                                                              directory,
+                                                              std::filesystem::directory_options::skip_permission_denied,
+                                                              iteration_error }
+            };
+            auto const end{ std::filesystem::recursive_directory_iterator{} };
+
+            while (!iteration_error && iterator != end) {
+                std::error_code type_error;
+                if (iterator->is_regular_file(type_error) && !type_error) {
+                    files.emplace_back(
+                        FileInfo{
+                            .modified_time = format_modified_time(*iterator),
+                            .size          = format_file_size(*iterator),
+                            .absolute_path = absolute_path_to_utf8(iterator->path()) }
+                    );
+                }
+                iterator.increment(iteration_error);
             }
-            iterator.increment(iteration_error);
         }
 
         std::ranges::sort(files, {}, &FileInfo::absolute_path);
+        auto const duplicates{ std::ranges::unique(files, {}, &FileInfo::absolute_path) };
+        files.erase(duplicates.begin(), duplicates.end());
         return files;
     }
 

@@ -3,7 +3,7 @@
 namespace file_monitor::ui {
     namespace {
 
-        constexpr std::string_view WINDOW_TITLE  = "FileMonitor";
+        constexpr std::string_view WINDOW_TITLE  = "文件监控";
         constexpr int              WINDOW_WIDTH  = 960;
         constexpr int              WINDOW_HEIGHT = 640;
 
