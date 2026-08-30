@@ -44,6 +44,7 @@ namespace file_monitor::ui {
         std::string                           m_dialog_error_message;
         std::string                           m_monitor_error_message;
         bool                                  m_dialog_open{ false };
+        bool                                  m_scroll_to_latest{ false };
     };
 
 } // namespace file_monitor::ui

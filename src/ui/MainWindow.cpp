@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <utility>
@@ -11,6 +12,8 @@
 namespace file_monitor::ui {
 
     namespace {
+
+        constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
 
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
@@ -149,6 +152,7 @@ namespace file_monitor::ui {
     auto MainWindow::resetFileMonitor() -> void {
         m_file_changes.clear();
         m_monitor_error_message.clear();
+        m_scroll_to_latest = false;
         m_file_monitor.Start(m_directories);
     }
 
@@ -234,6 +238,10 @@ namespace file_monitor::ui {
                         }
                     }
                 }
+                if (m_scroll_to_latest) {
+                    ImGui::SetScrollHereY(1.0F);
+                    m_scroll_to_latest = false;
+                }
                 ImGui::EndTable();
             }
         }
@@ -242,8 +250,19 @@ namespace file_monitor::ui {
 
     auto MainWindow::updateFileMonitor() -> void {
         auto changes{ m_file_monitor.TakeChanges() };
-        for (auto& change : changes) {
-            m_file_changes.emplace_back(std::move(change));
+        if (!changes.empty()) {
+            for (auto& change : changes) {
+                m_file_changes.emplace_back(std::move(change));
+            }
+
+            if (m_file_changes.size() > MAX_FILE_CHANGES) {
+                auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
+                m_file_changes.erase(
+                    m_file_changes.begin(),
+                    m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
+                );
+            }
+            m_scroll_to_latest = true;
         }
 
         auto monitor_error{ m_file_monitor.TakeError() };
