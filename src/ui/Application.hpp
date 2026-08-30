@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MainWindows.hpp"
+#include "MainWindow.hpp"
 #include "SdlImGuiBackend.hpp"
 
 namespace file_monitor::ui {
@@ -11,7 +11,7 @@ namespace file_monitor::ui {
 
     private:
         SdlImGuiBackend m_backend;
-        MainWindows     m_main_windows;
+        MainWindow      m_main_window;
     };
 
 } // namespace file_monitor::ui
