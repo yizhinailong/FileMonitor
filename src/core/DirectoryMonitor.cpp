@@ -35,6 +35,7 @@ namespace file_monitor::core {
             std::vector<FileChange>            changes;
             std::string                        error_message;
             bool                               initializing{ false };
+            std::size_t                        pending_initializations{ 0 };
         };
 
         auto build_file_cache(std::span<FileState const> files) -> FileCache {
@@ -122,6 +123,37 @@ namespace file_monitor::core {
                 return !state->initializing;
             });
             return lock;
+        }
+
+        auto initialize_directory(
+            std::shared_ptr<MonitorState> const& state,
+            std::filesystem::path                directory,
+            std::stop_token                      stop_token
+        ) -> void {
+            std::array const directories{ std::move(directory) };
+            auto const       files{ scan_files(directories, stop_token) };
+            if (stop_token.stop_requested()) {
+                return;
+            }
+
+            auto directory_files{ build_file_cache(files) };
+            auto initialization_completed{ false };
+            {
+                auto const lock{ std::scoped_lock{ state->mutex } };
+                if (stop_token.stop_requested() || state->pending_initializations == 0) {
+                    return;
+                }
+
+                state->files.merge(directory_files);
+                --state->pending_initializations;
+                initialization_completed = state->pending_initializations == 0;
+                if (initialization_completed) {
+                    state->initializing = false;
+                }
+            }
+            if (initialization_completed) {
+                state->initialized.notify_all();
+            }
         }
 
         auto record_added(
@@ -239,9 +271,15 @@ namespace file_monitor::core {
             state->files.insert_or_assign(current_path_text, std::move(current_file));
         }
 
-        auto resynchronize(std::shared_ptr<MonitorState> const& state) -> void {
+        auto resynchronize(
+            std::shared_ptr<MonitorState> const& state,
+            std::stop_token                      stop_token
+        ) -> void {
             auto       lock{ wait_for_initialization(state) };
-            auto const current_files{ scan_files(state->directories) };
+            auto const current_files{ scan_files(state->directories, stop_token) };
+            if (stop_token.stop_requested()) {
+                return;
+            }
 
             std::vector<FileState> previous_files;
             previous_files.reserve(state->files.size());
@@ -311,36 +349,15 @@ namespace file_monitor::core {
                 std::shared_ptr<MonitorState> state
             )
                 : m_root{ std::move(root) },
-                  m_state{ std::move(state) },
-                  m_directory_handle{
-                      CreateFileW(
-                          m_root.c_str(),
-                          FILE_LIST_DIRECTORY,
-                          FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                          nullptr,
-                          OPEN_EXISTING,
-                          FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-                          nullptr
-                      )
-                  },
-                  m_stop_event{ CreateEventW(nullptr, TRUE, FALSE, nullptr) },
-                  m_io_event{ CreateEventW(nullptr, TRUE, FALSE, nullptr) },
-                  m_ready_event{ CreateEventW(nullptr, TRUE, FALSE, nullptr) } {
-                if (!m_directory_handle || !m_stop_event || !m_io_event || !m_ready_event) {
-                    reportWindowsError("无法启动文件夹监控", GetLastError());
-                    return;
-                }
+                  m_state{ std::move(state) } {
                 m_thread = std::jthread{ [this](std::stop_token stop_token) {
                     run(stop_token);
                 } };
-                if (WaitForSingleObject(m_ready_event.Get(), INFINITE) != WAIT_OBJECT_0) {
-                    reportWindowsError("等待文件夹监控启动失败", GetLastError());
-                }
             }
 
             ~DirectoryWatcher() {
                 if (m_thread.joinable()) {
-                    m_thread.request_stop();
+                    RequestStop();
                     m_thread.join();
                 }
             }
@@ -349,6 +366,10 @@ namespace file_monitor::core {
             DirectoryWatcher(DirectoryWatcher&&)                         = delete;
             auto operator=(DirectoryWatcher const&) -> DirectoryWatcher& = delete;
             auto operator=(DirectoryWatcher&&) -> DirectoryWatcher&      = delete;
+
+            auto RequestStop() -> void {
+                m_thread.request_stop();
+            }
 
         private:
             auto reportWindowsError(std::string_view operation, DWORD error) -> void {
@@ -372,6 +393,37 @@ namespace file_monitor::core {
                     &ignored_bytes,
                     TRUE
                 );
+            }
+
+            auto initializeHandles() -> bool {
+                m_directory_handle = UniqueHandle{
+                    CreateFileW(
+                        m_root.c_str(),
+                        FILE_LIST_DIRECTORY,
+                        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                        nullptr,
+                        OPEN_EXISTING,
+                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+                        nullptr
+                    )
+                };
+                if (!m_directory_handle) {
+                    reportWindowsError("无法打开文件夹监控", GetLastError());
+                    return false;
+                }
+
+                m_stop_event = UniqueHandle{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
+                if (!m_stop_event) {
+                    reportWindowsError("无法创建监控停止事件", GetLastError());
+                    return false;
+                }
+
+                m_io_event = UniqueHandle{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
+                if (!m_io_event) {
+                    reportWindowsError("无法创建监控读取事件", GetLastError());
+                    return false;
+                }
+                return true;
             }
 
             auto processNotification(
@@ -456,19 +508,17 @@ namespace file_monitor::core {
             }
 
             auto run(std::stop_token stop_token) -> void {
+                if (!initializeHandles()) {
+                    initialize_directory(m_state, m_root, stop_token);
+                    return;
+                }
+
                 std::stop_callback stop_callback{ stop_token, [stop_event = m_stop_event.Get()] {
                                                      SetEvent(stop_event);
                                                  } };
                 alignas(DWORD) std::array<std::byte, 64 * 1024> buffer{};
                 std::optional<std::filesystem::path>            pending_rename;
-                auto                                            ready_signaled{ false };
-
-                auto const signal_ready{ [this, &ready_signaled] {
-                    if (!ready_signaled) {
-                        SetEvent(m_ready_event.Get());
-                        ready_signaled = true;
-                    }
-                } };
+                auto                                            initialized{ false };
 
                 while (!stop_token.stop_requested()) {
                     ResetEvent(m_io_event.Get());
@@ -490,11 +540,21 @@ namespace file_monitor::core {
                     };
                     auto const read_error{ read_started ? ERROR_SUCCESS : GetLastError() };
                     if (!read_started && read_error != ERROR_IO_PENDING) {
-                        signal_ready();
+                        if (!initialized) {
+                            initialize_directory(m_state, m_root, stop_token);
+                        }
                         reportWindowsError("读取文件夹变更失败", read_error);
                         return;
                     }
-                    signal_ready();
+
+                    if (!initialized) {
+                        initialize_directory(m_state, m_root, stop_token);
+                        initialized = true;
+                        if (stop_token.stop_requested()) {
+                            cancelPendingRead(overlapped);
+                            return;
+                        }
+                    }
 
                     std::array const wait_handles{ m_stop_event.Get(), m_io_event.Get() };
                     auto const       wait_result{
@@ -529,7 +589,7 @@ namespace file_monitor::core {
                         }
                         if (read_error == ERROR_NOTIFY_ENUM_DIR) {
                             pending_rename.reset();
-                            resynchronize(m_state);
+                            resynchronize(m_state, stop_token);
                             continue;
                         }
                         reportWindowsError("获取文件夹变更失败", read_error);
@@ -538,7 +598,7 @@ namespace file_monitor::core {
 
                     if (transferred_bytes == 0) {
                         pending_rename.reset();
-                        resynchronize(m_state);
+                        resynchronize(m_state, stop_token);
                         continue;
                     }
                     if (!processNotifications(
@@ -546,7 +606,7 @@ namespace file_monitor::core {
                             pending_rename
                         )) {
                         pending_rename.reset();
-                        resynchronize(m_state);
+                        resynchronize(m_state, stop_token);
                     }
                 }
             }
@@ -556,7 +616,6 @@ namespace file_monitor::core {
             UniqueHandle                  m_directory_handle;
             UniqueHandle                  m_stop_event;
             UniqueHandle                  m_io_event;
-            UniqueHandle                  m_ready_event;
             std::jthread                  m_thread;
         };
 
@@ -566,6 +625,7 @@ namespace file_monitor::core {
 
     struct DirectoryMonitor::Impl {
         std::shared_ptr<MonitorState> state{ std::make_shared<MonitorState>() };
+        std::vector<std::jthread>     initialization_threads;
 #if defined(_WIN32)
         std::vector<std::unique_ptr<DirectoryWatcher>> watchers;
 #endif
@@ -575,7 +635,9 @@ namespace file_monitor::core {
         : m_impl{ std::make_unique<Impl>() } {
     }
 
-    DirectoryMonitor::~DirectoryMonitor() = default;
+    DirectoryMonitor::~DirectoryMonitor() {
+        Stop();
+    }
 
     auto DirectoryMonitor::Start(
         std::span<std::filesystem::path const> directories
@@ -585,10 +647,11 @@ namespace file_monitor::core {
         {
             auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
             m_impl->state->directories.assign(directories.begin(), directories.end());
-            m_impl->state->files         = {};
-            m_impl->state->changes       = {};
-            m_impl->state->error_message = {};
-            m_impl->state->initializing  = true;
+            m_impl->state->files                   = {};
+            m_impl->state->changes                 = {};
+            m_impl->state->error_message           = {};
+            m_impl->state->initializing            = !directories.empty();
+            m_impl->state->pending_initializations = directories.size();
         }
 
 #if defined(_WIN32)
@@ -601,21 +664,39 @@ namespace file_monitor::core {
         if (!directories.empty()) {
             report_error(m_impl->state, "当前平台暂不支持系统文件变更通知");
         }
-#endif
-
-        auto const files{ scan_files(directories) };
-        {
-            auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-            m_impl->state->files        = build_file_cache(files);
-            m_impl->state->initializing = false;
+        m_impl->initialization_threads.reserve(directories.size());
+        for (auto const& directory : directories) {
+            m_impl->initialization_threads.emplace_back(
+                [state = m_impl->state, directory](std::stop_token stop_token) mutable {
+                    initialize_directory(state, std::move(directory), stop_token);
+                }
+            );
         }
-        m_impl->state->initialized.notify_all();
+#endif
+        if (directories.empty()) {
+            m_impl->state->initialized.notify_all();
+        }
     }
 
     auto DirectoryMonitor::Stop() -> void {
+        for (auto& thread : m_impl->initialization_threads) {
+            thread.request_stop();
+        }
+#if defined(_WIN32)
+        for (auto& watcher : m_impl->watchers) {
+            watcher->RequestStop();
+        }
+#endif
+        {
+            auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
+            m_impl->state->initializing            = false;
+            m_impl->state->pending_initializations = 0;
+        }
+        m_impl->state->initialized.notify_all();
 #if defined(_WIN32)
         m_impl->watchers.clear();
 #endif
+        m_impl->initialization_threads.clear();
     }
 
     auto DirectoryMonitor::TakeChanges() -> std::vector<FileChange> {

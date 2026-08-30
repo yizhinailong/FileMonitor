@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <optional>
 #include <span>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -35,6 +36,10 @@ namespace file_monitor::core {
 
     auto read_file_state(std::filesystem::path const& path) -> FileState;
     auto scan_files(std::span<std::filesystem::path const> directories) -> std::vector<FileState>;
+    auto scan_files(
+        std::span<std::filesystem::path const> directories,
+        std::stop_token                        stop_token
+    ) -> std::vector<FileState>;
     auto detect_file_changes(
         std::span<FileState const> previous_files,
         std::span<FileState const> current_files

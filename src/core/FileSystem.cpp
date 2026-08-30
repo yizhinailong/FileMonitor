@@ -204,11 +204,17 @@ namespace file_monitor::core {
         };
     }
 
-    auto scan_files(std::span<std::filesystem::path const> directories)
-        -> std::vector<FileState> {
+    auto scan_files(
+        std::span<std::filesystem::path const> directories,
+        std::stop_token                        stop_token
+    ) -> std::vector<FileState> {
         std::vector<FileState> files;
 
         for (auto const& directory : directories) {
+            if (stop_token.stop_requested()) {
+                break;
+            }
+
             std::error_code iteration_error;
             auto            iterator{
                 std::filesystem::
@@ -219,7 +225,7 @@ namespace file_monitor::core {
             };
             auto const end{ std::filesystem::recursive_directory_iterator{} };
 
-            while (!iteration_error && iterator != end) {
+            while (!stop_token.stop_requested() && !iteration_error && iterator != end) {
                 std::error_code type_error;
                 auto const      is_regular_file{ iterator->is_regular_file(type_error) };
                 if (!type_error) {
@@ -232,10 +238,19 @@ namespace file_monitor::core {
             }
         }
 
+        if (stop_token.stop_requested()) {
+            return {};
+        }
+
         std::ranges::sort(files, {}, &FileState::absolute_path);
         auto const duplicates{ std::ranges::unique(files, {}, &FileState::absolute_path) };
         files.erase(duplicates.begin(), duplicates.end());
         return files;
+    }
+
+    auto scan_files(std::span<std::filesystem::path const> directories)
+        -> std::vector<FileState> {
+        return scan_files(directories, {});
     }
 
     auto detect_file_changes(
