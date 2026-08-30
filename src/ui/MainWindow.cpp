@@ -152,7 +152,8 @@ namespace file_monitor::ui {
     auto MainWindow::resetFileMonitor() -> void {
         m_file_changes.clear();
         m_monitor_error_message.clear();
-        m_scroll_to_latest = false;
+        m_first_record_number = m_next_record_number;
+        m_scroll_to_latest    = false;
         m_file_monitor.Start(m_directories);
     }
 
@@ -187,7 +188,7 @@ namespace file_monitor::ui {
                 ImGui::TableSetupColumn(
                     "序号",
                     ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide,
-                    56.0F
+                    88.0F
                 );
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 180.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
@@ -201,14 +202,17 @@ namespace file_monitor::ui {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
-                        auto const  index{ static_cast<std::size_t>(item_index) };
+                        auto const index{ static_cast<std::size_t>(item_index) };
+                        auto const record_number{
+                            m_first_record_number + static_cast<std::uint64_t>(index)
+                        };
                         auto const& change{ m_file_changes[index] };
                         auto const  status_text{ core::file_change_status_text(change.status) };
                         auto const  status_color{ file_change_status_color(change.status) };
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("%zu", index + 1);
+                        ImGui::Text("%llu", static_cast<unsigned long long>(record_number));
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(change.time.c_str());
                         ImGui::TableSetColumnIndex(2);
@@ -251,12 +255,14 @@ namespace file_monitor::ui {
     auto MainWindow::updateFileMonitor() -> void {
         auto changes{ m_file_monitor.TakeChanges() };
         if (!changes.empty()) {
+            m_next_record_number += static_cast<std::uint64_t>(changes.size());
             for (auto& change : changes) {
                 m_file_changes.emplace_back(std::move(change));
             }
 
             if (m_file_changes.size() > MAX_FILE_CHANGES) {
                 auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
+                m_first_record_number += static_cast<std::uint64_t>(excess_count);
                 m_file_changes.erase(
                     m_file_changes.begin(),
                     m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)

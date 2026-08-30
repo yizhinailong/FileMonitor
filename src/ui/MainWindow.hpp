@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -43,6 +44,8 @@ namespace file_monitor::ui {
         SDL_Window*                           m_parent_window{ nullptr };
         std::string                           m_dialog_error_message;
         std::string                           m_monitor_error_message;
+        std::uint64_t                         m_first_record_number{ 1 };
+        std::uint64_t                         m_next_record_number{ 1 };
         bool                                  m_dialog_open{ false };
         bool                                  m_scroll_to_latest{ false };
     };
