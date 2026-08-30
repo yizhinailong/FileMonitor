@@ -141,19 +141,7 @@ namespace file_monitor::ui {
             m_dialog_state->error_message.clear();
         }
 
-        m_dialog_open = false;
-        if (!error_message.empty()) {
-            m_directory_status = "Directory selection failed: " + error_message;
-            return;
-        }
-
-        if (!selected_directory) {
-            m_directory_status = m_selected_directory.empty() ? "No directory selected" : m_selected_directory;
-            return;
-        }
-
         m_selected_directory = path_to_utf8(*selected_directory);
-        m_directory_status   = m_selected_directory;
         loadFiles(*selected_directory);
     }
 
@@ -180,20 +168,10 @@ namespace file_monitor::ui {
         m_files = std::move(files);
 
         auto const directory_text{ path_to_utf8(directory) };
-        if (iteration_error) {
-            m_file_summary = std::format(
-                "Unable to read all files in {}: {}",
-                directory_text,
-                iteration_error.message()
-            );
-        } else {
-            m_file_summary = std::format("{} file(s) in {}", m_files.size(), directory_text);
-        }
     }
 
     auto MainWindow::openDirectoryDialog() -> void {
-        m_dialog_open      = true;
-        m_directory_status = "Selecting directory...";
+        m_dialog_open = true;
 
         auto context{ std::make_unique<DirectoryDialogContext>() };
         context->state = m_dialog_state;
@@ -221,7 +199,6 @@ namespace file_monitor::ui {
             }
 
             ImGui::SameLine();
-            ImGui::TextUnformatted(m_directory_status.c_str());
             if (!m_selected_directory.empty() && ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", m_selected_directory.c_str());
             }
@@ -231,7 +208,6 @@ namespace file_monitor::ui {
 
     auto MainWindow::renderFileListPanel(float width, float height) -> void {
         if (ImGui::BeginChild("FileListPanel", { width, height }, true)) {
-            ImGui::TextUnformatted(m_file_summary.c_str());
             auto const     available{ ImGui::GetContentRegionAvail() };
             constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
                                          ImGuiTableFlags_RowBg |

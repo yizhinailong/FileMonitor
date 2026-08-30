@@ -31,8 +31,6 @@ namespace file_monitor::ui {
         auto renderDirectoryPanel(float width, float height) -> void;
         auto renderFileListPanel(float width, float height) -> void;
 
-        std::string           m_directory_status{ "No directory selected" };
-        std::string           m_file_summary{ "Select a directory to list its files" };
         std::vector<FileInfo> m_files;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
