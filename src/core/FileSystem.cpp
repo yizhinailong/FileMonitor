@@ -75,10 +75,11 @@ namespace file_monitor::core {
         for (auto const& directory : directories) {
             std::error_code iteration_error;
             auto            iterator{
-                std::filesystem::recursive_directory_iterator{
-                                                              directory,
-                                                              std::filesystem::directory_options::skip_permission_denied,
-                                                              iteration_error }
+                std::filesystem::
+                    recursive_directory_iterator{
+                                                 directory,
+                                                 std::filesystem::directory_options::skip_permission_denied,
+                                                 iteration_error }
             };
             auto const end{ std::filesystem::recursive_directory_iterator{} };
 
