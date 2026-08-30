@@ -9,11 +9,14 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "core/Configuration.hpp"
+
 namespace file_monitor::ui {
 
     namespace {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
+        auto const     CONFIG_PATH{ std::filesystem::path{ "data" } / "config.json" };
 
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
@@ -62,6 +65,13 @@ namespace file_monitor::ui {
 
     MainWindow::MainWindow()
         : m_dialog_state{ std::make_shared<DirectoryDialogState>() } {
+        auto configuration{ core::load_configuration(CONFIG_PATH) };
+        if (!configuration) {
+            m_configuration_error_message = std::move(configuration.error());
+            return;
+        }
+        m_directories = std::move(configuration->directories);
+        resetFileMonitor();
     }
 
     auto MainWindow::SetParentWindow(SDL_Window* window) -> void {
@@ -328,6 +338,14 @@ namespace file_monitor::ui {
             );
         }
 
+        if (!m_configuration_error_message.empty()) {
+            ImGui::TextColored(
+                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                "配置失败：%s",
+                m_configuration_error_message.c_str()
+            );
+        }
+
         constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
                                      ImGuiTableFlags_RowBg |
                                      ImGuiTableFlags_Resizable |
@@ -387,9 +405,20 @@ namespace file_monitor::ui {
         }
         ImGui::SameLine();
         if (ImGui::Button("保存", { ImGui::GetContentRegionAvail().x, 0.0F })) {
-            m_directories = m_pending_directories;
-            resetFileMonitor();
-            ImGui::CloseCurrentPopup();
+            auto const save_result{
+                core::save_configuration(
+                    CONFIG_PATH,
+                    core::Configuration{ .directories = m_pending_directories }
+                )
+            };
+            if (!save_result) {
+                m_configuration_error_message = save_result.error();
+            } else {
+                m_configuration_error_message.clear();
+                m_directories = m_pending_directories;
+                resetFileMonitor();
+                ImGui::CloseCurrentPopup();
+            }
         }
         ImGui::EndPopup();
     }
