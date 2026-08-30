@@ -2,6 +2,6 @@
 
 namespace file_monitor::ui {
 
-    int run(int argc, char* argv[]);
+    auto run(int argc, char* argv[]) -> int;
 
 } // namespace file_monitor::ui

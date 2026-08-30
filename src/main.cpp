@@ -2,6 +2,6 @@
 
 #include "ui/Application.hpp"
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     return file_monitor::ui::run(argc, argv);
 }

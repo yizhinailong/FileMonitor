@@ -1,6 +1,5 @@
 #include "Application.hpp"
 
-#include <algorithm>
 #include <cstdio>
 
 #include <SDL3/SDL.h>
@@ -11,21 +10,13 @@
 namespace file_monitor::ui {
     namespace {
 
-        constexpr int initial_width  = 960;
-        constexpr int initial_height = 640;
+        constexpr int INITIAL_WIDTH{ 960 };
+        constexpr int INITIAL_HEIGHT{ 640 };
 
-        struct ApplicationState {
-            bool dark_mode = true;
-        };
+        auto apply_theme() -> void {
+            ImGui::StyleColorsDark();
 
-        void apply_theme(bool dark_mode) {
-            if (dark_mode) {
-                ImGui::StyleColorsDark();
-            } else {
-                ImGui::StyleColorsLight();
-            }
-
-            auto& style             = ImGui::GetStyle();
+            auto& style{ ImGui::GetStyle() };
             style.WindowRounding    = 0.0F;
             style.ChildRounding     = 0.0F;
             style.FrameRounding     = 6.0F;
@@ -34,74 +25,51 @@ namespace file_monitor::ui {
             style.GrabRounding      = 6.0F;
             style.WindowBorderSize  = 0.0F;
             style.FrameBorderSize   = 0.0F;
-            style.WindowPadding     = { 24.0F, 20.0F };
+            style.WindowPadding     = { 16.0F, 12.0F };
             style.FramePadding      = { 12.0F, 8.0F };
             style.ItemSpacing       = { 10.0F, 10.0F };
         }
 
-        void center_text(const char* text, float vertical_offset = 0.0F) {
-            const auto available = ImGui::GetContentRegionAvail();
-            const auto text_size = ImGui::CalcTextSize(text);
-            ImGui::SetCursorPos({
-                ImGui::GetCursorPosX() + std::max(0.0F, (available.x - text_size.x) * 0.5F),
-                ImGui::GetCursorPosY() + std::max(0.0F, (available.y - text_size.y) * 0.5F) + vertical_offset,
-            });
-            ImGui::TextUnformatted(text);
-        }
-
-        void render_workspace(ApplicationState& state) {
-            const auto* viewport = ImGui::GetMainViewport();
+        auto render_workspace() -> void {
+            auto const* viewport{ ImGui::GetMainViewport() };
             ImGui::SetNextWindowPos(viewport->WorkPos);
             ImGui::SetNextWindowSize(viewport->WorkSize);
 
-            constexpr auto window_flags = ImGuiWindowFlags_NoDecoration |
-                                          ImGuiWindowFlags_NoMove |
-                                          ImGuiWindowFlags_NoSavedSettings |
-                                          ImGuiWindowFlags_NoBringToFrontOnFocus;
+            constexpr auto WINDOW_FLAGS{ ImGuiWindowFlags_NoDecoration |
+                                         ImGuiWindowFlags_NoMove |
+                                         ImGuiWindowFlags_NoSavedSettings |
+                                         ImGuiWindowFlags_NoBringToFrontOnFocus };
 
-            ImGui::Begin("FileMonitorWorkspace", nullptr, window_flags);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0F, 0.0F });
+            ImGui::Begin("FileMonitorWorkspace", nullptr, WINDOW_FLAGS);
+            ImGui::PopStyleVar();
 
-            const auto available    = ImGui::GetContentRegionAvail();
-            const auto column_width = std::max(1.0F, available.x * 0.5F);
+            auto const available{ ImGui::GetContentRegionAvail() };
+            auto const directory_pane_height{ available.y * 0.1F };
 
-            ImGui::BeginChild("PrimaryPane", { column_width, available.y }, false);
-            ImGui::SetWindowFontScale(2.4F);
-            center_text("FileMonitor");
-            ImGui::SetWindowFontScale(1.0F);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0.0F, 0.0F });
+            ImGui::BeginChild("DirectoryPane", { available.x, directory_pane_height }, true);
+            ImGui::TextUnformatted("Select directory");
             ImGui::EndChild();
 
-            ImGui::SameLine(0.0F, 0.0F);
-
-            ImGui::PushStyleColor(
-                ImGuiCol_ChildBg,
-                state.dark_mode ? ImVec4{ 0.18F, 0.18F, 0.18F, 1.0F } : ImVec4{ 0.87F, 0.87F, 0.87F, 1.0F }
-            );
-            ImGui::BeginChild("SettingsPane", { 0.0F, available.y }, false);
-
-            const auto control_size = ImGui::CalcTextSize("Dark mode");
-            ImGui::SetCursorPos({
-                std::max(0.0F, (ImGui::GetContentRegionAvail().x - control_size.x - 28.0F) * 0.5F),
-                std::max(0.0F, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeight() - 16.0F),
-            });
-            if (ImGui::Checkbox("Dark mode", &state.dark_mode)) {
-                apply_theme(state.dark_mode);
-            }
-
+            ImGui::BeginChild("LogPane", { available.x, 0.0F }, true);
+            ImGui::TextUnformatted("Logs");
             ImGui::EndChild();
-            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+
             ImGui::End();
         }
 
-        bool render_frame(SDL_GPUDevice* gpu_device, SDL_Window* window) {
+        auto render_frame(SDL_GPUDevice* gpu_device, SDL_Window* window) -> bool {
             ImGui::Render();
 
-            auto* draw_data = ImGui::GetDrawData();
-            auto* command_buffer = SDL_AcquireGPUCommandBuffer(gpu_device);
+            auto* draw_data{ ImGui::GetDrawData() };
+            auto* command_buffer{ SDL_AcquireGPUCommandBuffer(gpu_device) };
             if (command_buffer == nullptr) {
                 return false;
             }
 
-            SDL_GPUTexture* swapchain_texture = nullptr;
+            SDL_GPUTexture* swapchain_texture{ nullptr };
             if (!SDL_WaitAndAcquireGPUSwapchainTexture(
                     command_buffer,
                     window,
@@ -113,18 +81,18 @@ namespace file_monitor::ui {
                 return false;
             }
 
-            const bool minimized = draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F;
+            bool const minimized{ draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F };
             if (swapchain_texture != nullptr && !minimized) {
                 ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
 
-                const auto& clear_color = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+                auto const&            clear_color{ ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) };
                 SDL_GPUColorTargetInfo target_info{};
                 target_info.texture     = swapchain_texture;
                 target_info.clear_color = { clear_color.x, clear_color.y, clear_color.z, clear_color.w };
                 target_info.load_op     = SDL_GPU_LOADOP_CLEAR;
                 target_info.store_op    = SDL_GPU_STOREOP_STORE;
 
-                auto* render_pass = SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
+                auto* render_pass{ SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr) };
                 if (render_pass == nullptr) {
                     SDL_CancelGPUCommandBuffer(command_buffer);
                     return false;
@@ -139,18 +107,18 @@ namespace file_monitor::ui {
 
     } // namespace
 
-    int run(int /*argc*/, char* /*argv*/[]) {
+    auto run(int /*argc*/, char* /*argv*/[]) -> int {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
             std::fprintf(stderr, "SDL initialization failed: %s\n", SDL_GetError());
             return 1;
         }
 
-        auto* window = SDL_CreateWindow(
+        auto* window{ SDL_CreateWindow(
             "FileMonitor",
-            initial_width,
-            initial_height,
+            INITIAL_WIDTH,
+            INITIAL_HEIGHT,
             SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY
-        );
+        ) };
         if (window == nullptr) {
             std::fprintf(stderr, "Window creation failed: %s\n", SDL_GetError());
             SDL_Quit();
@@ -160,11 +128,11 @@ namespace file_monitor::ui {
         SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         SDL_ShowWindow(window);
 
-        constexpr auto shader_formats = SDL_GPU_SHADERFORMAT_SPIRV |
-                                        SDL_GPU_SHADERFORMAT_DXIL |
-                                        SDL_GPU_SHADERFORMAT_MSL |
-                                        SDL_GPU_SHADERFORMAT_METALLIB;
-        auto* gpu_device = SDL_CreateGPUDevice(shader_formats, false, nullptr);
+        constexpr auto SHADER_FORMATS{ SDL_GPU_SHADERFORMAT_SPIRV |
+                                       SDL_GPU_SHADERFORMAT_DXIL |
+                                       SDL_GPU_SHADERFORMAT_MSL |
+                                       SDL_GPU_SHADERFORMAT_METALLIB };
+        auto*          gpu_device{ SDL_CreateGPUDevice(SHADER_FORMATS, false, nullptr) };
         if (gpu_device == nullptr) {
             std::fprintf(stderr, "GPU device creation failed: %s\n", SDL_GetError());
             SDL_DestroyWindow(window);
@@ -196,12 +164,11 @@ namespace file_monitor::ui {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        auto& io        = ImGui::GetIO();
+        auto& io{ ImGui::GetIO() };
         io.IniFilename  = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-        ApplicationState state;
-        apply_theme(state.dark_mode);
+        apply_theme();
 
         if (!ImGui_ImplSDL3_InitForSDLGPU(window)) {
             std::fprintf(stderr, "ImGui SDL3 backend initialization failed\n");
@@ -230,10 +197,10 @@ namespace file_monitor::ui {
             return 1;
         }
 
-        bool running = true;
-        int exit_code = 0;
+        bool running{ true };
+        int  exit_code{ 0 };
         while (running) {
-            SDL_Event event;
+            SDL_Event event{};
             while (SDL_PollEvent(&event)) {
                 ImGui_ImplSDL3_ProcessEvent(&event);
                 if (event.type == SDL_EVENT_QUIT ||
@@ -256,7 +223,7 @@ namespace file_monitor::ui {
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
-            render_workspace(state);
+            render_workspace();
 
             if (!render_frame(gpu_device, window)) {
                 std::fprintf(stderr, "GPU frame submission failed: %s\n", SDL_GetError());
