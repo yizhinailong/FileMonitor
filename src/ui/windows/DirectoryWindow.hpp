@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window.hpp"
-#include "ui/utils/Text.hpp"
+#include "ui/utils/Button.hpp"
 
 namespace file_monitor::ui::windows {
 
@@ -12,7 +12,7 @@ namespace file_monitor::ui::windows {
     private:
         auto renderContent() -> void override;
 
-        utils::Text m_text{ "Select directory" };
+        utils::Button m_select_directory_button{ "Select directory" };
     };
 
 } // namespace file_monitor::ui::windows

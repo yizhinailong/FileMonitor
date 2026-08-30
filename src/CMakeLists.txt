@@ -6,6 +6,8 @@ add_executable(${PROJECT_NAME}
     ui/MainWindows.hpp
     ui/SdlImGuiBackend.cpp
     ui/SdlImGuiBackend.hpp
+    ui/utils/Button.cpp
+    ui/utils/Button.hpp
     ui/utils/Text.cpp
     ui/utils/Text.hpp
     ui/windows/DirectoryWindow.cpp

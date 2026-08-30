@@ -7,7 +7,7 @@ namespace file_monitor::ui::windows {
     }
 
     auto DirectoryWindow::renderContent() -> void {
-        m_text.Render();
+        m_select_directory_button.Render();
     }
 
 } // namespace file_monitor::ui::windows
