@@ -47,9 +47,15 @@ namespace file_monitor::ui {
             auto const system_time{ std::chrono::time_point_cast<std::chrono::system_clock::duration>(
                 file_time - decltype(file_time)::clock::now() + std::chrono::system_clock::now()
             ) };
+            auto const whole_seconds{ std::chrono::floor<std::chrono::seconds>(system_time) };
+            auto const milliseconds{
+                std::chrono::duration_cast<std::chrono::milliseconds>(system_time - whole_seconds)
+                    .count()
+            };
             return std::format(
-                "{:%Y-%m-%d %H:%M:%S}",
-                std::chrono::floor<std::chrono::seconds>(system_time)
+                "{:%Y-%m-%d %H:%M:%S}.{:03}",
+                whole_seconds,
+                milliseconds
             );
         }
 
