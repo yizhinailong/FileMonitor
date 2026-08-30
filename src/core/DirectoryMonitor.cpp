@@ -64,14 +64,18 @@ namespace file_monitor::core {
                    !relative_path.is_absolute() && *relative_path.begin() != "..";
         }
 
-        auto erase_descendants(FileCache& files, std::filesystem::path const& directory) -> void {
+        auto take_descendants(FileCache& files, std::filesystem::path const& directory)
+            -> std::vector<FileState> {
+            std::vector<FileState> descendants;
             for (auto file{ files.begin() }; file != files.end();) {
                 if (path_is_descendant(utf8_to_path(file->first), directory)) {
+                    descendants.emplace_back(std::move(file->second));
                     file = files.erase(file);
                 } else {
                     ++file;
                 }
             }
+            return descendants;
         }
 
         auto remap_descendants(
@@ -148,7 +152,19 @@ namespace file_monitor::core {
             auto const removed_file{ file->second };
             state->files.erase(file);
             if (removed_file.is_directory) {
-                erase_descendants(state->files, utf8_to_path(removed_file.absolute_path));
+                auto const descendants{
+                    take_descendants(
+                        state->files,
+                        utf8_to_path(removed_file.absolute_path)
+                    )
+                };
+                for (auto descendant{ descendants.rbegin() };
+                     descendant != descendants.rend();
+                     ++descendant) {
+                    state->changes.emplace_back(
+                        make_file_change(FileChangeStatus::Removed, *descendant)
+                    );
+                }
             }
             state->changes.emplace_back(make_file_change(FileChangeStatus::Removed, removed_file));
         }

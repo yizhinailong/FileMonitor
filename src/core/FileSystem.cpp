@@ -78,8 +78,12 @@ namespace file_monitor::core {
         }
 
         auto format_change_path(std::string path, bool is_directory) -> std::string {
-            if (is_directory && !path.empty() && !path.ends_with('/')) {
-                path += '/';
+            if (is_directory && !path.empty()) {
+                if (path.ends_with('/')) {
+                    path.back() = '\\';
+                } else if (!path.ends_with('\\')) {
+                    path += '\\';
+                }
             }
             return path;
         }
