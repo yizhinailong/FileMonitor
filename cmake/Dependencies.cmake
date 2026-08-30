@@ -12,6 +12,13 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+    URI "gh:nlohmann/json@3.12.0"
+    OPTIONS
+    "JSON_BuildTests OFF"
+    "JSON_Install OFF"
+)
+
+CPMAddPackage(
     NAME SDL3
     GITHUB_REPOSITORY libsdl-org/SDL
     GIT_TAG release-3.4.14
@@ -56,5 +63,6 @@ target_link_libraries(imgui
 
 set(PROJECT_DEPENDENCIES
     imgui::imgui
+    nlohmann_json::nlohmann_json
     SDL3::SDL3-static
 )
