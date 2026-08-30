@@ -124,7 +124,7 @@ namespace file_monitor::core {
             m_impl->error_message.clear();
             try {
                 m_impl->logger->info(
-                    "{} | {} | {} | {}",
+                    "[{}] [{}] [{}] {}",
                     change.time,
                     file_change_status_text(change.status),
                     change.size,
