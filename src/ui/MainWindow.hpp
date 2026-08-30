@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -28,17 +29,20 @@ namespace file_monitor::ui {
     private:
         auto consumeDirectorySelection() -> void;
         auto openDirectoryDialog() -> void;
-        auto reloadFiles() -> void;
+        auto resetFileMonitor() -> void;
         auto renderFileListPanel(float width, float height) -> void;
         auto renderSettingsPanel(float width, float height) -> void;
         auto renderSettingsWindow() -> void;
+        auto updateFileMonitor() -> void;
 
         std::vector<std::filesystem::path> m_directories;
         std::vector<std::filesystem::path> m_pending_directories;
-        std::vector<core::FileInfo>        m_files;
+        std::vector<core::FileState>       m_file_snapshot;
+        std::vector<core::FileChange>      m_file_changes;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
         SDL_Window*                           m_parent_window{ nullptr };
+        std::chrono::steady_clock::time_point m_next_file_scan;
         std::string                           m_dialog_error_message;
         bool                                  m_dialog_open{ false };
     };

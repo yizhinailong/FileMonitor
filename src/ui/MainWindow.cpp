@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <optional>
 #include <utility>
@@ -11,6 +12,8 @@
 namespace file_monitor::ui {
 
     namespace {
+
+        constexpr auto FILE_SCAN_INTERVAL{ std::chrono::milliseconds{ 500 } };
 
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
@@ -53,6 +56,7 @@ namespace file_monitor::ui {
 
     auto MainWindow::Render() -> void {
         consumeDirectorySelection();
+        updateFileMonitor();
 
         auto const* viewport{ ImGui::GetMainViewport() };
         ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -131,8 +135,10 @@ namespace file_monitor::ui {
         );
     }
 
-    auto MainWindow::reloadFiles() -> void {
-        m_files = core::load_files(m_directories);
+    auto MainWindow::resetFileMonitor() -> void {
+        m_file_changes.clear();
+        m_file_snapshot  = core::scan_files(m_directories);
+        m_next_file_scan = std::chrono::steady_clock::now() + FILE_SCAN_INTERVAL;
     }
 
     auto MainWindow::renderSettingsPanel(float width, float height) -> void {
@@ -161,43 +167,64 @@ namespace file_monitor::ui {
                                          ImGuiTableFlags_Resizable |
                                          ImGuiTableFlags_ScrollY |
                                          ImGuiTableFlags_SizingStretchProp;
-            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available)) {
+            if (ImGui::BeginTable("Files", 5, TABLE_FLAGS, available)) {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableSetupColumn(
                     "序号",
                     ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide,
                     56.0F
                 );
-                ImGui::TableSetupColumn("修改时间", ImGuiTableColumnFlags_WidthFixed, 180.0F);
+                ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 180.0F);
+                ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
                 ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableHeadersRow();
 
                 ImGuiListClipper clipper;
-                clipper.Begin(static_cast<int>(m_files.size()));
+                clipper.Begin(static_cast<int>(m_file_changes.size()));
                 while (clipper.Step()) {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
                         auto const  index{ static_cast<std::size_t>(item_index) };
-                        auto const& file{ m_files[index] };
+                        auto const& change{ m_file_changes[index] };
+                        auto const  status_text{ core::file_change_status_text(change.status) };
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("%zu", index + 1);
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::TextUnformatted(file.modified_time.c_str());
+                        ImGui::TextUnformatted(change.time.c_str());
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::TextUnformatted(file.size.c_str());
+                        ImGui::TextUnformatted(
+                            status_text.data(),
+                            status_text.data() + status_text.size()
+                        );
                         ImGui::TableSetColumnIndex(3);
-                        ImGui::TextUnformatted(file.absolute_path.c_str());
-                        ImGui::SetItemTooltip("%s", file.absolute_path.c_str());
+                        ImGui::TextUnformatted(change.size.c_str());
+                        ImGui::TableSetColumnIndex(4);
+                        ImGui::TextUnformatted(change.absolute_path.c_str());
+                        ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
                     }
                 }
                 ImGui::EndTable();
             }
         }
         ImGui::EndChild();
+    }
+
+    auto MainWindow::updateFileMonitor() -> void {
+        if (m_directories.empty() || std::chrono::steady_clock::now() < m_next_file_scan) {
+            return;
+        }
+
+        auto current_snapshot{ core::scan_files(m_directories) };
+        auto changes{ core::detect_file_changes(m_file_snapshot, current_snapshot) };
+        for (auto& change : changes) {
+            m_file_changes.emplace_back(std::move(change));
+        }
+        m_file_snapshot  = std::move(current_snapshot);
+        m_next_file_scan = std::chrono::steady_clock::now() + FILE_SCAN_INTERVAL;
     }
 
     auto MainWindow::renderSettingsWindow() -> void {
@@ -302,7 +329,7 @@ namespace file_monitor::ui {
         ImGui::SameLine();
         if (ImGui::Button("保存", { ImGui::GetContentRegionAvail().x, 0.0F })) {
             m_directories = m_pending_directories;
-            reloadFiles();
+            resetFileMonitor();
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
