@@ -8,6 +8,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <stop_token>
 #include <system_error>
 #include <thread>
@@ -353,9 +354,7 @@ namespace file_monitor::core {
             }
 
             auto changes{ detect_file_changes(previous_files, current_files) };
-            for (auto& change : changes) {
-                state->changes.emplace_back(std::move(change));
-            }
+            state->changes.append_range(changes | std::views::as_rvalue);
             state->files = build_file_cache(current_files);
         }
 
@@ -710,17 +709,16 @@ namespace file_monitor::core {
     ) -> void {
         Stop();
 
-        std::vector<std::filesystem::path> normalized_directories;
-        normalized_directories.reserve(directories.size());
-        for (auto const& directory : directories) {
-            normalized_directories.emplace_back(normalize_directory(directory));
-        }
-
-        std::vector<std::filesystem::path> normalized_excluded_directories;
-        normalized_excluded_directories.reserve(excluded_directories.size());
-        for (auto const& directory : excluded_directories) {
-            normalized_excluded_directories.emplace_back(normalize_directory(directory));
-        }
+        auto normalized_directories{
+            directories |
+            std::views::transform(normalize_directory) |
+            std::ranges::to<std::vector<std::filesystem::path>>()
+        };
+        auto normalized_excluded_directories{
+            excluded_directories |
+            std::views::transform(normalize_directory) |
+            std::ranges::to<std::vector<std::filesystem::path>>()
+        };
 
         {
             auto const lock{ std::scoped_lock{ m_impl->state->mutex } };

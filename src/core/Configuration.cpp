@@ -66,7 +66,7 @@ namespace file_monitor::core {
                 }
 
                 auto directory{ utf8_to_path(directory_text).lexically_normal() };
-                if (std::ranges::find(directories, directory) == directories.end()) {
+                if (!std::ranges::contains(directories, directory)) {
                     directories.emplace_back(std::move(directory));
                 }
             }

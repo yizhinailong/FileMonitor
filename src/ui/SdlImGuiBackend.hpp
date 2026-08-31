@@ -1,5 +1,7 @@
 #pragma once
 
+#include <expected>
+#include <string>
 #include <string_view>
 
 struct SDL_GPUDevice;
@@ -17,15 +19,16 @@ namespace file_monitor::ui {
         SdlImGuiBackend(SdlImGuiBackend&&)                         = delete;
         auto operator=(SdlImGuiBackend&&) -> SdlImGuiBackend&      = delete;
 
-        auto               Initialize(std::string_view title, int width, int height) -> bool;
+        auto Initialize(std::string_view title, int width, int height)
+            -> std::expected<void, std::string>;
         auto               ProcessEvents() -> bool;
         auto               BeginFrame() -> bool;
         auto               EndFrame() -> bool;
         [[nodiscard]] auto NativeWindow() const -> SDL_Window*;
 
     private:
-        auto initializeGpu() -> bool;
-        auto initializeImGui() -> bool;
+        auto initializeGpu() -> std::expected<void, std::string>;
+        auto initializeImGui() -> std::expected<void, std::string>;
         auto shutdown() -> void;
 
         SDL_Window*    m_window{ nullptr };

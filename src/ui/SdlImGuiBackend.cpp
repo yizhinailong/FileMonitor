@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdio>
+#include <format>
+#include <print>
 #include <string>
 
 #include <SDL3/SDL.h>
@@ -17,8 +19,12 @@ namespace file_monitor::ui {
                                         SDL_GPU_SHADERFORMAT_MSL |
                                         SDL_GPU_SHADERFORMAT_METALLIB;
 
-        auto log_sdl_error(char const* message) -> void {
-            std::fprintf(stderr, "%s: %s\n", message, SDL_GetError());
+        auto sdl_error(std::string_view message) -> std::string {
+            return std::format("{}: {}", message, SDL_GetError());
+        }
+
+        auto log_sdl_error(std::string_view message) -> void {
+            std::println(stderr, "{}", sdl_error(message));
         }
 
         auto apply_system_theme() -> void {
@@ -62,10 +68,10 @@ namespace file_monitor::ui {
         shutdown();
     }
 
-    auto SdlImGuiBackend::Initialize(std::string_view title, int width, int height) -> bool {
+    auto SdlImGuiBackend::Initialize(std::string_view title, int width, int height)
+        -> std::expected<void, std::string> {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
-            log_sdl_error("SDL initialization failed");
-            return false;
+            return std::unexpected{ sdl_error("SDL initialization failed") };
         }
         m_sdl_initialized = true;
 
@@ -77,17 +83,19 @@ namespace file_monitor::ui {
             SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY
         );
         if (m_window == nullptr) {
-            log_sdl_error("Window creation failed");
-            return false;
+            return std::unexpected{ sdl_error("Window creation failed") };
         }
 
-        if (!initializeGpu() || !initializeImGui()) {
-            return false;
+        if (auto result{ initializeGpu() }; !result) {
+            return result;
+        }
+        if (auto result{ initializeImGui() }; !result) {
+            return result;
         }
 
         SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         SDL_ShowWindow(m_window);
-        return true;
+        return {};
     }
 
     auto SdlImGuiBackend::ProcessEvents() -> bool {
@@ -175,16 +183,14 @@ namespace file_monitor::ui {
         return m_window;
     }
 
-    auto SdlImGuiBackend::initializeGpu() -> bool {
+    auto SdlImGuiBackend::initializeGpu() -> std::expected<void, std::string> {
         m_gpu_device = SDL_CreateGPUDevice(SHADER_FORMATS, false, nullptr);
         if (m_gpu_device == nullptr) {
-            log_sdl_error("GPU device creation failed");
-            return false;
+            return std::unexpected{ sdl_error("GPU device creation failed") };
         }
 
         if (!SDL_ClaimWindowForGPUDevice(m_gpu_device, m_window)) {
-            log_sdl_error("GPU window claim failed");
-            return false;
+            return std::unexpected{ sdl_error("GPU window claim failed") };
         }
         m_window_claimed = true;
 
@@ -194,13 +200,12 @@ namespace file_monitor::ui {
                 SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
                 SDL_GPU_PRESENTMODE_VSYNC
             )) {
-            log_sdl_error("GPU swapchain setup failed");
-            return false;
+            return std::unexpected{ sdl_error("GPU swapchain setup failed") };
         }
-        return true;
+        return {};
     }
 
-    auto SdlImGuiBackend::initializeImGui() -> bool {
+    auto SdlImGuiBackend::initializeImGui() -> std::expected<void, std::string> {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         m_imgui_context_created = true;
@@ -210,13 +215,11 @@ namespace file_monitor::ui {
         io.IniFilename  = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         if (!load_chinese_font(io)) {
-            std::fprintf(stderr, "Chinese font loading failed\n");
-            return false;
+            return std::unexpected{ "Chinese font loading failed" };
         }
 
         if (!ImGui_ImplSDL3_InitForSDLGPU(m_window)) {
-            std::fprintf(stderr, "ImGui SDL3 backend initialization failed\n");
-            return false;
+            return std::unexpected{ "ImGui SDL3 backend initialization failed" };
         }
         m_imgui_sdl_initialized = true;
 
@@ -227,11 +230,12 @@ namespace file_monitor::ui {
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
         init_info.PresentMode          = SDL_GPU_PRESENTMODE_VSYNC;
         if (!ImGui_ImplSDLGPU3_Init(&init_info)) {
-            log_sdl_error("ImGui SDL_GPU backend initialization failed");
-            return false;
+            return std::unexpected{
+                sdl_error("ImGui SDL_GPU backend initialization failed")
+            };
         }
         m_imgui_gpu_initialized = true;
-        return true;
+        return {};
     }
 
     auto SdlImGuiBackend::shutdown() -> void {

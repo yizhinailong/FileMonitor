@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
+#include <ranges>
 #include <utility>
 
 #include <SDL3/SDL.h>
@@ -222,9 +223,7 @@ namespace file_monitor::ui {
                 m_log_error_message.clear();
             }
 
-            for (auto& change : changes) {
-                m_file_changes.emplace_back(std::move(change));
-            }
+            m_file_changes.append_range(changes | std::views::as_rvalue);
 
             if (m_file_changes.size() > MAX_FILE_CHANGES) {
                 auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };

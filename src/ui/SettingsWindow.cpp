@@ -244,7 +244,7 @@ namespace file_monitor::ui {
     ) -> bool {
         directory = directory.lexically_normal();
         auto& directories{ pendingDirectories(group) };
-        if (std::ranges::find(directories, directory) != directories.end()) {
+        if (std::ranges::contains(directories, directory)) {
             return false;
         }
 
@@ -318,7 +318,7 @@ namespace file_monitor::ui {
         auto& editor{ directoryEditor(group) };
         auto& directories{ pendingDirectories(group) };
 
-        ImGui::PushID(static_cast<int>(group));
+        ImGui::PushID(std::to_underlying(group));
         constexpr auto ADD_BUTTON_WIDTH{ 72.0F };
         constexpr auto SELECT_BUTTON_WIDTH{ 104.0F };
         constexpr auto CLEAR_BUTTON_WIDTH{ 72.0F };
