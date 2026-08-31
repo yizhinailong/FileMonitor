@@ -347,11 +347,11 @@ namespace file_monitor::core {
                 return;
             }
 
-            std::vector<FileState> previous_files;
-            previous_files.reserve(state->files.size());
-            for (auto const& [path, file] : state->files) {
-                previous_files.emplace_back(file);
-            }
+            auto const previous_files{
+                state->files |
+                std::views::values |
+                std::ranges::to<std::vector<FileState>>()
+            };
 
             auto changes{ detect_file_changes(previous_files, current_files) };
             state->changes.append_range(changes | std::views::as_rvalue);

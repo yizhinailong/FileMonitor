@@ -4,6 +4,7 @@
 #include <exception>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <utility>
 
 #include <SDL3/SDL.h>
@@ -435,10 +436,9 @@ namespace file_monitor::ui {
                     empty_text.data()
                 );
             } else {
-                for (auto directory_index{ std::size_t{ 0 } };
-                     directory_index < directories.size();
-                     ++directory_index) {
-                    auto const path_text{ core::path_to_utf8(directories[directory_index]) };
+                for (auto [directory_index, directory] :
+                     std::views::enumerate(directories)) {
+                    auto const path_text{ core::path_to_utf8(directory) };
 
                     ImGui::PushID(static_cast<int>(directory_index));
                     ImGui::TableNextRow();
@@ -447,7 +447,7 @@ namespace file_monitor::ui {
                     ImGui::SetItemTooltip("%s", path_text.c_str());
                     ImGui::TableSetColumnIndex(1);
                     if (ImGui::Button("删除", { ImGui::GetContentRegionAvail().x, 0.0F })) {
-                        directory_to_remove = directory_index;
+                        directory_to_remove = static_cast<std::size_t>(directory_index);
                     }
                     ImGui::PopID();
                 }
