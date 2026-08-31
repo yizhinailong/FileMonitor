@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <format>
 #include <fstream>
+#include <ranges>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -150,14 +151,13 @@ namespace file_monitor::core {
         }
 
         nlohmann::json config_data;
-        config_data["directories"] = nlohmann::json::array();
-        for (auto const& directory : configuration.directories) {
-            config_data["directories"].emplace_back(path_to_utf8(directory));
-        }
-        config_data["excluded_directories"] = nlohmann::json::array();
-        for (auto const& directory : configuration.excluded_directories) {
-            config_data["excluded_directories"].emplace_back(path_to_utf8(directory));
-        }
+        config_data["directories"]          = configuration.directories |
+                                              std::views::transform(path_to_utf8) |
+                                              std::ranges::to<std::vector<std::string>>();
+
+        config_data["excluded_directories"] = configuration.excluded_directories |
+                                              std::views::transform(path_to_utf8) |
+                                              std::ranges::to<std::vector<std::string>>();
 
         std::ofstream output{ config_path, std::ios::binary | std::ios::trunc };
         if (!output) {

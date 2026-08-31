@@ -7,6 +7,7 @@
 #include <ctime>
 #include <format>
 #include <optional>
+#include <ranges>
 #include <system_error>
 
 #if defined(_WIN32)
@@ -305,20 +306,18 @@ namespace file_monitor::core {
             ++current_index;
         }
 
-        for (; previous_index < previous_files.size(); ++previous_index) {
-            add_file_change(
-                changes,
-                FileChangeStatus::Removed,
-                previous_files[previous_index]
-            );
-        }
-        for (; current_index < current_files.size(); ++current_index) {
-            add_file_change(
-                changes,
-                FileChangeStatus::Added,
-                current_files[current_index]
-            );
-        }
+        changes.append_range(
+            previous_files.subspan(previous_index) |
+            std::views::transform([](FileState const& file) {
+                return make_file_change(FileChangeStatus::Removed, file);
+            })
+        );
+        changes.append_range(
+            current_files.subspan(current_index) |
+            std::views::transform([](FileState const& file) {
+                return make_file_change(FileChangeStatus::Added, file);
+            })
+        );
         return changes;
     }
 

@@ -228,13 +228,13 @@ namespace file_monitor::core {
                         utf8_to_path(removed_file.absolute_path)
                     )
                 };
-                for (auto descendant{ descendants.rbegin() };
-                     descendant != descendants.rend();
-                     ++descendant) {
-                    state->changes.emplace_back(
-                        make_file_change(FileChangeStatus::Removed, *descendant)
-                    );
-                }
+                state->changes.append_range(
+                    descendants |
+                    std::views::reverse |
+                    std::views::transform([](FileState const& file) {
+                        return make_file_change(FileChangeStatus::Removed, file);
+                    })
+                );
             }
             state->changes.emplace_back(make_file_change(FileChangeStatus::Removed, removed_file));
         }
