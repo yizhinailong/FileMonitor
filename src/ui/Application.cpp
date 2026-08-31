@@ -1,9 +1,14 @@
 #include "Application.hpp"
 
+#include <string_view>
+
+#define FILE_MONITOR_STRINGIFY_IMPL(value) #value
+#define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)
+
 namespace file_monitor::ui {
     namespace {
 
-        constexpr std::string_view WINDOW_TITLE  = "文件监控";
+        constexpr std::string_view WINDOW_TITLE  = "文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION);
         constexpr int              WINDOW_WIDTH  = 960;
         constexpr int              WINDOW_HEIGHT = 640;
 
@@ -30,3 +35,6 @@ namespace file_monitor::ui {
     }
 
 } // namespace file_monitor::ui
+
+#undef FILE_MONITOR_STRINGIFY
+#undef FILE_MONITOR_STRINGIFY_IMPL

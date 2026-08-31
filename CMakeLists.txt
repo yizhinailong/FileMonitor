@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.3.0)
 
 project(FileMonitor
-    VERSION 0.3.10
+    VERSION 0.3.11
     LANGUAGES C CXX
 )
 
@@ -50,6 +50,11 @@ endif()
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    FILE_MONITOR_VERSION=${PROJECT_VERSION}
 )
 
 target_link_libraries(${PROJECT_NAME}
