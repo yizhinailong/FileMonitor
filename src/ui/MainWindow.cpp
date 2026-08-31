@@ -1,5 +1,6 @@
 #include "MainWindow.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <filesystem>
 #include <utility>
@@ -111,14 +112,52 @@ namespace file_monitor::ui {
             constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
                                          ImGuiTableFlags_RowBg |
                                          ImGuiTableFlags_Resizable |
+                                         ImGuiTableFlags_ScrollX |
                                          ImGuiTableFlags_ScrollY |
-                                         ImGuiTableFlags_SizingStretchProp;
-            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available)) {
+                                         ImGuiTableFlags_SizingFixedFit;
+            constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
+            constexpr auto MIN_PATH_COLUMN_WIDTH{ 640.0F };
+            constexpr auto MAX_PATH_COLUMN_WIDTH{ 2400.0F };
+            auto           path_column_width{ MIN_PATH_COLUMN_WIDTH };
+            auto const     rename_separator_width{ ImGui::CalcTextSize(" -> ").x };
+            for (auto const& change : m_file_changes) {
+                auto text_width{ ImGui::CalcTextSize(change.absolute_path.c_str()).x };
+                if (!change.previous_absolute_path.empty()) {
+                    text_width +=
+                        ImGui::CalcTextSize(change.previous_absolute_path.c_str()).x +
+                        rename_separator_width;
+                }
+                path_column_width = std::max(path_column_width, text_width);
+            }
+            path_column_width = std::clamp(
+                path_column_width + ImGui::GetStyle().CellPadding.x * 2.0F,
+                MIN_PATH_COLUMN_WIDTH,
+                MAX_PATH_COLUMN_WIDTH
+            );
+            path_column_width = std::max(
+                path_column_width,
+                available.x - FIXED_COLUMNS_WIDTH
+            );
+            auto const table_content_width{
+                FIXED_COLUMNS_WIDTH + path_column_width
+            };
+
+            if (ImGui::BeginTable(
+                    "Files",
+                    4,
+                    TABLE_FLAGS,
+                    available,
+                    table_content_width
+                )) {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
-                ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn(
+                    "绝对路径",
+                    ImGuiTableColumnFlags_WidthFixed,
+                    path_column_width
+                );
                 ImGui::TableHeadersRow();
 
                 ImGuiListClipper clipper;

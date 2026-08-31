@@ -377,16 +377,53 @@ namespace file_monitor::ui {
             );
         }
 
-        constexpr auto             TABLE_FLAGS = ImGuiTableFlags_Borders |
-                                                 ImGuiTableFlags_RowBg |
-                                                 ImGuiTableFlags_Resizable |
-                                                 ImGuiTableFlags_ScrollY |
-                                                 ImGuiTableFlags_SizingStretchProp;
+        constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
+                                     ImGuiTableFlags_RowBg |
+                                     ImGuiTableFlags_Resizable |
+                                     ImGuiTableFlags_ScrollX |
+                                     ImGuiTableFlags_ScrollY |
+                                     ImGuiTableFlags_SizingFixedFit;
+        constexpr auto ACTION_COLUMN_WIDTH{ 72.0F };
+        constexpr auto MIN_PATH_COLUMN_WIDTH{ 520.0F };
+        constexpr auto MAX_PATH_COLUMN_WIDTH{ 2000.0F };
+        auto           path_column_width{ MIN_PATH_COLUMN_WIDTH };
+        for (auto const& directory : directories) {
+            auto const path_text{ core::path_to_utf8(directory) };
+            path_column_width = std::max(
+                path_column_width,
+                ImGui::CalcTextSize(path_text.c_str()).x
+            );
+        }
+        path_column_width = std::clamp(
+            path_column_width + ImGui::GetStyle().CellPadding.x * 2.0F,
+            MIN_PATH_COLUMN_WIDTH,
+            MAX_PATH_COLUMN_WIDTH
+        );
+        path_column_width = std::max(
+            path_column_width,
+            ImGui::GetContentRegionAvail().x - ACTION_COLUMN_WIDTH
+        );
+        auto const table_content_width{ path_column_width + ACTION_COLUMN_WIDTH };
+
         std::optional<std::size_t> directory_to_remove;
-        if (ImGui::BeginTable("ConfiguredDirectories", 2, TABLE_FLAGS, { 0.0F, 0.0F })) {
+        if (ImGui::BeginTable(
+                "ConfiguredDirectories",
+                2,
+                TABLE_FLAGS,
+                { 0.0F, 0.0F },
+                table_content_width
+            )) {
             ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("文件夹路径", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("操作", ImGuiTableColumnFlags_WidthFixed, 72.0F);
+            ImGui::TableSetupColumn(
+                "文件夹路径",
+                ImGuiTableColumnFlags_WidthFixed,
+                path_column_width
+            );
+            ImGui::TableSetupColumn(
+                "操作",
+                ImGuiTableColumnFlags_WidthFixed,
+                ACTION_COLUMN_WIDTH
+            );
             ImGui::TableHeadersRow();
 
             if (directories.empty()) {
