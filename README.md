@@ -7,8 +7,8 @@ FileMonitor 是一个面向 Windows 的轻量级文件夹监控工具。它通�
 - 同时监控多个文件夹及其子目录
 - 展示事件时间、状态、文件大小和绝对路径
 - 识别文件与目录的创建、删除、修改、重命名和移动
-- 将监控目录保存到 `data/config.json`
-- 按日期将完整事件记录到 `data/YYYY-MM-DD.log`
+- 将监控目录保存到 `./data/FileMonitor/config.json`
+- 按日期将完整事件记录到 `./data/FileMonitor/YYYY-MM-DD.log`
 - 支持高 DPI、键盘导航和中文字体
 
 ## 环境要求
@@ -64,7 +64,7 @@ cmake --install build/release --prefix dist
 3. 点击“保存”开始监控。
 4. 文件变更会显示在主列表中，并同步写入当天的日志文件。
 
-配置和日志路径相对于程序的当前工作目录。通过 `just run` 启动时，它们位于仓库根目录下的 `data` 文件夹中。
+配置和日志路径相对于程序的当前工作目录。通过 `just run` 启动时，它们位于仓库根目录下的 `data/FileMonitor` 文件夹中。
 
 ## 常见问题
 

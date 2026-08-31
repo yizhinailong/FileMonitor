@@ -19,7 +19,7 @@ namespace file_monitor::ui {
     namespace {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
-        auto const     DATA_DIRECTORY{ std::filesystem::path{ "data" } };
+        auto const     DATA_DIRECTORY{ std::filesystem::path{ "data" } / "FileMonitor" };
         auto const     CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
 
         struct DirectoryDialogContext {
