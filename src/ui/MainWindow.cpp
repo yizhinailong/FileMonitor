@@ -36,6 +36,7 @@ namespace file_monitor::ui {
                 case core::FileChangeStatus::Modified:
                     return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
                 case core::FileChangeStatus::Renamed:
+                case core::FileChangeStatus::Moved:
                     return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
             }
             return ImGui::GetStyleColorVec4(ImGuiCol_Text);

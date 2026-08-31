@@ -15,7 +15,8 @@ namespace file_monitor::core {
         Added,
         Removed,
         Modified,
-        Renamed
+        Renamed,
+        Moved
     };
 
     struct FileState {

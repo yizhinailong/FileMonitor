@@ -325,6 +325,8 @@ namespace file_monitor::core {
                 return "修改";
             case FileChangeStatus::Renamed:
                 return "重命名";
+            case FileChangeStatus::Moved:
+                return "移动";
         }
         return "未知";
     }

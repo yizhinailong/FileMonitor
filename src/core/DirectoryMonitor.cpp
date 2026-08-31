@@ -225,11 +225,14 @@ namespace file_monitor::core {
             state->files.insert_or_assign(file_path, std::move(file));
         }
 
-        auto record_renamed(
+        auto record_path_changed(
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const&         previous_path,
             std::filesystem::path const&         current_path
         ) -> void {
+            auto const status{
+                previous_path.parent_path() == current_path.parent_path() ? FileChangeStatus::Renamed : FileChangeStatus::Moved
+            };
             auto       current_file{ read_file_state(current_path) };
             auto const previous_path_text{ read_file_state(previous_path).absolute_path };
             auto       lock{ wait_for_initialization(state) };
@@ -262,7 +265,7 @@ namespace file_monitor::core {
 
             state->changes.emplace_back(
                 make_file_change(
-                    FileChangeStatus::Renamed,
+                    status,
                     current_file,
                     previous_path_text
                 )
@@ -451,7 +454,7 @@ namespace file_monitor::core {
                         break;
                     case FILE_ACTION_RENAMED_NEW_NAME:
                         if (pending_rename) {
-                            record_renamed(m_state, *pending_rename, path);
+                            record_path_changed(m_state, *pending_rename, path);
                             pending_rename.reset();
                         } else {
                             record_added(m_state, path);
