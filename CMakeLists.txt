@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if(WIN32)
+    enable_language(RC)
+endif()
+
 include(cmake/Dependencies.cmake)
 
 add_executable(${PROJECT_NAME}
@@ -35,6 +39,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 if(WIN32)
+    target_sources(${PROJECT_NAME} PRIVATE app.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
