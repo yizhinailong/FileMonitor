@@ -2,12 +2,15 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "core/Configuration.hpp"
 
@@ -62,6 +65,13 @@ namespace file_monitor::ui {
             context->state->completed            = true;
         }
 
+        auto utf8_to_path(std::string_view path) -> std::filesystem::path {
+            auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
+            return std::filesystem::path{
+                std::u8string{ begin, begin + path.size() }
+            };
+        }
+
     } // namespace
 
     MainWindow::MainWindow()
@@ -111,6 +121,51 @@ namespace file_monitor::ui {
         ImGui::End();
     }
 
+    auto MainWindow::addManualDirectory() -> void {
+        if (m_directory_input.empty()) {
+            m_directory_input_error_message = "请输入文件夹路径";
+            return;
+        }
+
+        std::filesystem::path directory;
+        try {
+            directory = utf8_to_path(m_directory_input).lexically_normal();
+        } catch (std::exception const& error) {
+            m_directory_input_error_message = "文件夹路径无效：" + std::string{ error.what() };
+            return;
+        }
+
+        std::error_code check_error;
+        auto const      is_directory{ std::filesystem::is_directory(directory, check_error) };
+        if (check_error) {
+            m_directory_input_error_message =
+                "检查文件夹失败：" + check_error.message();
+            return;
+        }
+        if (!is_directory) {
+            m_directory_input_error_message = "路径不是存在的文件夹";
+            return;
+        }
+        if (!addPendingDirectory(directory)) {
+            m_directory_input_error_message = "该文件夹已添加";
+            return;
+        }
+
+        m_directory_input.clear();
+        m_directory_input_error_message.clear();
+    }
+
+    auto MainWindow::addPendingDirectory(std::filesystem::path directory) -> bool {
+        directory = directory.lexically_normal();
+        if (std::ranges::find(m_pending_directories, directory) !=
+            m_pending_directories.end()) {
+            return false;
+        }
+
+        m_pending_directories.emplace_back(std::move(directory));
+        return true;
+    }
+
     auto MainWindow::consumeDirectorySelection() -> void {
         std::vector<std::filesystem::path> selected_directories;
         std::string                        error_message;
@@ -131,11 +186,7 @@ namespace file_monitor::ui {
         m_dialog_error_message = std::move(error_message);
 
         for (auto& directory : selected_directories) {
-            directory = directory.lexically_normal();
-            if (std::ranges::find(m_pending_directories, directory) ==
-                m_pending_directories.end()) {
-                m_pending_directories.emplace_back(std::move(directory));
-            }
+            addPendingDirectory(std::move(directory));
         }
     }
 
@@ -181,6 +232,8 @@ namespace file_monitor::ui {
 
         if (open_settings) {
             m_pending_directories = m_directories;
+            m_directory_input.clear();
+            m_directory_input_error_message.clear();
             m_dialog_error_message.clear();
             ImGui::OpenPopup("设置##SettingsWindow");
         }
@@ -302,23 +355,65 @@ namespace file_monitor::ui {
             return;
         }
 
+        constexpr auto ADD_BUTTON_WIDTH{ 72.0F };
+        constexpr auto SELECT_BUTTON_WIDTH{ 104.0F };
+        constexpr auto CLEAR_BUTTON_WIDTH{ 72.0F };
+        auto const     button_spacing{ ImGui::GetStyle().ItemSpacing.x * 3.0F };
+        ImGui::SetNextItemWidth(
+            std::max(
+                1.0F,
+                ImGui::GetContentRegionAvail().x - ADD_BUTTON_WIDTH - SELECT_BUTTON_WIDTH -
+                    CLEAR_BUTTON_WIDTH - button_spacing
+            )
+        );
+        auto const submit_directory{
+            ImGui::InputTextWithHint(
+                "##DirectoryPath",
+                "输入文件夹路径",
+                &m_directory_input,
+                ImGuiInputTextFlags_EnterReturnsTrue
+            )
+        };
+        if (ImGui::IsItemEdited()) {
+            m_directory_input_error_message.clear();
+        }
+        ImGui::SameLine();
+        auto const add_directory{
+            ImGui::Button("添加", { ADD_BUTTON_WIDTH, 0.0F })
+        };
+        if (submit_directory || add_directory) {
+            addManualDirectory();
+        }
+
+        ImGui::SameLine();
         ImGui::BeginDisabled(m_dialog_open);
-        auto const add_directories{ ImGui::Button("添加文件夹") };
+        auto const select_directories{
+            ImGui::Button("选择文件夹", { SELECT_BUTTON_WIDTH, 0.0F })
+        };
         ImGui::EndDisabled();
-        if (add_directories) {
+        if (select_directories) {
             openDirectoryDialog();
         }
 
         ImGui::SameLine();
         ImGui::BeginDisabled(m_pending_directories.empty());
-        auto const clear_directories{ ImGui::Button("清空") };
+        auto const clear_directories{
+            ImGui::Button("清空", { CLEAR_BUTTON_WIDTH, 0.0F })
+        };
         ImGui::EndDisabled();
         if (clear_directories) {
             m_pending_directories.clear();
         }
 
+        if (!m_directory_input_error_message.empty()) {
+            ImGui::TextColored(
+                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                "%s",
+                m_directory_input_error_message.c_str()
+            );
+        }
+
         if (!m_dialog_error_message.empty()) {
-            ImGui::SameLine();
             ImGui::TextColored(
                 ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
                 "选择文件夹失败：%s",

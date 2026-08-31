@@ -27,6 +27,8 @@ namespace file_monitor::ui {
         auto Render() -> void;
 
     private:
+        auto addManualDirectory() -> void;
+        auto addPendingDirectory(std::filesystem::path directory) -> bool;
         auto consumeDirectorySelection() -> void;
         auto openDirectoryDialog() -> void;
         auto resetFileMonitor() -> void;
@@ -43,6 +45,8 @@ namespace file_monitor::ui {
         core::DirectoryMonitor                m_file_monitor;
         core::ChangeLogger                    m_change_logger;
         SDL_Window*                           m_parent_window{ nullptr };
+        std::string                           m_directory_input;
+        std::string                           m_directory_input_error_message;
         std::string                           m_dialog_error_message;
         std::string                           m_configuration_error_message;
         std::string                           m_log_error_message;
