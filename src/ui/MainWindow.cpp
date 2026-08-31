@@ -27,17 +27,22 @@ namespace file_monitor::ui {
         };
 
         auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
+            auto const light_theme{ SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT };
             switch (status) {
                 case core::FileChangeStatus::Added:
-                    return { 0.30F, 0.85F, 0.40F, 1.0F };
+                    return light_theme ? ImVec4{ 0.05F, 0.45F, 0.15F, 1.0F } : ImVec4{ 0.30F, 0.85F, 0.40F, 1.0F };
                 case core::FileChangeStatus::Removed:
-                    return { 1.0F, 0.35F, 0.35F, 1.0F };
+                    return light_theme ? ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } : ImVec4{ 1.0F, 0.35F, 0.35F, 1.0F };
                 case core::FileChangeStatus::Modified:
-                    return { 1.0F, 0.80F, 0.25F, 1.0F };
+                    return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
                 case core::FileChangeStatus::Renamed:
-                    return { 1.0F, 0.80F, 0.25F, 1.0F };
+                    return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
             }
             return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        }
+
+        auto error_text_color() -> ImVec4 {
+            return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ? ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } : ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
         }
 
         auto SDLCALL directory_dialog_callback(
@@ -407,7 +412,7 @@ namespace file_monitor::ui {
 
         if (!m_directory_input_error_message.empty()) {
             ImGui::TextColored(
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                error_text_color(),
                 "%s",
                 m_directory_input_error_message.c_str()
             );
@@ -415,7 +420,7 @@ namespace file_monitor::ui {
 
         if (!m_dialog_error_message.empty()) {
             ImGui::TextColored(
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                error_text_color(),
                 "选择文件夹失败：%s",
                 m_dialog_error_message.c_str()
             );
@@ -423,7 +428,7 @@ namespace file_monitor::ui {
 
         if (!m_monitor_error_message.empty()) {
             ImGui::TextColored(
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                error_text_color(),
                 "监控失败：%s",
                 m_monitor_error_message.c_str()
             );
@@ -431,7 +436,7 @@ namespace file_monitor::ui {
 
         if (!m_configuration_error_message.empty()) {
             ImGui::TextColored(
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                error_text_color(),
                 "配置失败：%s",
                 m_configuration_error_message.c_str()
             );
@@ -439,7 +444,7 @@ namespace file_monitor::ui {
 
         if (!m_log_error_message.empty()) {
             ImGui::TextColored(
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F },
+                error_text_color(),
                 "日志失败：%s",
                 m_log_error_message.c_str()
             );

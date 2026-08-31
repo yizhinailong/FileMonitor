@@ -21,6 +21,14 @@ namespace file_monitor::ui {
             std::fprintf(stderr, "%s: %s\n", message, SDL_GetError());
         }
 
+        auto apply_system_theme() -> void {
+            if (SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT) {
+                ImGui::StyleColorsLight();
+            } else {
+                ImGui::StyleColorsDark();
+            }
+        }
+
         auto load_chinese_font(ImGuiIO& io) -> bool {
 #if defined(_WIN32)
             constexpr std::array FONT_PATHS{
@@ -86,6 +94,9 @@ namespace file_monitor::ui {
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
+            if (event.type == SDL_EVENT_SYSTEM_THEME_CHANGED) {
+                apply_system_theme();
+            }
             if (event.type == SDL_EVENT_QUIT ||
                 (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                  event.window.windowID == SDL_GetWindowID(m_window))) {
@@ -193,6 +204,7 @@ namespace file_monitor::ui {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         m_imgui_context_created = true;
+        apply_system_theme();
 
         auto& io{ ImGui::GetIO() };
         io.IniFilename  = nullptr;
