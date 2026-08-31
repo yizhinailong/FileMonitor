@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.3.0)
 
 project(FileMonitor
-    VERSION 0.3.9
+    VERSION 0.3.10
     LANGUAGES C CXX
 )
 
@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME}
     src/ui/MainWindow.hpp
     src/ui/SdlImGuiBackend.cpp
     src/ui/SdlImGuiBackend.hpp
+    src/ui/SettingsWindow.cpp
+    src/ui/SettingsWindow.hpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
