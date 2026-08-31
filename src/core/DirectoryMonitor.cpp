@@ -1,5 +1,6 @@
 #include "DirectoryMonitor.hpp"
 
+#include <algorithm>
 #include <array>
 #include <condition_variable>
 #include <cstddef>
@@ -31,6 +32,7 @@ namespace file_monitor::core {
             std::mutex                         mutex;
             std::condition_variable            initialized;
             std::vector<std::filesystem::path> directories;
+            std::vector<std::filesystem::path> excluded_directories;
             FileCache                          files;
             std::vector<FileChange>            changes;
             std::string                        error_message;
@@ -53,7 +55,9 @@ namespace file_monitor::core {
 
         auto utf8_to_path(std::string_view path) -> std::filesystem::path {
             auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
-            return std::filesystem::path{ std::u8string{ begin, begin + path.size() } };
+            return std::filesystem::path{
+                std::u8string{ begin, begin + path.size() }
+            };
         }
 
         auto path_is_descendant(
@@ -63,6 +67,29 @@ namespace file_monitor::core {
             auto const relative_path{ path.lexically_relative(directory) };
             return !relative_path.empty() && relative_path != "." &&
                    !relative_path.is_absolute() && *relative_path.begin() != "..";
+        }
+
+        auto path_is_excluded(
+            std::filesystem::path const&           path,
+            std::span<std::filesystem::path const> excluded_directories
+        ) -> bool {
+            return std::ranges::any_of(
+                excluded_directories,
+                [&path](std::filesystem::path const& excluded_directory) {
+                    return path == excluded_directory ||
+                           path_is_descendant(path, excluded_directory);
+                }
+            );
+        }
+
+        auto normalize_directory(std::filesystem::path const& directory)
+            -> std::filesystem::path {
+            std::error_code absolute_error;
+            auto            normalized{ std::filesystem::absolute(directory, absolute_error) };
+            if (absolute_error) {
+                normalized = directory;
+            }
+            return normalized.lexically_normal();
         }
 
         auto take_descendants(FileCache& files, std::filesystem::path const& directory)
@@ -92,7 +119,7 @@ namespace file_monitor::core {
                     continue;
                 }
 
-                auto remapped_file{ std::move(file->second) };
+                auto       remapped_file{ std::move(file->second) };
                 auto const relative_path{ file_path.lexically_relative(previous_directory) };
                 remapped_file.absolute_path = path_to_utf8(current_directory / relative_path);
                 remapped_files.emplace_back(std::move(remapped_file));
@@ -131,7 +158,9 @@ namespace file_monitor::core {
             std::stop_token                      stop_token
         ) -> void {
             std::array const directories{ std::move(directory) };
-            auto const       files{ scan_files(directories, stop_token) };
+            auto const       files{
+                scan_files(directories, state->excluded_directories, stop_token)
+            };
             if (stop_token.stop_requested()) {
                 return;
             }
@@ -160,6 +189,10 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const&         path
         ) -> void {
+            if (path_is_excluded(path, state->excluded_directories)) {
+                return;
+            }
+
             auto file{ read_file_state(path) };
             auto lock{ wait_for_initialization(state) };
             if (state->files.contains(file.absolute_path)) {
@@ -174,6 +207,10 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const&         path
         ) -> void {
+            if (path_is_excluded(path, state->excluded_directories)) {
+                return;
+            }
+
             auto const path_text{ read_file_state(path).absolute_path };
             auto       lock{ wait_for_initialization(state) };
             auto const file{ state->files.find(path_text) };
@@ -205,7 +242,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const&         path
         ) -> void {
-            if (!path_is_regular_file(path)) {
+            if (path_is_excluded(path, state->excluded_directories) ||
+                !path_is_regular_file(path)) {
                 return;
             }
 
@@ -230,6 +268,24 @@ namespace file_monitor::core {
             std::filesystem::path const&         previous_path,
             std::filesystem::path const&         current_path
         ) -> void {
+            auto const previous_is_excluded{
+                path_is_excluded(previous_path, state->excluded_directories)
+            };
+            auto const current_is_excluded{
+                path_is_excluded(current_path, state->excluded_directories)
+            };
+            if (previous_is_excluded && current_is_excluded) {
+                return;
+            }
+            if (current_is_excluded) {
+                record_removed(state, previous_path);
+                return;
+            }
+            if (previous_is_excluded) {
+                record_added(state, current_path);
+                return;
+            }
+
             auto const status{
                 previous_path.parent_path() == current_path.parent_path() ? FileChangeStatus::Renamed : FileChangeStatus::Moved
             };
@@ -279,7 +335,13 @@ namespace file_monitor::core {
             std::stop_token                      stop_token
         ) -> void {
             auto       lock{ wait_for_initialization(state) };
-            auto const current_files{ scan_files(state->directories, stop_token) };
+            auto const current_files{
+                scan_files(
+                    state->directories,
+                    state->excluded_directories,
+                    stop_token
+                )
+            };
             if (stop_token.stop_requested()) {
                 return;
             }
@@ -643,32 +705,47 @@ namespace file_monitor::core {
     }
 
     auto DirectoryMonitor::Start(
-        std::span<std::filesystem::path const> directories
+        std::span<std::filesystem::path const> directories,
+        std::span<std::filesystem::path const> excluded_directories
     ) -> void {
         Stop();
 
+        std::vector<std::filesystem::path> normalized_directories;
+        normalized_directories.reserve(directories.size());
+        for (auto const& directory : directories) {
+            normalized_directories.emplace_back(normalize_directory(directory));
+        }
+
+        std::vector<std::filesystem::path> normalized_excluded_directories;
+        normalized_excluded_directories.reserve(excluded_directories.size());
+        for (auto const& directory : excluded_directories) {
+            normalized_excluded_directories.emplace_back(normalize_directory(directory));
+        }
+
         {
             auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-            m_impl->state->directories.assign(directories.begin(), directories.end());
+            m_impl->state->directories = normalized_directories;
+            m_impl->state->excluded_directories =
+                std::move(normalized_excluded_directories);
             m_impl->state->files                   = {};
             m_impl->state->changes                 = {};
             m_impl->state->error_message           = {};
-            m_impl->state->initializing            = !directories.empty();
-            m_impl->state->pending_initializations = directories.size();
+            m_impl->state->initializing            = !normalized_directories.empty();
+            m_impl->state->pending_initializations = normalized_directories.size();
         }
 
 #if defined(_WIN32)
-        for (auto const& directory : directories) {
+        for (auto const& directory : normalized_directories) {
             m_impl->watchers.emplace_back(
                 std::make_unique<DirectoryWatcher>(directory, m_impl->state)
             );
         }
 #else
-        if (!directories.empty()) {
+        if (!normalized_directories.empty()) {
             report_error(m_impl->state, "当前平台暂不支持系统文件变更通知");
         }
-        m_impl->initialization_threads.reserve(directories.size());
-        for (auto const& directory : directories) {
+        m_impl->initialization_threads.reserve(normalized_directories.size());
+        for (auto const& directory : normalized_directories) {
             m_impl->initialization_threads.emplace_back(
                 [state = m_impl->state, directory](std::stop_token stop_token) mutable {
                     initialize_directory(state, std::move(directory), stop_token);
@@ -676,7 +753,7 @@ namespace file_monitor::core {
             );
         }
 #endif
-        if (directories.empty()) {
+        if (normalized_directories.empty()) {
             m_impl->state->initialized.notify_all();
         }
     }

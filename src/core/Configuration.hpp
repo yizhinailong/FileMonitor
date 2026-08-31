@@ -9,6 +9,7 @@ namespace file_monitor::core {
 
     struct Configuration {
         std::vector<std::filesystem::path> directories;
+        std::vector<std::filesystem::path> excluded_directories;
     };
 
     auto load_configuration(std::filesystem::path const& config_path)

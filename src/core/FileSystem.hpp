@@ -21,10 +21,10 @@ namespace file_monitor::core {
 
     struct FileState {
         std::optional<std::chrono::system_clock::time_point> creation_time;
-        std::optional<std::filesystem::file_time_type> modified_time;
-        std::optional<std::uintmax_t>                  size;
-        std::string                                    absolute_path;
-        bool                                           is_directory{ false };
+        std::optional<std::filesystem::file_time_type>       modified_time;
+        std::optional<std::uintmax_t>                        size;
+        std::string                                          absolute_path;
+        bool                                                 is_directory{ false };
     };
 
     struct FileChange {
@@ -38,6 +38,7 @@ namespace file_monitor::core {
     auto read_file_state(std::filesystem::path const& path) -> FileState;
     auto scan_files(
         std::span<std::filesystem::path const> directories,
+        std::span<std::filesystem::path const> excluded_directories,
         std::stop_token                        stop_token
     ) -> std::vector<FileState>;
     auto detect_file_changes(

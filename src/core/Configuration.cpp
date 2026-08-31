@@ -29,7 +29,48 @@ namespace file_monitor::core {
 
         auto utf8_to_path(std::string_view path) -> std::filesystem::path {
             auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
-            return std::filesystem::path{ std::u8string{ begin, begin + path.size() } };
+            return std::filesystem::path{
+                std::u8string{ begin, begin + path.size() }
+            };
+        }
+
+        auto load_directories(
+            nlohmann::json const&               config_data,
+            std::string_view                    key,
+            std::vector<std::filesystem::path>& directories,
+            bool                                required
+        ) -> std::expected<void, std::string> {
+            auto const directory_values{ config_data.find(key) };
+            if (directory_values == config_data.end()) {
+                if (required) {
+                    return std::unexpected{ std::format("{} 必须是数组", key) };
+                }
+                return {};
+            }
+            if (!directory_values->is_array()) {
+                return std::unexpected{ std::format("{} 必须是数组", key) };
+            }
+
+            for (auto const& directory_value : *directory_values) {
+                if (!directory_value.is_string()) {
+                    return std::unexpected{
+                        std::format("{} 中的文件夹路径必须是字符串", key)
+                    };
+                }
+
+                auto const& directory_text{ directory_value.get_ref<std::string const&>() };
+                if (directory_text.empty()) {
+                    return std::unexpected{
+                        std::format("{} 中的文件夹路径不能为空", key)
+                    };
+                }
+
+                auto directory{ utf8_to_path(directory_text).lexically_normal() };
+                if (std::ranges::find(directories, directory) == directories.end()) {
+                    directories.emplace_back(std::move(directory));
+                }
+            }
+            return {};
         }
 
     } // namespace
@@ -64,33 +105,31 @@ namespace file_monitor::core {
             return std::unexpected{ config_error("解析配置文件失败", config_path, "根节点必须是对象") };
         }
 
-        auto const directory_values{ config_data.find("directories") };
-        if (directory_values == config_data.end() || !directory_values->is_array()) {
+        Configuration configuration;
+        auto const    directories_result{
+            load_directories(config_data, "directories", configuration.directories, true)
+        };
+        if (!directories_result) {
             return std::unexpected{
-                config_error("解析配置文件失败", config_path, "directories 必须是数组")
+                config_error("解析配置文件失败", config_path, directories_result.error())
             };
         }
-
-        Configuration configuration;
-        for (auto const& directory_value : *directory_values) {
-            if (!directory_value.is_string()) {
-                return std::unexpected{
-                    config_error("解析配置文件失败", config_path, "文件夹路径必须是字符串")
-                };
-            }
-
-            auto const& directory_text{ directory_value.get_ref<std::string const&>() };
-            if (directory_text.empty()) {
-                return std::unexpected{
-                    config_error("解析配置文件失败", config_path, "文件夹路径不能为空")
-                };
-            }
-
-            auto directory{ utf8_to_path(directory_text).lexically_normal() };
-            if (std::ranges::find(configuration.directories, directory) ==
-                configuration.directories.end()) {
-                configuration.directories.emplace_back(std::move(directory));
-            }
+        auto const excluded_directories_result{
+            load_directories(
+                config_data,
+                "excluded_directories",
+                configuration.excluded_directories,
+                false
+            )
+        };
+        if (!excluded_directories_result) {
+            return std::unexpected{
+                config_error(
+                    "解析配置文件失败",
+                    config_path,
+                    excluded_directories_result.error()
+                )
+            };
         }
         return configuration;
     }
@@ -114,6 +153,10 @@ namespace file_monitor::core {
         config_data["directories"] = nlohmann::json::array();
         for (auto const& directory : configuration.directories) {
             config_data["directories"].emplace_back(path_to_utf8(directory));
+        }
+        config_data["excluded_directories"] = nlohmann::json::array();
+        for (auto const& directory : configuration.excluded_directories) {
+            config_data["excluded_directories"].emplace_back(path_to_utf8(directory));
         }
 
         std::ofstream output{ config_path, std::ios::binary | std::ios::trunc };

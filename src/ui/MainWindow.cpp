@@ -79,7 +79,10 @@ namespace file_monitor::ui {
         m_file_changes.clear();
         m_monitor_error_message.clear();
         m_scroll_to_latest = false;
-        m_file_monitor.Start(m_settings_window.Directories());
+        m_file_monitor.Start(
+            m_settings_window.Directories(),
+            m_settings_window.ExcludedDirectories()
+        );
     }
 
     auto MainWindow::renderSettingsPanel(float width, float height) -> void {
@@ -89,8 +92,9 @@ namespace file_monitor::ui {
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip(
-                    "已选择 %zu 个文件夹",
-                    m_settings_window.Directories().size()
+                    "监控 %zu 个文件夹，排除 %zu 个文件夹",
+                    m_settings_window.Directories().size(),
+                    m_settings_window.ExcludedDirectories().size()
                 );
             }
         }

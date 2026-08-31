@@ -206,13 +206,33 @@ namespace file_monitor::core {
 
     auto scan_files(
         std::span<std::filesystem::path const> directories,
+        std::span<std::filesystem::path const> excluded_directories,
         std::stop_token                        stop_token
     ) -> std::vector<FileState> {
         std::vector<FileState> files;
 
+        auto const path_is_excluded{
+            [excluded_directories](std::filesystem::path const& path) {
+                return std::ranges::any_of(
+                    excluded_directories,
+                    [&path](std::filesystem::path const& excluded_directory) {
+                        auto const relative_path{
+                            path.lexically_relative(excluded_directory)
+                        };
+                        return relative_path == "." ||
+                               (!relative_path.empty() && !relative_path.is_absolute() &&
+                                *relative_path.begin() != "..");
+                    }
+                );
+            }
+        };
+
         for (auto const& directory : directories) {
             if (stop_token.stop_requested()) {
                 break;
+            }
+            if (path_is_excluded(directory)) {
+                continue;
             }
 
             std::error_code iteration_error;
@@ -226,12 +246,17 @@ namespace file_monitor::core {
             auto const end{ std::filesystem::recursive_directory_iterator{} };
 
             while (!stop_token.stop_requested() && !iteration_error && iterator != end) {
+                auto const      path{ iterator->path().lexically_normal() };
                 std::error_code type_error;
                 auto const      is_regular_file{ iterator->is_regular_file(type_error) };
                 if (!type_error) {
                     auto const is_directory{ iterator->is_directory(type_error) };
-                    if (!type_error && (is_regular_file || is_directory)) {
-                        files.emplace_back(read_file_state(iterator->path()));
+                    if (!type_error && is_directory && path_is_excluded(path)) {
+                        iterator.disable_recursion_pending();
+                    } else if (!type_error && is_regular_file && !path_is_excluded(path)) {
+                        files.emplace_back(read_file_state(path));
+                    } else if (!type_error && is_directory) {
+                        files.emplace_back(read_file_state(path));
                     }
                 }
                 iterator.increment(iteration_error);
