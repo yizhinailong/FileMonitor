@@ -10,7 +10,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "FileSystem.hpp"
+#include "Utils.hpp"
 
 namespace file_monitor::core {
     namespace {
@@ -23,16 +23,9 @@ namespace file_monitor::core {
             return std::format(
                 "{} {}：{}",
                 operation,
-                path_to_utf8(config_path),
+                utils::path_to_utf8(config_path),
                 detail
             );
-        }
-
-        auto utf8_to_path(std::string_view path) -> std::filesystem::path {
-            auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
-            return std::filesystem::path{
-                std::u8string{ begin, begin + path.size() }
-            };
         }
 
         auto load_directories(
@@ -66,7 +59,7 @@ namespace file_monitor::core {
                     };
                 }
 
-                auto directory{ utf8_to_path(directory_text).lexically_normal() };
+                auto directory{ utils::utf8_to_path(directory_text).lexically_normal() };
                 if (!std::ranges::contains(directories, directory)) {
                     directories.emplace_back(std::move(directory));
                 }
@@ -152,11 +145,11 @@ namespace file_monitor::core {
 
         nlohmann::json config_data;
         config_data["directories"]          = configuration.directories |
-                                              std::views::transform(path_to_utf8) |
+                                              std::views::transform(utils::path_to_utf8) |
                                               std::ranges::to<std::vector<std::string>>();
 
         config_data["excluded_directories"] = configuration.excluded_directories |
-                                              std::views::transform(path_to_utf8) |
+                                              std::views::transform(utils::path_to_utf8) |
                                               std::ranges::to<std::vector<std::string>>();
 
         std::ofstream output{ config_path, std::ios::binary | std::ios::trunc };

@@ -11,7 +11,7 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
-#include "core/FileSystem.hpp"
+#include "core/Utils.hpp"
 
 namespace file_monitor::ui {
 
@@ -46,8 +46,7 @@ namespace file_monitor::ui {
                 error_message = SDL_GetError();
             } else {
                 for (auto item{ file_list }; *item != nullptr; ++item) {
-                    auto const* utf8_path{ reinterpret_cast<char8_t const*>(*item) };
-                    selected_directories.emplace_back(std::u8string{ utf8_path });
+                    selected_directories.emplace_back(core::utils::utf8_to_path(*item));
                 }
             }
 
@@ -55,13 +54,6 @@ namespace file_monitor::ui {
             context->state->selected_directories = std::move(selected_directories);
             context->state->error_message        = std::move(error_message);
             context->state->completed            = true;
-        }
-
-        auto utf8_to_path(std::string_view path) -> std::filesystem::path {
-            auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
-            return std::filesystem::path{
-                std::u8string{ begin, begin + path.size() }
-            };
         }
 
     } // namespace
@@ -214,7 +206,7 @@ namespace file_monitor::ui {
 
         std::filesystem::path directory;
         try {
-            directory = utf8_to_path(editor.input).lexically_normal();
+            directory = core::utils::utf8_to_path(editor.input).lexically_normal();
         } catch (std::exception const& error) {
             editor.error_message = "文件夹路径无效：" + std::string{ error.what() };
             return;
@@ -292,7 +284,7 @@ namespace file_monitor::ui {
 
         auto const& directories{ pendingDirectories(group) };
         auto const  default_location_text{
-            directories.empty() ? std::string{} : core::path_to_utf8(directories.back())
+            directories.empty() ? std::string{} : core::utils::path_to_utf8(directories.back())
         };
         auto const* default_location{
             default_location_text.empty() ? nullptr : default_location_text.c_str()
@@ -389,7 +381,7 @@ namespace file_monitor::ui {
         constexpr auto MAX_PATH_COLUMN_WIDTH{ 2000.0F };
         auto           path_column_width{ MIN_PATH_COLUMN_WIDTH };
         for (auto const& directory : directories) {
-            auto const path_text{ core::path_to_utf8(directory) };
+            auto const path_text{ core::utils::path_to_utf8(directory) };
             path_column_width = std::max(
                 path_column_width,
                 ImGui::CalcTextSize(path_text.c_str()).x
@@ -438,7 +430,7 @@ namespace file_monitor::ui {
             } else {
                 for (auto [directory_index, directory] :
                      std::views::enumerate(directories)) {
-                    auto const path_text{ core::path_to_utf8(directory) };
+                    auto const path_text{ core::utils::path_to_utf8(directory) };
 
                     ImGui::PushID(static_cast<int>(directory_index));
                     ImGui::TableNextRow();

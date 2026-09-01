@@ -9,6 +9,8 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
+#include "Utils.hpp"
+
 namespace file_monitor::core {
     namespace {
 
@@ -64,7 +66,7 @@ namespace file_monitor::core {
                 return std::unexpected{
                     std::format(
                         "创建日志目录失败 {}：{}",
-                        path_to_utf8(log_directory),
+                        utils::path_to_utf8(log_directory),
                         create_error.message()
                     )
                 };
@@ -74,7 +76,7 @@ namespace file_monitor::core {
             try {
                 auto sink{
                     std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                        path_to_utf8(log_path),
+                        utils::path_to_utf8(log_path),
                         false
                     )
                 };
@@ -93,7 +95,7 @@ namespace file_monitor::core {
                 return std::unexpected{
                     std::format(
                         "打开日志文件失败 {}：{}",
-                        path_to_utf8(log_path),
+                        utils::path_to_utf8(log_path),
                         exception.what()
                     )
                 };

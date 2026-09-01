@@ -10,6 +10,8 @@
 #include <ranges>
 #include <system_error>
 
+#include "Utils.hpp"
+
 #if defined(_WIN32)
     #ifndef NOMINMAX
         #define NOMINMAX
@@ -156,7 +158,7 @@ namespace file_monitor::core {
         auto absolute_path_to_utf8(std::filesystem::path const& path) -> std::string {
             std::error_code absolute_error;
             auto const      absolute_path{ std::filesystem::absolute(path, absolute_error) };
-            return path_to_utf8(absolute_error ? path : absolute_path);
+            return utils::path_to_utf8(absolute_error ? path : absolute_path);
         }
 
         auto format_change_path(std::string path, bool is_directory) -> std::string {
@@ -353,11 +355,6 @@ namespace file_monitor::core {
                 return "移动";
         }
         return "未知";
-    }
-
-    auto path_to_utf8(std::filesystem::path const& path) -> std::string {
-        auto const utf8_path{ path.u8string() };
-        return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
     }
 
 } // namespace file_monitor::core

@@ -14,6 +14,8 @@
 #include <thread>
 #include <utility>
 
+#include "Utils.hpp"
+
 #if defined(_WIN32)
     #ifndef NOMINMAX
         #define NOMINMAX
@@ -54,13 +56,6 @@ namespace file_monitor::core {
             return std::filesystem::is_regular_file(path, type_error) && !type_error;
         }
 
-        auto utf8_to_path(std::string_view path) -> std::filesystem::path {
-            auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
-            return std::filesystem::path{
-                std::u8string{ begin, begin + path.size() }
-            };
-        }
-
         auto path_is_descendant(
             std::filesystem::path const& path,
             std::filesystem::path const& directory
@@ -97,7 +92,7 @@ namespace file_monitor::core {
             -> std::vector<FileState> {
             std::vector<FileState> descendants;
             for (auto file{ files.begin() }; file != files.end();) {
-                if (path_is_descendant(utf8_to_path(file->first), directory)) {
+                if (path_is_descendant(utils::utf8_to_path(file->first), directory)) {
                     descendants.emplace_back(std::move(file->second));
                     file = files.erase(file);
                 } else {
@@ -114,7 +109,7 @@ namespace file_monitor::core {
         ) -> void {
             std::vector<FileState> remapped_files;
             for (auto file{ files.begin() }; file != files.end();) {
-                auto const file_path{ utf8_to_path(file->first) };
+                auto const file_path{ utils::utf8_to_path(file->first) };
                 if (!path_is_descendant(file_path, previous_directory)) {
                     ++file;
                     continue;
@@ -122,7 +117,9 @@ namespace file_monitor::core {
 
                 auto       remapped_file{ std::move(file->second) };
                 auto const relative_path{ file_path.lexically_relative(previous_directory) };
-                remapped_file.absolute_path = path_to_utf8(current_directory / relative_path);
+                remapped_file.absolute_path = utils::path_to_utf8(
+                    current_directory / relative_path
+                );
                 remapped_files.emplace_back(std::move(remapped_file));
                 file = files.erase(file);
             }
@@ -225,7 +222,7 @@ namespace file_monitor::core {
                 auto const descendants{
                     take_descendants(
                         state->files,
-                        utf8_to_path(removed_file.absolute_path)
+                        utils::utf8_to_path(removed_file.absolute_path)
                     )
                 };
                 state->changes.append_range(
@@ -313,8 +310,8 @@ namespace file_monitor::core {
                 if (current_file.is_directory) {
                     remap_descendants(
                         state->files,
-                        utf8_to_path(previous->second.absolute_path),
-                        utf8_to_path(current_file.absolute_path)
+                        utils::utf8_to_path(previous->second.absolute_path),
+                        utils::utf8_to_path(current_file.absolute_path)
                     );
                 }
                 state->files.erase(previous);
@@ -442,7 +439,7 @@ namespace file_monitor::core {
                     std::format(
                         "{} {}：{}",
                         operation,
-                        path_to_utf8(m_root),
+                        utils::path_to_utf8(m_root),
                         std::system_category().message(static_cast<int>(error))
                     )
                 );

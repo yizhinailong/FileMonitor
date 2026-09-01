@@ -51,6 +51,5 @@ namespace file_monitor::core {
         std::string      previous_absolute_path = {}
     ) -> FileChange;
     auto file_change_status_text(FileChangeStatus status) -> std::string_view;
-    auto path_to_utf8(std::filesystem::path const& path) -> std::string;
 
 } // namespace file_monitor::core

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.3.0)
 
 project(FileMonitor
-    VERSION 0.3.13
+    VERSION 0.3.14
     LANGUAGES C CXX
 )
 
@@ -25,6 +25,8 @@ add_executable(${PROJECT_NAME}
     src/core/DirectoryMonitor.hpp
     src/core/FileSystem.cpp
     src/core/FileSystem.hpp
+    src/core/Utils.cpp
+    src/core/Utils.hpp
     src/main.cpp
     src/ui/Application.cpp
     src/ui/Application.hpp
