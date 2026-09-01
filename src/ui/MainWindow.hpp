@@ -20,10 +20,10 @@ namespace file_monitor::ui {
         auto Render() -> void;
 
     private:
-        auto resetFileMonitor() -> void;
-        auto renderFileListPanel(float width, float height) -> void;
-        auto renderSettingsPanel(float width, float height) -> void;
         auto updateFileMonitor() -> void;
+        auto renderSettingsPanel(float width, float height) -> void;
+        auto renderFileListPanel(float width, float height) -> void;
+        auto resetFileMonitor() -> void;
 
         std::vector<core::FileChange> m_file_changes;
 

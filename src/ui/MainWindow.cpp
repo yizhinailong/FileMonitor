@@ -81,14 +81,32 @@ namespace file_monitor::ui {
         ImGui::End();
     }
 
-    auto MainWindow::resetFileMonitor() -> void {
-        m_file_changes.clear();
-        m_monitor_error_message.clear();
-        m_scroll_to_latest = false;
-        m_file_monitor.Start(
-            m_settings_window.Directories(),
-            m_settings_window.ExcludedDirectories()
-        );
+    auto MainWindow::updateFileMonitor() -> void {
+        auto changes{ m_file_monitor.TakeChanges() };
+        if (!changes.empty()) {
+            auto const log_result{ m_change_logger.Write(changes) };
+            if (!log_result) {
+                m_log_error_message = log_result.error();
+            } else {
+                m_log_error_message.clear();
+            }
+
+            m_file_changes.append_range(changes | std::views::as_rvalue);
+
+            if (m_file_changes.size() > MAX_FILE_CHANGES) {
+                auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
+                m_file_changes.erase(
+                    m_file_changes.begin(),
+                    m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
+                );
+            }
+            m_scroll_to_latest = true;
+        }
+
+        auto monitor_error{ m_file_monitor.TakeError() };
+        if (!monitor_error.empty()) {
+            m_monitor_error_message = std::move(monitor_error);
+        }
     }
 
     auto MainWindow::renderSettingsPanel(float width, float height) -> void {
@@ -217,32 +235,14 @@ namespace file_monitor::ui {
         ImGui::EndChild();
     }
 
-    auto MainWindow::updateFileMonitor() -> void {
-        auto changes{ m_file_monitor.TakeChanges() };
-        if (!changes.empty()) {
-            auto const log_result{ m_change_logger.Write(changes) };
-            if (!log_result) {
-                m_log_error_message = log_result.error();
-            } else {
-                m_log_error_message.clear();
-            }
-
-            m_file_changes.append_range(changes | std::views::as_rvalue);
-
-            if (m_file_changes.size() > MAX_FILE_CHANGES) {
-                auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
-                m_file_changes.erase(
-                    m_file_changes.begin(),
-                    m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
-                );
-            }
-            m_scroll_to_latest = true;
-        }
-
-        auto monitor_error{ m_file_monitor.TakeError() };
-        if (!monitor_error.empty()) {
-            m_monitor_error_message = std::move(monitor_error);
-        }
+    auto MainWindow::resetFileMonitor() -> void {
+        m_file_changes.clear();
+        m_monitor_error_message.clear();
+        m_scroll_to_latest = false;
+        m_file_monitor.Start(
+            m_settings_window.Directories(),
+            m_settings_window.ExcludedDirectories()
+        );
     }
 
 } // namespace file_monitor::ui
