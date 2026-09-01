@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <exception>
-#include <mutex>
 #include <optional>
 #include <ranges>
 #include <utility>
@@ -15,13 +14,6 @@
 
 namespace file_monitor::ui {
 
-    struct DirectoryDialogState {
-        std::mutex                         mutex;
-        std::vector<std::filesystem::path> selected_directories;
-        std::string                        error_message;
-        bool                               completed{ false };
-    };
-
     namespace {
 
         struct DirectoryDialogContext {
@@ -29,7 +21,9 @@ namespace file_monitor::ui {
         };
 
         auto error_text_color() -> ImVec4 {
-            return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ? ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } : ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
+            return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ?
+                       ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } :
+                       ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
         }
 
         auto SDLCALL directory_dialog_callback(
