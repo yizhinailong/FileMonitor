@@ -21,10 +21,11 @@ namespace file_monitor::ui {
 
         auto Initialize(std::string_view title, int width, int height)
             -> std::expected<void, std::string>;
-        auto               ProcessEvents() -> bool;
-        auto               BeginFrame() -> bool;
-        auto               EndFrame() -> bool;
-        [[nodiscard]] auto NativeWindow() const -> SDL_Window*;
+        auto ProcessEvents() -> bool;
+        auto BeginFrame() -> bool;
+        auto EndFrame() -> bool;
+        [[nodiscard]]
+        auto NativeWindow() const -> SDL_Window*;
 
     private:
         auto initializeGpu() -> std::expected<void, std::string>;
