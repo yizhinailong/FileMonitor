@@ -7,14 +7,16 @@
 #include "core/ChangeLogger.hpp"
 #include "core/DirectoryMonitor.hpp"
 
-struct SDL_Window;
-
 namespace file_monitor::ui {
     class MainWindow final {
     public:
         MainWindow();
 
-        auto SetParentWindow(SDL_Window* window) -> void;
+        [[nodiscard]]
+        auto Settings() -> SettingsWindow&;
+        [[nodiscard]]
+        auto Settings() const -> SettingsWindow const&;
+
         auto Render() -> void;
 
     private:

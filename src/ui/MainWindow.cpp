@@ -41,8 +41,12 @@ namespace file_monitor::ui {
         resetFileMonitor();
     }
 
-    auto MainWindow::SetParentWindow(SDL_Window* window) -> void {
-        m_settings_window.SetParentWindow(window);
+    auto MainWindow::Settings() -> SettingsWindow& {
+        return m_settings_window;
+    }
+
+    auto MainWindow::Settings() const -> SettingsWindow const& {
+        return m_settings_window;
     }
 
     auto MainWindow::Render() -> void {

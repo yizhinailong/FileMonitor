@@ -24,7 +24,7 @@ namespace file_monitor::ui {
             std::println(stderr, "{}", initialization.error());
             return 1;
         }
-        m_main_window.SetParentWindow(m_backend.NativeWindow());
+        m_main_window.Settings().SetParentWindow(m_backend.NativeWindow());
 
         while (m_backend.ProcessEvents()) {
             if (!m_backend.BeginFrame()) {
