@@ -166,11 +166,7 @@ namespace file_monitor::ui {
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
-                ImGui::TableSetupColumn(
-                    "绝对路径",
-                    ImGuiTableColumnFlags_WidthFixed,
-                    path_column_width
-                );
+                ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthFixed, path_column_width);
                 ImGui::TableHeadersRow();
 
                 ImGuiListClipper clipper;
