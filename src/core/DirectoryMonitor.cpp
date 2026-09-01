@@ -1,24 +1,20 @@
-module;
+#include "DirectoryMonitor.hpp"
 
 #include <algorithm>
 #include <array>
 #include <condition_variable>
 #include <cstddef>
-#include <filesystem>
 #include <format>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <optional>
 #include <ranges>
-#include <span>
 #include <stop_token>
-#include <string>
-#include <string_view>
 #include <system_error>
 #include <thread>
 #include <utility>
-#include <vector>
+
+#include "Utils.hpp"
 
 #if defined(_WIN32)
     #ifndef NOMINMAX
@@ -29,8 +25,6 @@ module;
     #endif
     #include <Windows.h>
 #endif
-
-module core;
 
 namespace file_monitor::core {
     namespace {

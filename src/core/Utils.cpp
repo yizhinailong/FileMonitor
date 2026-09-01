@@ -1,10 +1,4 @@
-module;
-
-#include <filesystem>
-#include <string>
-#include <string_view>
-
-module core;
+#include "Utils.hpp"
 
 namespace file_monitor::core::utils {
 

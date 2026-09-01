@@ -1,7 +1,6 @@
-module;
+#pragma once
 
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <span>
@@ -10,9 +9,7 @@ module;
 #include <string_view>
 #include <vector>
 
-export module core:file_system;
-
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     enum class FileChangeStatus {
         Added,

@@ -1,4 +1,4 @@
-module;
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -6,11 +6,9 @@ module;
 #include <span>
 #include <string>
 
-export module core:change_logger;
+#include "FileSystem.hpp"
 
-import :file_system;
-
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     class ChangeLogger final {
     public:

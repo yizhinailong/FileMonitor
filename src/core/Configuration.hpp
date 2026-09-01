@@ -1,13 +1,11 @@
-module;
+#pragma once
 
 #include <expected>
 #include <filesystem>
 #include <string>
 #include <vector>
 
-export module core:configuration;
-
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     struct Configuration {
         std::vector<std::filesystem::path> directories;

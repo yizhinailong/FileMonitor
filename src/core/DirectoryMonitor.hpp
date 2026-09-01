@@ -1,4 +1,4 @@
-module;
+#pragma once
 
 #include <filesystem>
 #include <memory>
@@ -6,11 +6,9 @@ module;
 #include <string>
 #include <vector>
 
-export module core:directory_monitor;
+#include "FileSystem.hpp"
 
-import :file_system;
-
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     class DirectoryMonitor final {
     public:
