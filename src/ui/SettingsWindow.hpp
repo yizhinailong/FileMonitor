@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#include "core/Configuration.hpp"
+import core;
 
 struct SDL_Window;
 

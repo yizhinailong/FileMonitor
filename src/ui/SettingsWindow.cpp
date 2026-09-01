@@ -11,8 +11,6 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
-#include "core/Utils.hpp"
-
 namespace file_monitor::ui {
 
     struct DirectoryDialogState {

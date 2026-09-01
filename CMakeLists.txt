@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.3.0)
 
 project(FileMonitor
-    VERSION 0.3.14
+    VERSION 0.4.1
     LANGUAGES C CXX
 )
 
@@ -18,15 +18,10 @@ include(cmake/Dependencies.cmake)
 
 add_executable(${PROJECT_NAME}
     src/core/ChangeLogger.cpp
-    src/core/ChangeLogger.hpp
     src/core/Configuration.cpp
-    src/core/Configuration.hpp
     src/core/DirectoryMonitor.cpp
-    src/core/DirectoryMonitor.hpp
     src/core/FileSystem.cpp
-    src/core/FileSystem.hpp
     src/core/Utils.cpp
-    src/core/Utils.hpp
     src/main.cpp
     src/ui/Application.cpp
     src/ui/Application.hpp
@@ -36,6 +31,17 @@ add_executable(${PROJECT_NAME}
     src/ui/SdlImGuiBackend.hpp
     src/ui/SettingsWindow.cpp
     src/ui/SettingsWindow.hpp
+)
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    FILE_SET core_modules TYPE CXX_MODULES FILES
+    src/core/Core.cppm
+    src/core/ChangeLogger.cppm
+    src/core/Configuration.cppm
+    src/core/DirectoryMonitor.cppm
+    src/core/FileSystem.cppm
+    src/core/Utils.cppm
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

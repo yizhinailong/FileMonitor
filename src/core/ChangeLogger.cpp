@@ -1,7 +1,12 @@
-#include "ChangeLogger.hpp"
+module;
 
+#include <expected>
+#include <filesystem>
 #include <format>
+#include <memory>
 #include <ranges>
+#include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -9,7 +14,7 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include "Utils.hpp"
+module core;
 
 namespace file_monitor::core {
     namespace {

@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "SettingsWindow.hpp"
-#include "core/ChangeLogger.hpp"
-#include "core/DirectoryMonitor.hpp"
+
+import core;
 
 struct SDL_Window;
 

@@ -1,16 +1,20 @@
-#include "Configuration.hpp"
+module;
 
 #include <algorithm>
+#include <expected>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <ranges>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include "Utils.hpp"
+module core;
 
 namespace file_monitor::core {
     namespace {

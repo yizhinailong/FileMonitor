@@ -1,16 +1,20 @@
-#include "FileSystem.hpp"
+module;
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <ctime>
+#include <filesystem>
 #include <format>
 #include <optional>
 #include <ranges>
+#include <span>
+#include <stop_token>
+#include <string>
+#include <string_view>
 #include <system_error>
-
-#include "Utils.hpp"
+#include <vector>
 
 #if defined(_WIN32)
     #ifndef NOMINMAX
@@ -21,6 +25,8 @@
     #endif
     #include <Windows.h>
 #endif
+
+module core;
 
 namespace file_monitor::core {
     namespace {
