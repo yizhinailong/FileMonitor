@@ -34,6 +34,31 @@ jobs:
         with:
           arch: amd64
 
+      - name: Select standalone LLVM toolchain
+        shell: pwsh
+        run: |
+          $llvmBin = Join-Path $env:ProgramFiles "LLVM\bin"
+          $requiredTools = @("clang-cl.exe", "clang-scan-deps.exe")
+          foreach ($tool in $requiredTools) {
+              if (-not (Test-Path -LiteralPath (Join-Path $llvmBin $tool))) {
+                  throw "Required LLVM tool not found: $tool"
+              }
+          }
+          $llvmBin >> $env:GITHUB_PATH
+
+      - name: Verify LLVM module tools
+        shell: pwsh
+        run: |
+          $compiler = Get-Command clang-cl -ErrorAction Stop
+          $scanner = Get-Command clang-scan-deps -ErrorAction Stop
+          $compilerDir = Split-Path -Parent $compiler.Source
+          $scannerDir = Split-Path -Parent $scanner.Source
+          if ($compilerDir -ne $scannerDir) {
+              throw "clang-cl and clang-scan-deps must come from the same LLVM installation"
+          }
+          clang-cl --version
+          clang-scan-deps --version
+
       - name: Set up CMake and Ninja
         uses: lukka/get-cmake@v4.3.2
 
