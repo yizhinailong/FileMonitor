@@ -161,13 +161,7 @@ namespace file_monitor::ui {
                 FIXED_COLUMNS_WIDTH + path_column_width
             };
 
-            if (ImGui::BeginTable(
-                    "Files",
-                    4,
-                    TABLE_FLAGS,
-                    available,
-                    table_content_width
-                )) {
+            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available, table_content_width)) {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
