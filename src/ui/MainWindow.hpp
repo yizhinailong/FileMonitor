@@ -14,8 +14,6 @@ namespace file_monitor::ui {
 
         [[nodiscard]]
         auto Settings() -> SettingsWindow&;
-        [[nodiscard]]
-        auto Settings() const -> SettingsWindow const&;
 
         auto Render() -> void;
 

@@ -45,10 +45,6 @@ namespace file_monitor::ui {
         return m_settings_window;
     }
 
-    auto MainWindow::Settings() const -> SettingsWindow const& {
-        return m_settings_window;
-    }
-
     auto MainWindow::Render() -> void {
         updateFileMonitor();
 
