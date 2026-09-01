@@ -14,6 +14,7 @@ namespace file_monitor::ui {
     namespace {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
+        constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
         auto const     DATA_DIRECTORY{ std::filesystem::path{ "data" } / "FileMonitor" };
         auto const     CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
 
@@ -127,46 +128,26 @@ namespace file_monitor::ui {
 
     auto MainWindow::renderFileListPanel(float width, float height) -> void {
         if (ImGui::BeginChild("FileListPanel", { width, height }, true)) {
-            auto const     available{ ImGui::GetContentRegionAvail() };
+            auto const     available_width{ ImGui::GetContentRegionAvail().x };
             constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
                                          ImGuiTableFlags_RowBg |
                                          ImGuiTableFlags_Resizable |
                                          ImGuiTableFlags_ScrollX |
-                                         ImGuiTableFlags_ScrollY |
-                                         ImGuiTableFlags_SizingFixedFit;
-            constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
-            constexpr auto MIN_PATH_COLUMN_WIDTH{ 640.0F };
-            constexpr auto MAX_PATH_COLUMN_WIDTH{ 2400.0F };
-            auto           path_column_width{ MIN_PATH_COLUMN_WIDTH };
-            auto const     rename_separator_width{ ImGui::CalcTextSize(" -> ").x };
-            for (auto const& change : m_file_changes) {
-                auto text_width{ ImGui::CalcTextSize(change.absolute_path.c_str()).x };
-                if (!change.previous_absolute_path.empty()) {
-                    text_width +=
-                        ImGui::CalcTextSize(change.previous_absolute_path.c_str()).x +
-                        rename_separator_width;
-                }
-                path_column_width = std::max(path_column_width, text_width);
-            }
-            path_column_width = std::clamp(
-                path_column_width + ImGui::GetStyle().CellPadding.x * 2.0F,
-                MIN_PATH_COLUMN_WIDTH,
-                MAX_PATH_COLUMN_WIDTH
-            );
-            path_column_width = std::max(
-                path_column_width,
-                available.x - FIXED_COLUMNS_WIDTH
-            );
-            auto const table_content_width{
-                FIXED_COLUMNS_WIDTH + path_column_width
+                                         ImGuiTableFlags_ScrollY;
+            auto const     preferred_path_width{ calculatePathColumnWidth() };
+            auto const     table_content_width{
+                std::max(
+                    available_width,
+                    FIXED_COLUMNS_WIDTH + preferred_path_width
+                )
             };
 
-            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, available, table_content_width)) {
+            if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, { available_width, 0.0F }, table_content_width)) {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
                 ImGui::TableSetupColumn("状态", ImGuiTableColumnFlags_WidthFixed, 72.0F);
                 ImGui::TableSetupColumn("大小", ImGuiTableColumnFlags_WidthFixed, 110.0F);
-                ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthFixed, path_column_width);
+                ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch, 1.0F);
                 ImGui::TableHeadersRow();
 
                 ImGuiListClipper clipper;
@@ -175,40 +156,7 @@ namespace file_monitor::ui {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
-                        auto const  index{ static_cast<std::size_t>(item_index) };
-                        auto const& change{ m_file_changes[index] };
-                        auto const  status_text{ core::file_change_status_text(change.status) };
-                        auto const  status_color{ file_change_status_color(change.status) };
-
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::TextUnformatted(change.time.c_str());
-                        ImGui::SetItemTooltip("%s", change.time.c_str());
-                        ImGui::TableSetColumnIndex(1);
-                        ImGui::TextColored(
-                            status_color,
-                            "%.*s",
-                            static_cast<int>(status_text.size()),
-                            status_text.data()
-                        );
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::TextUnformatted(change.size.c_str());
-                        ImGui::TableSetColumnIndex(3);
-                        if (change.previous_absolute_path.empty()) {
-                            ImGui::TextUnformatted(change.absolute_path.c_str());
-                            ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
-                        } else {
-                            ImGui::Text(
-                                "%s -> %s",
-                                change.previous_absolute_path.c_str(),
-                                change.absolute_path.c_str()
-                            );
-                            ImGui::SetItemTooltip(
-                                "%s -> %s",
-                                change.previous_absolute_path.c_str(),
-                                change.absolute_path.c_str()
-                            );
-                        }
+                        renderFileChangeRow(m_file_changes[static_cast<std::size_t>(item_index)]);
                     }
                 }
                 if (m_scroll_to_latest) {
@@ -219,6 +167,57 @@ namespace file_monitor::ui {
             }
         }
         ImGui::EndChild();
+    }
+
+    auto MainWindow::renderFileChangeRow(core::FileChange const& change) -> void {
+        auto const status_text{ core::file_change_status_text(change.status) };
+        auto const status_color{ file_change_status_color(change.status) };
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted(change.time.c_str());
+        ImGui::SetItemTooltip("%s", change.time.c_str());
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextColored(
+            status_color,
+            "%.*s",
+            static_cast<int>(status_text.size()),
+            status_text.data()
+        );
+        ImGui::TableSetColumnIndex(2);
+        ImGui::TextUnformatted(change.size.c_str());
+        ImGui::TableSetColumnIndex(3);
+        if (change.previous_absolute_path.empty()) {
+            ImGui::TextUnformatted(change.absolute_path.c_str());
+            ImGui::SetItemTooltip("%s", change.absolute_path.c_str());
+        } else {
+            ImGui::Text(
+                "%s -> %s",
+                change.previous_absolute_path.c_str(),
+                change.absolute_path.c_str()
+            );
+            ImGui::SetItemTooltip(
+                "%s -> %s",
+                change.previous_absolute_path.c_str(),
+                change.absolute_path.c_str()
+            );
+        }
+    }
+
+    auto MainWindow::calculatePathColumnWidth() const -> float {
+        auto       path_width{ ImGui::CalcTextSize("绝对路径").x };
+        auto const rename_separator_width{ ImGui::CalcTextSize(" -> ").x };
+        for (auto const& change : m_file_changes) {
+            auto text_width{ ImGui::CalcTextSize(change.absolute_path.c_str()).x };
+            if (!change.previous_absolute_path.empty()) {
+                text_width +=
+                    ImGui::CalcTextSize(change.previous_absolute_path.c_str()).x +
+                    rename_separator_width;
+            }
+            path_width = std::max(path_width, text_width);
+        }
+        path_width += ImGui::GetStyle().CellPadding.x * 2.0F;
+        return path_width;
     }
 
     auto MainWindow::resetFileMonitor() -> void {

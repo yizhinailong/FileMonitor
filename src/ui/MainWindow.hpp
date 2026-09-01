@@ -21,6 +21,9 @@ namespace file_monitor::ui {
         auto updateFileMonitor() -> void;
         auto renderSettingsPanel(float width, float height) -> void;
         auto renderFileListPanel(float width, float height) -> void;
+        auto renderFileChangeRow(core::FileChange const& change) -> void;
+        [[nodiscard]]
+        auto calculatePathColumnWidth() const -> float;
         auto resetFileMonitor() -> void;
 
         std::vector<core::FileChange> m_file_changes;
