@@ -4,27 +4,15 @@
 #include <array>
 #include <condition_variable>
 #include <cstddef>
-#include <format>
 #include <map>
 #include <mutex>
-#include <optional>
 #include <ranges>
 #include <stop_token>
-#include <system_error>
 #include <thread>
 #include <utility>
 
 #include "Utils.hpp"
-
-#if defined(_WIN32)
-    #ifndef NOMINMAX
-        #define NOMINMAX
-    #endif
-    #ifndef WIN32_LEAN_AND_MEAN
-        #define WIN32_LEAN_AND_MEAN
-    #endif
-    #include <Windows.h>
-#endif
+#include "directory_watch/DirectoryWatchBackend.hpp"
 
 namespace file_monitor::core {
     namespace {
@@ -355,341 +343,38 @@ namespace file_monitor::core {
             state->files = build_file_cache(current_files);
         }
 
-#if defined(_WIN32)
-
-        class UniqueHandle final {
-        public:
-            UniqueHandle() = default;
-
-            explicit UniqueHandle(HANDLE handle)
-                : m_handle{ handle } {
+        auto handle_directory_watch_event(
+            std::shared_ptr<MonitorState> const& state,
+            detail::DirectoryWatchEvent const&   event,
+            std::stop_token                      stop_token
+        ) -> void {
+            switch (event.kind) {
+                case detail::DirectoryWatchEventKind::Added:
+                    record_added(state, event.path);
+                    break;
+                case detail::DirectoryWatchEventKind::Removed:
+                    record_removed(state, event.path);
+                    break;
+                case detail::DirectoryWatchEventKind::Modified:
+                    record_modified(state, event.path);
+                    break;
+                case detail::DirectoryWatchEventKind::PathChanged:
+                    record_path_changed(state, event.previous_path, event.path);
+                    break;
+                case detail::DirectoryWatchEventKind::RescanRequired:
+                    resynchronize(state, stop_token);
+                    break;
             }
-
-            ~UniqueHandle() {
-                reset();
-            }
-
-            UniqueHandle(UniqueHandle const&)                    = delete;
-            auto operator=(UniqueHandle const&) -> UniqueHandle& = delete;
-
-            UniqueHandle(UniqueHandle&& other) noexcept
-                : m_handle{ std::exchange(other.m_handle, nullptr) } {
-            }
-
-            auto operator=(UniqueHandle&& other) noexcept -> UniqueHandle& {
-                if (this != &other) {
-                    reset();
-                    m_handle = std::exchange(other.m_handle, nullptr);
-                }
-                return *this;
-            }
-
-            auto Get() const -> HANDLE {
-                return m_handle;
-            }
-
-            explicit operator bool() const {
-                return m_handle != nullptr && m_handle != INVALID_HANDLE_VALUE;
-            }
-
-        private:
-            auto reset() -> void {
-                if (*this) {
-                    CloseHandle(m_handle);
-                }
-                m_handle = nullptr;
-            }
-
-            HANDLE m_handle{ nullptr };
-        };
-
-        class DirectoryWatcher final {
-        public:
-            DirectoryWatcher(
-                std::filesystem::path         root,
-                std::shared_ptr<MonitorState> state
-            )
-                : m_root{ std::move(root) },
-                  m_state{ std::move(state) } {
-                m_thread = std::jthread{ [this](std::stop_token stop_token) {
-                    run(stop_token);
-                } };
-            }
-
-            ~DirectoryWatcher() {
-                if (m_thread.joinable()) {
-                    RequestStop();
-                    m_thread.join();
-                }
-            }
-
-            DirectoryWatcher(DirectoryWatcher const&)                    = delete;
-            DirectoryWatcher(DirectoryWatcher&&)                         = delete;
-            auto operator=(DirectoryWatcher const&) -> DirectoryWatcher& = delete;
-            auto operator=(DirectoryWatcher&&) -> DirectoryWatcher&      = delete;
-
-            auto RequestStop() -> void {
-                m_thread.request_stop();
-            }
-
-        private:
-            auto reportWindowsError(std::string_view operation, DWORD error) -> void {
-                report_error(
-                    m_state,
-                    std::format(
-                        "{} {}：{}",
-                        operation,
-                        utils::path_to_utf8(m_root),
-                        std::system_category().message(static_cast<int>(error))
-                    )
-                );
-            }
-
-            auto cancelPendingRead(OVERLAPPED& overlapped) -> void {
-                CancelIoEx(m_directory_handle.Get(), &overlapped);
-                DWORD ignored_bytes{};
-                GetOverlappedResult(
-                    m_directory_handle.Get(),
-                    &overlapped,
-                    &ignored_bytes,
-                    TRUE
-                );
-            }
-
-            auto initializeHandles() -> bool {
-                m_directory_handle = UniqueHandle{
-                    CreateFileW(
-                        m_root.c_str(),
-                        FILE_LIST_DIRECTORY,
-                        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                        nullptr,
-                        OPEN_EXISTING,
-                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-                        nullptr
-                    )
-                };
-                if (!m_directory_handle) {
-                    reportWindowsError("无法打开文件夹监控", GetLastError());
-                    return false;
-                }
-
-                m_stop_event = UniqueHandle{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
-                if (!m_stop_event) {
-                    reportWindowsError("无法创建监控停止事件", GetLastError());
-                    return false;
-                }
-
-                m_io_event = UniqueHandle{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
-                if (!m_io_event) {
-                    reportWindowsError("无法创建监控读取事件", GetLastError());
-                    return false;
-                }
-                return true;
-            }
-
-            auto processNotification(
-                DWORD                                 action,
-                std::filesystem::path const&          path,
-                std::optional<std::filesystem::path>& pending_rename
-            ) -> void {
-                if (pending_rename && action != FILE_ACTION_RENAMED_NEW_NAME) {
-                    record_removed(m_state, *pending_rename);
-                    pending_rename.reset();
-                }
-
-                switch (action) {
-                    case FILE_ACTION_ADDED:
-                        record_added(m_state, path);
-                        break;
-                    case FILE_ACTION_REMOVED:
-                        record_removed(m_state, path);
-                        break;
-                    case FILE_ACTION_MODIFIED:
-                        record_modified(m_state, path);
-                        break;
-                    case FILE_ACTION_RENAMED_OLD_NAME:
-                        pending_rename = path;
-                        break;
-                    case FILE_ACTION_RENAMED_NEW_NAME:
-                        if (pending_rename) {
-                            record_path_changed(m_state, *pending_rename, path);
-                            pending_rename.reset();
-                        } else {
-                            record_added(m_state, path);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            auto processNotifications(
-                std::span<std::byte const>            bytes,
-                std::optional<std::filesystem::path>& pending_rename
-            ) -> bool {
-                constexpr auto HEADER_SIZE{ offsetof(FILE_NOTIFY_INFORMATION, FileName) };
-                auto           offset{ std::size_t{ 0 } };
-
-                while (offset < bytes.size()) {
-                    auto const remaining{ bytes.size() - offset };
-                    if (remaining < HEADER_SIZE) {
-                        return false;
-                    }
-
-                    auto const* notification{
-                        reinterpret_cast<FILE_NOTIFY_INFORMATION const*>(bytes.data() + offset)
-                    };
-                    if (notification->FileNameLength > remaining - HEADER_SIZE ||
-                        notification->FileNameLength % sizeof(wchar_t) != 0) {
-                        return false;
-                    }
-
-                    auto const character_count{
-                        static_cast<std::size_t>(notification->FileNameLength) / sizeof(wchar_t)
-                    };
-                    auto const relative_path{
-                        std::wstring{ notification->FileName, character_count }
-                    };
-                    processNotification(
-                        notification->Action,
-                        (m_root / relative_path).lexically_normal(),
-                        pending_rename
-                    );
-
-                    if (notification->NextEntryOffset == 0) {
-                        return true;
-                    }
-                    if (notification->NextEntryOffset < HEADER_SIZE ||
-                        notification->NextEntryOffset > remaining) {
-                        return false;
-                    }
-                    offset += notification->NextEntryOffset;
-                }
-                return true;
-            }
-
-            auto run(std::stop_token stop_token) -> void {
-                if (!initializeHandles()) {
-                    initialize_directory(m_state, m_root, stop_token);
-                    return;
-                }
-
-                std::stop_callback stop_callback{ stop_token, [stop_event = m_stop_event.Get()] {
-                                                     SetEvent(stop_event);
-                                                 } };
-                alignas(DWORD) std::array<std::byte, 64 * 1024> buffer{};
-                std::optional<std::filesystem::path>            pending_rename;
-                auto                                            initialized{ false };
-
-                while (!stop_token.stop_requested()) {
-                    ResetEvent(m_io_event.Get());
-                    OVERLAPPED overlapped{};
-                    overlapped.hEvent = m_io_event.Get();
-                    DWORD      ignored_bytes{};
-                    auto const read_started{
-                        ReadDirectoryChangesW(
-                            m_directory_handle.Get(),
-                            buffer.data(),
-                            static_cast<DWORD>(buffer.size()),
-                            TRUE,
-                            FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
-                                FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
-                            &ignored_bytes,
-                            &overlapped,
-                            nullptr
-                        )
-                    };
-                    auto const read_error{ read_started ? ERROR_SUCCESS : GetLastError() };
-                    if (!read_started && read_error != ERROR_IO_PENDING) {
-                        if (!initialized) {
-                            initialize_directory(m_state, m_root, stop_token);
-                        }
-                        reportWindowsError("读取文件夹变更失败", read_error);
-                        return;
-                    }
-
-                    if (!initialized) {
-                        initialize_directory(m_state, m_root, stop_token);
-                        initialized = true;
-                        if (stop_token.stop_requested()) {
-                            cancelPendingRead(overlapped);
-                            return;
-                        }
-                    }
-
-                    std::array const wait_handles{ m_stop_event.Get(), m_io_event.Get() };
-                    auto const       wait_result{
-                        WaitForMultipleObjects(
-                            static_cast<DWORD>(wait_handles.size()),
-                            wait_handles.data(),
-                            FALSE,
-                            INFINITE
-                        )
-                    };
-                    if (wait_result == WAIT_OBJECT_0) {
-                        cancelPendingRead(overlapped);
-                        return;
-                    }
-                    if (wait_result != WAIT_OBJECT_0 + 1) {
-                        auto const wait_error{ GetLastError() };
-                        cancelPendingRead(overlapped);
-                        reportWindowsError("等待文件夹变更失败", wait_error);
-                        return;
-                    }
-
-                    DWORD transferred_bytes{};
-                    if (!GetOverlappedResult(
-                            m_directory_handle.Get(),
-                            &overlapped,
-                            &transferred_bytes,
-                            FALSE
-                        )) {
-                        auto const read_error{ GetLastError() };
-                        if (read_error == ERROR_OPERATION_ABORTED && stop_token.stop_requested()) {
-                            return;
-                        }
-                        if (read_error == ERROR_NOTIFY_ENUM_DIR) {
-                            pending_rename.reset();
-                            resynchronize(m_state, stop_token);
-                            continue;
-                        }
-                        reportWindowsError("获取文件夹变更失败", read_error);
-                        return;
-                    }
-
-                    if (transferred_bytes == 0) {
-                        pending_rename.reset();
-                        resynchronize(m_state, stop_token);
-                        continue;
-                    }
-                    if (!processNotifications(
-                            std::span<std::byte const>{ buffer.data(), transferred_bytes },
-                            pending_rename
-                        )) {
-                        pending_rename.reset();
-                        resynchronize(m_state, stop_token);
-                    }
-                }
-            }
-
-            std::filesystem::path         m_root;
-            std::shared_ptr<MonitorState> m_state;
-            UniqueHandle                  m_directory_handle;
-            UniqueHandle                  m_stop_event;
-            UniqueHandle                  m_io_event;
-            std::jthread                  m_thread;
-        };
-
-#endif
+        }
 
     } // namespace
 
     struct DirectoryMonitor::Impl {
-        std::shared_ptr<MonitorState> state{ std::make_shared<MonitorState>() };
-        std::vector<std::jthread>     initialization_threads;
-#if defined(_WIN32)
-        std::vector<std::unique_ptr<DirectoryWatcher>> watchers;
-#endif
+        std::shared_ptr<MonitorState> state{
+            std::make_shared<MonitorState>()
+        };
+        std::vector<std::jthread>                      initialization_threads;
+        std::unique_ptr<detail::DirectoryWatchBackend> watch_backend;
     };
 
     DirectoryMonitor::DirectoryMonitor()
@@ -729,16 +414,18 @@ namespace file_monitor::core {
             m_impl->state->pending_initializations = normalized_directories.size();
         }
 
-#if defined(_WIN32)
-        for (auto const& directory : normalized_directories) {
-            m_impl->watchers.emplace_back(
-                std::make_unique<DirectoryWatcher>(directory, m_impl->state)
-            );
-        }
-#else
         if (!normalized_directories.empty()) {
-            report_error(m_impl->state, "当前平台暂不支持系统文件变更通知");
+            m_impl->watch_backend = std::make_unique<detail::DirectoryWatchBackend>(
+                detail::DirectoryWatchCallbacks{
+                    .on_event = [state = m_impl->state](
+                                    detail::DirectoryWatchEvent event,
+                                    std::stop_token             stop_token
+                                ) { handle_directory_watch_event(state, event, stop_token); },
+                    .on_error = [state = m_impl->state](std::string message) { report_error(state, std::move(message)); } }
+            );
+            m_impl->watch_backend->Start(normalized_directories);
         }
+
         m_impl->initialization_threads.reserve(normalized_directories.size());
         for (auto const& directory : normalized_directories) {
             m_impl->initialization_threads.emplace_back(
@@ -747,7 +434,6 @@ namespace file_monitor::core {
                 }
             );
         }
-#endif
         if (normalized_directories.empty()) {
             m_impl->state->initialized.notify_all();
         }
@@ -757,20 +443,16 @@ namespace file_monitor::core {
         for (auto& thread : m_impl->initialization_threads) {
             thread.request_stop();
         }
-#if defined(_WIN32)
-        for (auto& watcher : m_impl->watchers) {
-            watcher->RequestStop();
+        if (m_impl->watch_backend) {
+            m_impl->watch_backend->RequestStop();
         }
-#endif
         {
             auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
             m_impl->state->initializing            = false;
             m_impl->state->pending_initializations = 0;
         }
         m_impl->state->initialized.notify_all();
-#if defined(_WIN32)
-        m_impl->watchers.clear();
-#endif
+        m_impl->watch_backend.reset();
         m_impl->initialization_threads.clear();
     }
 

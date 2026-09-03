@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME}
     src/core/Configuration.hpp
     src/core/DirectoryMonitor.cpp
     src/core/DirectoryMonitor.hpp
+    src/core/directory_watch/DirectoryWatchBackend.hpp
     src/core/FileSystem.cpp
     src/core/FileSystem.hpp
     src/core/Utils.cpp
@@ -36,6 +37,13 @@ add_executable(${PROJECT_NAME}
     src/ui/SdlImGuiBackend.hpp
     src/ui/SettingsWindow.cpp
     src/ui/SettingsWindow.hpp
+)
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    $<$<PLATFORM_ID:Windows>:src/core/directory_watch/DirectoryWatchBackendWindows.cpp>
+    $<$<PLATFORM_ID:Linux>:src/core/directory_watch/DirectoryWatchBackendLinux.cpp>
+    $<$<NOT:$<PLATFORM_ID:Windows,Linux>>:src/core/directory_watch/DirectoryWatchBackendUnsupported.cpp>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
