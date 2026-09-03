@@ -43,10 +43,7 @@ namespace file_monitor::ui {
         };
 
         auto addManualDirectory(DirectoryGroup group) -> void;
-        auto addPendingDirectory(
-            DirectoryGroup        group,
-            std::filesystem::path directory
-        ) -> bool;
+        auto addPendingDirectory(DirectoryGroup group, std::filesystem::path directory) -> bool;
         auto consumeDirectorySelection() -> void;
         auto directoryEditor(DirectoryGroup group) -> DirectoryEditorState&;
         auto openDirectoryDialog(DirectoryGroup group) -> void;
