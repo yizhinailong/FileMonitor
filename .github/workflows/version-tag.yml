@@ -19,7 +19,7 @@ concurrency:
 jobs:
   tag:
     name: Tag CMake project version
-    runs-on: ubuntu-latest
+    runs-on: windows-2025
     timeout-minutes: 5
 
     steps:

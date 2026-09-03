@@ -12,15 +12,13 @@
 
 #include "Utils.hpp"
 
-#if defined(_WIN32)
-    #ifndef NOMINMAX
-        #define NOMINMAX
-    #endif
-    #ifndef WIN32_LEAN_AND_MEAN
-        #define WIN32_LEAN_AND_MEAN
-    #endif
-    #include <Windows.h>
+#ifndef NOMINMAX
+    #define NOMINMAX
 #endif
+#ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
 
 namespace file_monitor::core {
     namespace {
@@ -29,7 +27,6 @@ namespace file_monitor::core {
 
         auto read_creation_time(std::filesystem::path const& path)
             -> std::optional<SystemTime> {
-#if defined(_WIN32)
             WIN32_FILE_ATTRIBUTE_DATA attributes{};
             if (!GetFileAttributesExW(
                     path.c_str(),
@@ -55,10 +52,6 @@ namespace file_monitor::core {
                     WindowsDuration{ unix_ticks }
                 )
             };
-#else
-            static_cast<void>(path);
-            return std::nullopt;
-#endif
         }
 
         auto read_file_size(std::filesystem::directory_entry const& entry)
@@ -117,11 +110,7 @@ namespace file_monitor::core {
             };
             auto const time_value{ std::chrono::system_clock::to_time_t(whole_seconds) };
             std::tm    local_time{};
-#if defined(_WIN32)
             auto const conversion_failed{ localtime_s(&local_time, &time_value) != 0 };
-#else
-            auto const conversion_failed{ localtime_r(&time_value, &local_time) == nullptr };
-#endif
             std::array<char, 20> local_time_text{};
             if (conversion_failed ||
                 std::strftime(

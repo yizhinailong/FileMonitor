@@ -36,22 +36,10 @@ namespace file_monitor::ui {
         }
 
         auto load_chinese_font(ImGuiIO& io) -> bool {
-#if defined(_WIN32)
             constexpr std::array FONT_PATHS{
                 "C:/Windows/Fonts/msyh.ttc",
                 "C:/Windows/Fonts/simhei.ttf"
             };
-#elif defined(__APPLE__)
-            constexpr std::array FONT_PATHS{
-                "/System/Library/Fonts/PingFang.ttc",
-                "/System/Library/Fonts/STHeiti Light.ttc"
-            };
-#else
-            constexpr std::array FONT_PATHS{
-                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
-            };
-#endif
 
             for (auto const* font_path : FONT_PATHS) {
                 if (auto* font{ io.Fonts->AddFontFromFileTTF(font_path, 18.0F) }) {

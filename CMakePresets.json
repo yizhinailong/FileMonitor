@@ -28,27 +28,6 @@
       }
     },
     {
-      "name": "linux-base",
-      "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
-      "environment": {
-        "CPM_SOURCE_CACHE": "$penv{CPM_SOURCE_CACHE}"
-      },
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
-      }
-    },
-    {
       "name": "windows-debug",
       "displayName": "Windows Debug",
       "description": "Windows debug build with Ninja, Clang-CL, and ccache",
@@ -65,24 +44,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
-    },
-    {
-      "name": "linux-debug",
-      "displayName": "Linux Debug",
-      "description": "Linux debug build with Ninja, GCC 15, and ccache",
-      "inherits": "linux-base",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "linux-release",
-      "displayName": "Linux Release",
-      "description": "Linux release build with Ninja, GCC 15, and ccache",
-      "inherits": "linux-base",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
     }
   ],
   "buildPresets": [
@@ -95,16 +56,6 @@
       "name": "windows-release",
       "displayName": "Build Windows Release",
       "configurePreset": "windows-release"
-    },
-    {
-      "name": "linux-debug",
-      "displayName": "Build Linux Debug",
-      "configurePreset": "linux-debug"
-    },
-    {
-      "name": "linux-release",
-      "displayName": "Build Linux Release",
-      "configurePreset": "linux-release"
     }
   ]
 }

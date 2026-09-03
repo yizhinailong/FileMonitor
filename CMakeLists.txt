@@ -1,18 +1,20 @@
 cmake_minimum_required(VERSION 4.3.0)
 
 project(FileMonitor
-    VERSION 0.4.4
+    VERSION 0.4.5
     LANGUAGES C CXX
 )
+
+if(NOT WIN32)
+    message(FATAL_ERROR "FileMonitor only supports Windows")
+endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-if(WIN32)
-    enable_language(RC)
-endif()
+enable_language(RC)
 
 include(cmake/Dependencies.cmake)
 
@@ -24,6 +26,7 @@ add_executable(${PROJECT_NAME}
     src/core/DirectoryMonitor.cpp
     src/core/DirectoryMonitor.hpp
     src/core/directory_watch/DirectoryWatchBackend.hpp
+    src/core/directory_watch/DirectoryWatchBackendWindows.cpp
     src/core/FileSystem.cpp
     src/core/FileSystem.hpp
     src/core/Utils.cpp
@@ -37,25 +40,13 @@ add_executable(${PROJECT_NAME}
     src/ui/SdlImGuiBackend.hpp
     src/ui/SettingsWindow.cpp
     src/ui/SettingsWindow.hpp
-)
-
-target_sources(${PROJECT_NAME}
-    PRIVATE
-    $<$<PLATFORM_ID:Windows>:src/core/directory_watch/DirectoryWatchBackendWindows.cpp>
-    $<$<PLATFORM_ID:Linux>:src/core/directory_watch/DirectoryWatchBackendLinux.cpp>
-    $<$<NOT:$<PLATFORM_ID:Windows,Linux>>:src/core/directory_watch/DirectoryWatchBackendUnsupported.cpp>
+    app.rc
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    WIN32_EXECUTABLE TRUE
 )
-
-if(WIN32)
-    target_sources(${PROJECT_NAME} PRIVATE app.rc)
-    set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
-elseif(APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
-endif()
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
