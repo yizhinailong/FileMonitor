@@ -50,12 +50,12 @@ just install
 不使用 `just` 时，可以直接调用 CMake：
 
 ```powershell
-cmake --preset debug
-cmake --build --preset debug
+cmake --preset windows-debug
+cmake --build --preset windows-debug
 
-cmake --preset release
-cmake --build --preset release
-cmake --install build/release --prefix dist
+cmake --preset windows-release
+cmake --build --preset windows-release
+cmake --install build/windows-release --prefix dist
 ```
 
 ## 使用方法

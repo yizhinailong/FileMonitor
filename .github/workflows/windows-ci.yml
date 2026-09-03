@@ -68,7 +68,7 @@ jobs:
         id: package
         shell: pwsh
         run: |
-          $versionMatch = Select-String ./build/release/CMakeCache.txt `
+          $versionMatch = Select-String ./build/windows-release/CMakeCache.txt `
               -Pattern '^CMAKE_PROJECT_VERSION:STATIC=(\d+\.\d+\.\d+)$'
           if ($null -eq $versionMatch) {
               throw "CMAKE_PROJECT_VERSION must use the X.Y.Z format"

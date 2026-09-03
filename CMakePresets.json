@@ -28,19 +28,58 @@
       }
     },
     {
-      "name": "debug",
-      "displayName": "Debug",
-      "description": "Debug build with Ninja, SDL3, Dear ImGui, and sccache",
+      "name": "linux-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "environment": {
+        "CPM_SOURCE_CACHE": "$penv{CPM_SOURCE_CACHE}"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc-15",
+        "CMAKE_CXX_COMPILER": "g++-15",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+      }
+    },
+    {
+      "name": "windows-debug",
+      "displayName": "Windows Debug",
+      "description": "Windows debug build with Ninja, Clang-CL, and sccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "release",
-      "displayName": "Release",
-      "description": "Optimized release build with Ninja, SDL3, Dear ImGui, and sccache",
+      "name": "windows-release",
+      "displayName": "Windows Release",
+      "description": "Windows release build with Ninja, Clang-CL, and sccache",
       "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "description": "Linux debug build with Ninja, GCC 15, and sccache",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "description": "Linux release build with Ninja, GCC 15, and sccache",
+      "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -48,14 +87,24 @@
   ],
   "buildPresets": [
     {
-      "name": "debug",
-      "displayName": "Build Debug",
-      "configurePreset": "debug"
+      "name": "windows-debug",
+      "displayName": "Build Windows Debug",
+      "configurePreset": "windows-debug"
     },
     {
-      "name": "release",
-      "displayName": "Build Release",
-      "configurePreset": "release"
+      "name": "windows-release",
+      "displayName": "Build Windows Release",
+      "configurePreset": "windows-release"
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Build Linux Debug",
+      "configurePreset": "linux-debug"
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Build Linux Release",
+      "configurePreset": "linux-release"
     }
   ]
 }
