@@ -23,8 +23,8 @@
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
       }
     },
     {
@@ -44,14 +44,14 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
       }
     },
     {
       "name": "windows-debug",
       "displayName": "Windows Debug",
-      "description": "Windows debug build with Ninja, Clang-CL, and sccache",
+      "description": "Windows debug build with Ninja, Clang-CL, and ccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -60,7 +60,7 @@
     {
       "name": "windows-release",
       "displayName": "Windows Release",
-      "description": "Windows release build with Ninja, Clang-CL, and sccache",
+      "description": "Windows release build with Ninja, Clang-CL, and ccache",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -69,7 +69,7 @@
     {
       "name": "linux-debug",
       "displayName": "Linux Debug",
-      "description": "Linux debug build with Ninja, GCC 15, and sccache",
+      "description": "Linux debug build with Ninja, GCC 15, and ccache",
       "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -78,7 +78,7 @@
     {
       "name": "linux-release",
       "displayName": "Linux Release",
-      "description": "Linux release build with Ninja, GCC 15, and sccache",
+      "description": "Linux release build with Ninja, GCC 15, and ccache",
       "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
