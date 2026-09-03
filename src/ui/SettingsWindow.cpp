@@ -26,6 +26,20 @@ namespace file_monitor::ui {
                        ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
         }
 
+        auto render_error(std::string_view label, std::string_view message) -> void {
+            if (message.empty()) {
+                return;
+            }
+            ImGui::TextColored(
+                error_text_color(),
+                "%.*s：%.*s",
+                static_cast<int>(label.size()),
+                label.data(),
+                static_cast<int>(message.size()),
+                message.data()
+            );
+        }
+
         auto SDLCALL directory_dialog_callback(
             void*              userdata,
             char const* const* file_list,
@@ -98,36 +112,10 @@ namespace file_monitor::ui {
             return false;
         }
 
-        if (!m_dialog_error_message.empty()) {
-            ImGui::TextColored(
-                error_text_color(),
-                "选择文件夹失败：%s",
-                m_dialog_error_message.c_str()
-            );
-        }
-        if (!monitor_error.empty()) {
-            ImGui::TextColored(
-                error_text_color(),
-                "监控失败：%.*s",
-                static_cast<int>(monitor_error.size()),
-                monitor_error.data()
-            );
-        }
-        if (!m_configuration_error_message.empty()) {
-            ImGui::TextColored(
-                error_text_color(),
-                "配置失败：%s",
-                m_configuration_error_message.c_str()
-            );
-        }
-        if (!log_error.empty()) {
-            ImGui::TextColored(
-                error_text_color(),
-                "日志失败：%.*s",
-                static_cast<int>(log_error.size()),
-                log_error.data()
-            );
-        }
+        render_error("选择文件夹失败", m_dialog_error_message);
+        render_error("监控失败", monitor_error);
+        render_error("配置失败", m_configuration_error_message);
+        render_error("日志失败", log_error);
 
         if (ImGui::BeginChild(
                 "DirectorySettings",
@@ -294,7 +282,9 @@ namespace file_monitor::ui {
 
     auto SettingsWindow::pendingDirectories(DirectoryGroup group)
         -> std::vector<std::filesystem::path>& {
-        return group == DirectoryGroup::Monitored ? m_pending_configuration.directories : m_pending_configuration.excluded_directories;
+        return group == DirectoryGroup::Monitored ?
+                   m_pending_configuration.directories :
+                   m_pending_configuration.excluded_directories;
     }
 
     auto SettingsWindow::renderDirectoryEditor(
