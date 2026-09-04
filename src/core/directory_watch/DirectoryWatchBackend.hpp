@@ -19,6 +19,7 @@ namespace file_monitor::core::detail {
 
     struct DirectoryWatchEvent {
         DirectoryWatchEventKind kind;
+        std::filesystem::path   root;
         std::filesystem::path   path;
         std::filesystem::path   previous_path;
     };

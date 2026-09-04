@@ -214,6 +214,7 @@ namespace file_monitor::core::detail {
                 m_callbacks.on_event(
                     DirectoryWatchEvent{
                         .kind          = kind,
+                        .root          = m_root,
                         .path          = std::move(path),
                         .previous_path = previous_path },
                     stop_token
@@ -316,7 +317,8 @@ namespace file_monitor::core::detail {
             auto requestRescan(std::stop_token stop_token) -> void {
                 m_callbacks.on_event(
                     DirectoryWatchEvent{
-                        .kind = DirectoryWatchEventKind::RescanRequired },
+                        .kind = DirectoryWatchEventKind::RescanRequired,
+                        .root = m_root },
                     stop_token
                 );
             }
