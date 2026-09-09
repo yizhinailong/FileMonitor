@@ -24,7 +24,8 @@
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": "ON"
       }
     },
     {
