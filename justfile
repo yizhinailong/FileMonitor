@@ -1,5 +1,7 @@
 default:
-    just --list
+    cmake --version
+    ninja --version
+    ccache --version
 
 [windows]
 build profile="debug":
