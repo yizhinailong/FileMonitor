@@ -1,6 +1,32 @@
 #include "Utils.hpp"
 
+#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+
 namespace file_monitor::core::utils {
+    namespace {
+
+        auto path_elements_equal(
+            std::filesystem::path const& left,
+            std::filesystem::path const& right
+        ) -> bool {
+            auto const& left_text{ left.native() };
+            auto const& right_text{ right.native() };
+            return CompareStringOrdinal(
+                       left_text.data(),
+                       static_cast<int>(left_text.size()),
+                       right_text.data(),
+                       static_cast<int>(right_text.size()),
+                       TRUE
+                   ) == CSTR_EQUAL;
+        }
+
+    } // namespace
 
     auto path_to_utf8(std::filesystem::path const& path) -> std::string {
         auto const utf8_path{ path.u8string() };
@@ -12,6 +38,31 @@ namespace file_monitor::core::utils {
         return std::filesystem::path{
             std::u8string{ begin, begin + path.size() }
         };
+    }
+
+    // Windows file systems treat paths case-insensitively, so path elements are
+    // compared the same way; a trailing separator on directory is ignored.
+    auto path_is_within(
+        std::filesystem::path const& path,
+        std::filesystem::path const& directory
+    ) -> bool {
+        if (directory.empty()) {
+            return false;
+        }
+
+        auto path_element{ path.begin() };
+        auto const path_end{ path.end() };
+        for (auto const& directory_element : directory) {
+            if (directory_element.empty()) {
+                continue;
+            }
+            if (path_element == path_end ||
+                !path_elements_equal(*path_element, directory_element)) {
+                return false;
+            }
+            ++path_element;
+        }
+        return true;
     }
 
 } // namespace file_monitor::core::utils

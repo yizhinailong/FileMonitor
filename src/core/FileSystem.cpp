@@ -208,12 +208,7 @@ namespace file_monitor::core {
                 return std::ranges::any_of(
                     excluded_directories,
                     [&path](std::filesystem::path const& excluded_directory) {
-                        auto const relative_path{
-                            path.lexically_relative(excluded_directory)
-                        };
-                        return relative_path == "." ||
-                            (!relative_path.empty() && !relative_path.is_absolute() &&
-                             *relative_path.begin() != "..");
+                        return utils::path_is_within(path, excluded_directory);
                     }
                 );
             }

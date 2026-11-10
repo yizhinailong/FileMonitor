@@ -57,8 +57,7 @@ namespace file_monitor::core {
             return std::ranges::any_of(
                 excluded_directories,
                 [&path](std::filesystem::path const& excluded_directory) {
-                    return path == excluded_directory ||
-                        path_is_descendant(path, excluded_directory);
+                    return utils::path_is_within(path, excluded_directory);
                 }
             );
         }
