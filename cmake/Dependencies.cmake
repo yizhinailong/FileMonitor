@@ -65,6 +65,20 @@ CPMAddPackage(
     DOWNLOAD_ONLY YES
 )
 
+CPMAddPackage(
+    NAME ftxui
+    GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
+    GIT_TAG v7.0.3
+    EXCLUDE_FROM_ALL YES
+    SYSTEM YES
+    OPTIONS
+    "FTXUI_BUILD_DOCS OFF"
+    "FTXUI_BUILD_EXAMPLES OFF"
+    "FTXUI_BUILD_TESTS OFF"
+    "FTXUI_ENABLE_INSTALL OFF"
+    "FTXUI_QUIET ON"
+)
+
 find_package(OpenGL REQUIRED)
 
 add_library(imgui STATIC
@@ -99,4 +113,8 @@ set(GUI_DEPENDENCIES
     imgui::imgui
     OpenGL::GL
     SDL3::SDL3-static
+)
+
+set(TUI_DEPENDENCIES
+    ftxui::component
 )

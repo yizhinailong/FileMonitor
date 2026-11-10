@@ -17,5 +17,9 @@ publish profile="release": (build profile)
 run profile="debug": (build profile)
     @./build/windows-{{ profile }}/FileMonitor.exe
 
+[windows]
+run-tui profile="debug": (build profile)
+    @./build/windows-{{ profile }}/FileMonitorTui.exe
+
 clean:
     @cmake -E rm -rf "./build" "./dist"

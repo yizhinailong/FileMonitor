@@ -58,9 +58,10 @@ jobs:
       - name: Verify installation
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem ./dist -Recurse -File)
-          if ($files.Count -ne 1 -or $files[0].Name -ne "FileMonitor.exe") {
-              throw "Expected dist to contain only FileMonitor.exe"
+          $expected = @("FileMonitor.exe", "FileMonitorTui.exe")
+          $files = @(Get-ChildItem ./dist -Recurse -File | ForEach-Object Name | Sort-Object)
+          if (Compare-Object $expected $files) {
+              throw "Expected dist to contain only $($expected -join ', ')"
           }
 
       - name: Package
@@ -82,7 +83,7 @@ jobs:
           $checksum = "$archive.sha256"
 
           Push-Location ./dist
-          cmake -E tar cf "../$archive" --format=zip -- FileMonitor.exe
+          cmake -E tar cf "../$archive" --format=zip -- FileMonitor.exe FileMonitorTui.exe
           Pop-Location
 
           $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()

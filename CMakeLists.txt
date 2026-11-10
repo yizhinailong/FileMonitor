@@ -32,6 +32,12 @@ file(GLOB_RECURSE GUI_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/*.hpp"
 )
 
+file(GLOB_RECURSE TUI_SOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/tui/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/tui/*.hpp"
+)
+
 add_library(
     ${PROJECT_NAME}Core
     STATIC
@@ -75,8 +81,32 @@ target_link_libraries(
     ${GUI_DEPENDENCIES}
 )
 
+add_executable(
+    ${PROJECT_NAME}Tui
+    ${TUI_SOURCES}
+    app.rc
+)
+
+set_target_properties(
+    ${PROJECT_NAME}Tui PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+target_compile_definitions(
+    ${PROJECT_NAME}Tui
+    PRIVATE
+    FILE_MONITOR_VERSION=${PROJECT_VERSION}
+)
+
+target_link_libraries(
+    ${PROJECT_NAME}Tui
+    PRIVATE
+    ${PROJECT_NAME}Core
+    ${TUI_DEPENDENCIES}
+)
+
 install(
-    TARGETS ${PROJECT_NAME}
+    TARGETS ${PROJECT_NAME} ${PROJECT_NAME}Tui
     BUNDLE DESTINATION .
     RUNTIME DESTINATION .
 )
