@@ -6,6 +6,8 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "ErrorText.hpp"
+
 namespace file_monitor::gui {
 
     namespace {
@@ -59,6 +61,7 @@ namespace file_monitor::gui {
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0.0F, 0.0F });
         renderSettingsPanel(available.x, settings_panel_height);
+        renderErrorPanel(available.x);
         renderFileListPanel(available.x, 0.0F);
         ImGui::PopStyleVar();
 
@@ -85,6 +88,20 @@ namespace file_monitor::gui {
         if (open_settings) {
             m_settings_window.Open(configuration);
         }
+    }
+
+    auto MainWindow::renderErrorPanel(float width) -> void {
+        if (!has_session_errors(m_session)) {
+            return;
+        }
+        if (ImGui::BeginChild(
+                "ErrorPanel",
+                { width, 0.0F },
+                ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY
+            )) {
+            render_session_errors(m_session);
+        }
+        ImGui::EndChild();
     }
 
     auto MainWindow::renderFileListPanel(float width, float height) -> void {

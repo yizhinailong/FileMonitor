@@ -57,4 +57,12 @@ namespace file_monitor::tui {
         return error_text(std::format("{}：{}", label, message));
     }
 
+    auto session_error_text(core::MonitorSession const& session) -> ftxui::Element {
+        return ftxui::vbox({
+            error_text("监控失败", session.MonitorError()),
+            error_text("配置失败", session.ConfigurationError()),
+            error_text("日志失败", session.LogError()),
+        });
+    }
+
 } // namespace file_monitor::tui

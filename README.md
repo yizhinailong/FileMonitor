@@ -85,6 +85,8 @@ cmake --install build/windows-release --prefix dist
 4. 选择“保存”开始监控，按 Esc 或“取消”放弃修改。用 Tab 或方向键在控件之间移动焦点。
 5. 主列表用 `↑` `↓`、PgUp、PgDn、Home、End 或鼠标滚轮滚动，用 `←` `→` 横向滚动路径列；有新变更时自动滚动到最新一行。时间列只显示变更发生的时间，删除事件的创建时间记录在日志中。按 `q` 或 Ctrl+C 退出。
 
+监控、配置或日志出错时，两个界面都会在主界面顶部显示错误信息。
+
 配置和日志保存在程序所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关；同一目录下的 `FileMonitor.exe` 和 `FileMonitorTui.exe` 共用这份配置和日志。该文件夹始终不会被监控，避免写日志时又产生新的变更事件。通过 `just run` 或 `just run-tui` 启动时，它位于 `build/windows-debug/data/FileMonitor`，执行 `just clean` 会一并删除。
 
 ## 常见问题

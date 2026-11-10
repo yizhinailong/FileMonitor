@@ -14,6 +14,7 @@ namespace file_monitor::gui {
 
     private:
         auto renderSettingsPanel(float width, float height) -> void;
+        auto renderErrorPanel(float width) -> void;
         auto renderFileListPanel(float width, float height) -> void;
         auto renderFileChangeRow(core::FileChange const& change) -> void;
         [[nodiscard]]

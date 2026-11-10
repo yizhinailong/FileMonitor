@@ -76,6 +76,7 @@ namespace file_monitor::tui {
                     m_settings_button->Render(),
                     ftxui::text(summary) | ftxui::vcenter,
                 }),
+                session_error_text(m_session),
                 m_change_table.Render() | ftxui::flex,
                 ftxui::separatorLight(),
                 ftxui::text(KEY_HINTS) | ftxui::dim,

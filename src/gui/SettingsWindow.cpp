@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+#include "ErrorText.hpp"
 #include "core/Utils.hpp"
 
 namespace file_monitor::gui {
@@ -18,26 +19,6 @@ namespace file_monitor::gui {
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
         };
-
-        auto error_text_color() -> ImVec4 {
-            return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ?
-                ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } :
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
-        }
-
-        auto render_error(std::string_view label, std::string_view message) -> void {
-            if (message.empty()) {
-                return;
-            }
-            ImGui::TextColored(
-                error_text_color(),
-                "%.*s：%.*s",
-                static_cast<int>(label.size()),
-                label.data(),
-                static_cast<int>(message.size()),
-                message.data()
-            );
-        }
 
         auto SDLCALL directory_dialog_callback(
             void* userdata,
@@ -98,9 +79,7 @@ namespace file_monitor::gui {
         }
 
         render_error("选择文件夹失败", m_dialog_error_message);
-        render_error("监控失败", session.MonitorError());
-        render_error("配置失败", session.ConfigurationError());
-        render_error("日志失败", session.LogError());
+        render_session_errors(session);
 
         if (ImGui::BeginChild(
                 "DirectorySettings",
@@ -276,13 +255,7 @@ namespace file_monitor::gui {
             directories.clear();
         }
 
-        if (!editor.error_message.empty()) {
-            ImGui::TextColored(
-                error_text_color(),
-                "%s",
-                editor.error_message.c_str()
-            );
-        }
+        render_error(editor.error_message);
 
         constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
             ImGuiTableFlags_RowBg |

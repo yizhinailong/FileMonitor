@@ -47,9 +47,7 @@ namespace file_monitor::tui {
     auto SettingsWindow::OnRender() -> ftxui::Element {
         auto content{
             ftxui::vbox({
-                error_text("监控失败", m_session.MonitorError()),
-                error_text("配置失败", m_session.ConfigurationError()),
-                error_text("日志失败", m_session.LogError()),
+                session_error_text(m_session),
                 m_tab_toggle->Render(),
                 ftxui::separatorLight(),
                 m_editor_tabs->Render() | ftxui::flex,
