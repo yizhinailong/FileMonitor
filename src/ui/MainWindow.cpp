@@ -225,10 +225,11 @@ namespace file_monitor::ui {
         m_file_changes.clear();
         m_monitor_error_message.clear();
         m_scroll_to_latest = false;
-        m_file_monitor.Start(
-            m_settings_window.Directories(),
-            m_settings_window.ExcludedDirectories()
-        );
+
+        // Writing the change log must not produce change events of its own.
+        auto excluded_directories{ m_settings_window.ExcludedDirectories() };
+        excluded_directories.emplace_back(m_data_directory);
+        m_file_monitor.Start(m_settings_window.Directories(), excluded_directories);
     }
 
 } // namespace file_monitor::ui

@@ -73,7 +73,7 @@ cmake --install build/windows-release --prefix dist
 3. 点击“保存”开始监控。
 4. 文件变更会显示在主列表中，并同步写入当天的日志文件。
 
-配置和日志保存在 `FileMonitor.exe` 所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关。通过 `just run` 启动时，它位于 `build/windows-debug/data/FileMonitor`，执行 `just clean` 会一并删除。
+配置和日志保存在 `FileMonitor.exe` 所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关。该文件夹始终不会被监控，避免写日志时又产生新的变更事件。通过 `just run` 启动时，它位于 `build/windows-debug/data/FileMonitor`，执行 `just clean` 会一并删除。
 
 ## 常见问题
 
