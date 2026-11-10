@@ -1,0 +1,5 @@
+# Store and check out text files with LF line endings, regardless of the
+# local core.autocrlf setting.
+* text=auto eol=lf
+
+*.ico binary
