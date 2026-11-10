@@ -1,20 +1,12 @@
 #include "SettingsWindow.hpp"
 
-#include <algorithm>
 #include <utility>
 
 #include <ftxui/component/component.hpp>
-#include <ftxui/screen/terminal.hpp>
 
 #include "Widgets.hpp"
 
 namespace file_monitor::tui {
-    namespace {
-
-        constexpr auto MAX_WINDOW_WIDTH{ 100 };
-        constexpr auto MAX_WINDOW_HEIGHT{ 30 };
-
-    } // namespace
 
     SettingsWindow::SettingsWindow(
         core::MonitorSession& session,
@@ -53,10 +45,6 @@ namespace file_monitor::tui {
     }
 
     auto SettingsWindow::OnRender() -> ftxui::Element {
-        auto const terminal_size{ ftxui::Terminal::Size() };
-        auto const width{ std::clamp(terminal_size.dimx - 4, 1, MAX_WINDOW_WIDTH) };
-        auto const height{ std::clamp(terminal_size.dimy - 2, 1, MAX_WINDOW_HEIGHT) };
-
         auto content{
             ftxui::vbox({
                 error_text("监控失败", m_session.MonitorError()),
@@ -71,9 +59,7 @@ namespace file_monitor::tui {
                 }),
             })
         };
-        return ftxui::window(ftxui::text(" 设置 "), std::move(content)) |
-            ftxui::size(ftxui::WIDTH, ftxui::EQUAL, width) |
-            ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, height);
+        return ftxui::window(ftxui::text(" 设置 "), std::move(content));
     }
 
     auto SettingsWindow::OnEvent(ftxui::Event event) -> bool {

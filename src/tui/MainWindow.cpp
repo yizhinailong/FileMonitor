@@ -17,6 +17,8 @@ namespace file_monitor::tui {
         constexpr std::string_view WINDOW_TITLE = " 文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION) " ";
         constexpr std::string_view KEY_HINTS =
             "s 设置  q 退出  ↑↓ PgUp PgDn Home End 滚动  ←→ 横向滚动";
+        constexpr auto MAIN_PAGE{ 0 };
+        constexpr auto SETTINGS_PAGE{ 1 };
 
     } // namespace
 
@@ -28,7 +30,10 @@ namespace file_monitor::tui {
         auto main_view{
             ftxui::Renderer(m_settings_button, [this] { return renderMainView(); })
         };
-        Add(ftxui::Modal(std::move(main_view), m_settings_window, &m_settings_open));
+        // Settings take the whole screen: a dialog over the change table would
+        // leave less room for long paths, and a wide glyph under its left edge
+        // would hide the dialog border.
+        Add(ftxui::Container::Tab({ std::move(main_view), m_settings_window }, &m_page));
     }
 
     auto MainWindow::Update() -> bool {
@@ -40,7 +45,7 @@ namespace file_monitor::tui {
     }
 
     auto MainWindow::OnEvent(ftxui::Event event) -> bool {
-        if (!m_settings_open) {
+        if (m_page == MAIN_PAGE) {
             if (event == ftxui::Event::Character('q')) {
                 m_on_quit();
                 return true;
@@ -81,11 +86,11 @@ namespace file_monitor::tui {
 
     auto MainWindow::openSettings() -> void {
         m_settings_window->Open();
-        m_settings_open = true;
+        m_page = SETTINGS_PAGE;
     }
 
     auto MainWindow::closeSettings() -> void {
-        m_settings_open = false;
+        m_page = MAIN_PAGE;
         m_settings_button->TakeFocus();
     }
 

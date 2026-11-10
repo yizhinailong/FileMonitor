@@ -32,7 +32,7 @@ namespace file_monitor::tui {
         FileChangeTable m_change_table;
         std::shared_ptr<SettingsWindow> m_settings_window;
         ftxui::Component m_settings_button;
-        bool m_settings_open{ false };
+        int m_page{ 0 };
     };
 
 } // namespace file_monitor::tui
