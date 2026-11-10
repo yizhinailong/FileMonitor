@@ -2,20 +2,14 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <filesystem>
-#include <ranges>
-#include <utility>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
-
-#include "core/Utils.hpp"
 
 namespace file_monitor::gui {
 
     namespace {
 
-        constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
         constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
 
         auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
@@ -36,19 +30,14 @@ namespace file_monitor::gui {
 
     } // namespace
 
-    MainWindow::MainWindow()
-        : m_data_directory{ core::utils::executable_directory() / "data" / "FileMonitor" },
-          m_settings_window{ m_data_directory / "config.json" },
-          m_change_logger{ m_data_directory } {
-        resetFileMonitor();
-    }
-
     auto MainWindow::Settings() -> SettingsWindow& {
         return m_settings_window;
     }
 
     auto MainWindow::Render() -> void {
-        updateFileMonitor();
+        if (m_session.Update().changes_added) {
+            m_scroll_to_latest = true;
+        }
 
         auto const* viewport{ ImGui::GetMainViewport() };
         ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -73,41 +62,12 @@ namespace file_monitor::gui {
         renderFileListPanel(available.x, 0.0F);
         ImGui::PopStyleVar();
 
-        if (m_settings_window.Render(m_monitor_error_message, m_log_error_message)) {
-            resetFileMonitor();
-        }
+        m_settings_window.Render(m_session);
         ImGui::End();
     }
 
-    auto MainWindow::updateFileMonitor() -> void {
-        auto changes{ m_file_monitor.TakeChanges() };
-        if (!changes.empty()) {
-            auto const log_result{ m_change_logger.Write(changes) };
-            if (!log_result) {
-                m_log_error_message = log_result.error();
-            } else {
-                m_log_error_message.clear();
-            }
-
-            m_file_changes.append_range(changes | std::views::as_rvalue);
-
-            if (m_file_changes.size() > MAX_FILE_CHANGES) {
-                auto const excess_count{ m_file_changes.size() - MAX_FILE_CHANGES };
-                m_file_changes.erase(
-                    m_file_changes.begin(),
-                    m_file_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
-                );
-            }
-            m_scroll_to_latest = true;
-        }
-
-        auto monitor_error{ m_file_monitor.TakeError() };
-        if (!monitor_error.empty()) {
-            m_monitor_error_message = std::move(monitor_error);
-        }
-    }
-
     auto MainWindow::renderSettingsPanel(float width, float height) -> void {
+        auto const& configuration{ m_session.CurrentConfiguration() };
         auto open_settings{ false };
         if (ImGui::BeginChild("SettingsPanel", { width, height }, true)) {
             open_settings = ImGui::Button("设置", ImGui::GetContentRegionAvail());
@@ -115,15 +75,15 @@ namespace file_monitor::gui {
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip(
                     "监控 %zu 个文件夹，排除 %zu 个文件夹",
-                    m_settings_window.Directories().size(),
-                    m_settings_window.ExcludedDirectories().size()
+                    configuration.directories.size(),
+                    configuration.excluded_directories.size()
                 );
             }
         }
         ImGui::EndChild();
 
         if (open_settings) {
-            m_settings_window.Open();
+            m_settings_window.Open(configuration);
         }
     }
 
@@ -151,13 +111,14 @@ namespace file_monitor::gui {
                 ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch, 1.0F);
                 ImGui::TableHeadersRow();
 
+                auto const changes{ m_session.Changes() };
                 ImGuiListClipper clipper;
-                clipper.Begin(static_cast<int>(m_file_changes.size()));
+                clipper.Begin(static_cast<int>(changes.size()));
                 while (clipper.Step()) {
                     for (auto item_index{ clipper.DisplayStart };
                          item_index < clipper.DisplayEnd;
                          ++item_index) {
-                        renderFileChangeRow(m_file_changes[static_cast<std::size_t>(item_index)]);
+                        renderFileChangeRow(changes[static_cast<std::size_t>(item_index)]);
                     }
                 }
                 if (m_scroll_to_latest) {
@@ -208,7 +169,7 @@ namespace file_monitor::gui {
     auto MainWindow::calculatePathColumnWidth() const -> float {
         auto path_width{ ImGui::CalcTextSize("绝对路径").x };
         auto const rename_separator_width{ ImGui::CalcTextSize(" -> ").x };
-        for (auto const& change : m_file_changes) {
+        for (auto const& change : m_session.Changes()) {
             auto text_width{ ImGui::CalcTextSize(change.absolute_path.c_str()).x };
             if (!change.previous_absolute_path.empty()) {
                 text_width +=
@@ -219,17 +180,6 @@ namespace file_monitor::gui {
         }
         path_width += ImGui::GetStyle().CellPadding.x * 2.0F;
         return path_width;
-    }
-
-    auto MainWindow::resetFileMonitor() -> void {
-        m_file_changes.clear();
-        m_monitor_error_message.clear();
-        m_scroll_to_latest = false;
-
-        // Writing the change log must not produce change events of its own.
-        auto excluded_directories{ m_settings_window.ExcludedDirectories() };
-        excluded_directories.emplace_back(m_data_directory);
-        m_file_monitor.Start(m_settings_window.Directories(), excluded_directories);
     }
 
 } // namespace file_monitor::gui

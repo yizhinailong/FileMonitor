@@ -1,7 +1,6 @@
 #include "SettingsWindow.hpp"
 
 #include <algorithm>
-#include <exception>
 #include <optional>
 #include <ranges>
 #include <utility>
@@ -66,33 +65,19 @@ namespace file_monitor::gui {
 
     } // namespace
 
-    SettingsWindow::SettingsWindow(std::filesystem::path config_path)
-        : m_config_path{ std::move(config_path) },
-          m_dialog_state{ std::make_shared<DirectoryDialogState>() } {
-        auto configuration{ core::load_configuration(m_config_path) };
-        if (!configuration) {
-            m_configuration_error_message = std::move(configuration.error());
-            return;
-        }
-        m_configuration = std::move(*configuration);
-    }
-
     auto SettingsWindow::SetParentWindow(SDL_Window* window) -> void {
         m_parent_window = window;
     }
 
-    auto SettingsWindow::Open() -> void {
-        m_pending_configuration = m_configuration;
+    auto SettingsWindow::Open(core::Configuration const& configuration) -> void {
+        m_pending_configuration = configuration;
         m_monitored_editor = {};
         m_excluded_editor = {};
         m_dialog_error_message.clear();
         ImGui::OpenPopup("设置##SettingsWindow");
     }
 
-    auto SettingsWindow::Render(
-        std::string_view monitor_error,
-        std::string_view log_error
-    ) -> bool {
+    auto SettingsWindow::Render(core::MonitorSession& session) -> void {
         consumeDirectorySelection();
 
         auto const* viewport{ ImGui::GetMainViewport() };
@@ -109,13 +94,13 @@ namespace file_monitor::gui {
                 nullptr,
                 ImGuiWindowFlags_NoSavedSettings
             )) {
-            return false;
+            return;
         }
 
         render_error("选择文件夹失败", m_dialog_error_message);
-        render_error("监控失败", monitor_error);
-        render_error("配置失败", m_configuration_error_message);
-        render_error("日志失败", log_error);
+        render_error("监控失败", session.MonitorError());
+        render_error("配置失败", session.ConfigurationError());
+        render_error("日志失败", session.LogError());
 
         if (ImGui::BeginChild(
                 "DirectorySettings",
@@ -151,80 +136,25 @@ namespace file_monitor::gui {
         }
         ImGui::SameLine();
 
-        auto configuration_changed{ false };
-        if (ImGui::Button("保存", { ImGui::GetContentRegionAvail().x, 0.0F })) {
-            auto const save_result{
-                core::save_configuration(m_config_path, m_pending_configuration)
-            };
-            if (!save_result) {
-                m_configuration_error_message = save_result.error();
-            } else {
-                m_configuration_error_message.clear();
-                m_configuration = m_pending_configuration;
-                configuration_changed = true;
-                ImGui::CloseCurrentPopup();
-            }
+        if (ImGui::Button("保存", { ImGui::GetContentRegionAvail().x, 0.0F }) &&
+            session.SaveConfiguration(m_pending_configuration)) {
+            ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
-        return configuration_changed;
-    }
-
-    auto SettingsWindow::Directories() const
-        -> std::vector<std::filesystem::path> const& {
-        return m_configuration.directories;
-    }
-
-    auto SettingsWindow::ExcludedDirectories() const
-        -> std::vector<std::filesystem::path> const& {
-        return m_configuration.excluded_directories;
     }
 
     auto SettingsWindow::addManualDirectory(DirectoryGroup group) -> void {
         auto& editor{ directoryEditor(group) };
-        if (editor.input.empty()) {
-            editor.error_message = "请输入文件夹路径";
-            return;
-        }
-
-        std::filesystem::path directory;
-        try {
-            directory = core::utils::utf8_to_path(editor.input).lexically_normal();
-        } catch (std::exception const& error) {
-            editor.error_message = "文件夹路径无效：" + std::string{ error.what() };
-            return;
-        }
-
-        std::error_code check_error;
-        auto const is_directory{ std::filesystem::is_directory(directory, check_error) };
-        if (check_error) {
-            editor.error_message = "检查文件夹失败：" + check_error.message();
-            return;
-        }
-        if (!is_directory) {
-            editor.error_message = "路径不是存在的文件夹";
-            return;
-        }
-        if (!addPendingDirectory(group, directory)) {
-            editor.error_message = "该文件夹已添加";
+        auto const result{
+            core::add_directory_input(pendingDirectories(group), editor.input)
+        };
+        if (!result) {
+            editor.error_message = result.error();
             return;
         }
 
         editor.input.clear();
         editor.error_message.clear();
-    }
-
-    auto SettingsWindow::addPendingDirectory(
-        DirectoryGroup group,
-        std::filesystem::path directory
-    ) -> bool {
-        directory = directory.lexically_normal();
-        auto& directories{ pendingDirectories(group) };
-        if (std::ranges::contains(directories, directory)) {
-            return false;
-        }
-
-        directories.emplace_back(std::move(directory));
-        return true;
     }
 
     auto SettingsWindow::consumeDirectorySelection() -> void {
@@ -247,7 +177,7 @@ namespace file_monitor::gui {
         m_dialog_error_message = std::move(error_message);
 
         for (auto& directory : selected_directories) {
-            addPendingDirectory(m_dialog_group, std::move(directory));
+            core::add_directory(pendingDirectories(m_dialog_group), std::move(directory));
         }
     }
 

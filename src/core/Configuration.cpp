@@ -1,6 +1,7 @@
 #include "Configuration.hpp"
 
 #include <algorithm>
+#include <exception>
 #include <format>
 #include <fstream>
 #include <ranges>
@@ -160,6 +161,48 @@ namespace file_monitor::core {
         output.close();
         if (!output) {
             return std::unexpected{ config_error("保存配置文件失败", config_path, "写入错误") };
+        }
+        return {};
+    }
+
+    auto add_directory(
+        std::vector<std::filesystem::path>& directories,
+        std::filesystem::path directory
+    ) -> bool {
+        directory = directory.lexically_normal();
+        if (std::ranges::contains(directories, directory)) {
+            return false;
+        }
+
+        directories.emplace_back(std::move(directory));
+        return true;
+    }
+
+    auto add_directory_input(
+        std::vector<std::filesystem::path>& directories,
+        std::string_view input
+    ) -> std::expected<void, std::string> {
+        if (input.empty()) {
+            return std::unexpected{ "请输入文件夹路径" };
+        }
+
+        std::filesystem::path directory;
+        try {
+            directory = utils::utf8_to_path(input).lexically_normal();
+        } catch (std::exception const& error) {
+            return std::unexpected{ "文件夹路径无效：" + std::string{ error.what() } };
+        }
+
+        std::error_code check_error;
+        auto const is_directory{ std::filesystem::is_directory(directory, check_error) };
+        if (check_error) {
+            return std::unexpected{ "检查文件夹失败：" + check_error.message() };
+        }
+        if (!is_directory) {
+            return std::unexpected{ "路径不是存在的文件夹" };
+        }
+        if (!add_directory(directories, std::move(directory))) {
+            return std::unexpected{ "该文件夹已添加" };
         }
         return {};
     }

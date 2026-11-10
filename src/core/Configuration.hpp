@@ -3,6 +3,7 @@
 #include <expected>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace file_monitor::core {
@@ -17,6 +18,15 @@ namespace file_monitor::core {
     auto save_configuration(
         std::filesystem::path const& config_path,
         Configuration const& configuration
+    ) -> std::expected<void, std::string>;
+
+    auto add_directory(
+        std::vector<std::filesystem::path>& directories,
+        std::filesystem::path directory
+    ) -> bool;
+    auto add_directory_input(
+        std::vector<std::filesystem::path>& directories,
+        std::string_view input
     ) -> std::expected<void, std::string>;
 
 } // namespace file_monitor::core
