@@ -19,28 +19,14 @@ enable_language(RC)
 include(cmake/ClangClCcache.cmake)
 include(cmake/Dependencies.cmake)
 
+file(GLOB_RECURSE PROJECT_SOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+)
+
 add_executable(${PROJECT_NAME}
-    src/core/ChangeLogger.cpp
-    src/core/ChangeLogger.hpp
-    src/core/Configuration.cpp
-    src/core/Configuration.hpp
-    src/core/DirectoryMonitor.cpp
-    src/core/DirectoryMonitor.hpp
-    src/core/directory_watch/DirectoryWatchBackend.hpp
-    src/core/directory_watch/DirectoryWatchBackendWindows.cpp
-    src/core/FileSystem.cpp
-    src/core/FileSystem.hpp
-    src/core/Utils.cpp
-    src/core/Utils.hpp
-    src/main.cpp
-    src/ui/Application.cpp
-    src/ui/Application.hpp
-    src/ui/MainWindow.cpp
-    src/ui/MainWindow.hpp
-    src/ui/SdlImGuiBackend.cpp
-    src/ui/SdlImGuiBackend.hpp
-    src/ui/SettingsWindow.cpp
-    src/ui/SettingsWindow.hpp
+    ${PROJECT_SOURCES}
     app.rc
 )
 
