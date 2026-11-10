@@ -83,7 +83,7 @@ cmake --install build/windows-release --prefix dist
 2. 按 `s` 或选中“设置”后按 Enter 打开设置。焦点位于顶部标签栏时，用 `←` `→` 切换“监控文件夹”和“不监控文件夹”标签页。
 3. 输入文件夹路径后按 Enter 或“添加”；相对路径按当前工作目录转换为绝对路径后保存。在列表中选中文件夹后按 Delete 或“删除”移除。终端界面不提供系统的选择文件夹对话框。
 4. 选择“保存”开始监控，按 Esc 或“取消”放弃修改。用 Tab 或方向键在控件之间移动焦点。
-5. 主列表用 `↑` `↓`、PgUp、PgDn、Home、End 或鼠标滚轮滚动，用 `←` `→` 横向滚动路径列；有新变更时自动滚动到最新一行。按 `q` 或 Ctrl+C 退出。
+5. 主列表用 `↑` `↓`、PgUp、PgDn、Home、End 或鼠标滚轮滚动，用 `←` `→` 横向滚动路径列；有新变更时自动滚动到最新一行。时间列只显示变更发生的时间，删除事件的创建时间记录在日志中。按 `q` 或 Ctrl+C 退出。
 
 配置和日志保存在程序所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关；同一目录下的 `FileMonitor.exe` 和 `FileMonitorTui.exe` 共用这份配置和日志。该文件夹始终不会被监控，避免写日志时又产生新的变更事件。通过 `just run` 或 `just run-tui` 启动时，它位于 `build/windows-debug/data/FileMonitor`，执行 `just clean` 会一并删除。
 

@@ -14,17 +14,12 @@
 namespace file_monitor::core {
     namespace {
 
-        auto change_event_date(std::string_view time) -> std::string {
-            auto date_offset{ std::size_t{ 0 } };
-            auto const separator{ time.rfind(" -> ") };
-            if (separator != std::string_view::npos) {
-                date_offset = separator + 4;
-            }
-            if (time.size() < date_offset + 10) {
+        auto change_event_date(std::string_view event_time) -> std::string {
+            if (event_time.size() < 10) {
                 return "unknown-date";
             }
 
-            auto const date{ time.substr(date_offset, 10) };
+            auto const date{ event_time.substr(0, 10) };
             for (auto [index, character] : std::views::enumerate(date)) {
                 if (index == 4 || index == 7) {
                     if (character != '-') {
@@ -118,7 +113,7 @@ namespace file_monitor::core {
     auto ChangeLogger::Write(std::span<FileChange const> changes)
         -> std::expected<void, std::string> {
         for (auto const& change : changes) {
-            auto const date{ change_event_date(change.time) };
+            auto const date{ change_event_date(file_change_event_time(change)) };
             auto const logger_result{ m_impl->ensureLogger(date) };
             if (!logger_result) {
                 return logger_result;

@@ -51,5 +51,8 @@ namespace file_monitor::core {
         std::string previous_absolute_path = {}
     ) -> FileChange;
     auto file_change_status_text(FileChangeStatus status) -> std::string_view;
+    // A removed file's time reads "created -> removed"; this returns the time of
+    // the change itself.
+    auto file_change_event_time(FileChange const& change) -> std::string_view;
 
 } // namespace file_monitor::core

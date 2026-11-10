@@ -73,7 +73,10 @@ namespace file_monitor::tui {
                 .path = ftxui::string_width("绝对路径")
             };
             for (auto const& change : changes) {
-                widths.time = std::max(widths.time, ftxui::string_width(change.time));
+                widths.time = std::max(
+                    widths.time,
+                    ftxui::string_width(std::string{ core::file_change_event_time(change) })
+                );
                 widths.status = std::max(
                     widths.status,
                     ftxui::string_width(core::file_change_status_text(change.status))
@@ -156,7 +159,7 @@ namespace file_monitor::tui {
         for (auto const& change : rendered_changes) {
             rows.push_back(
                 make_row(
-                    ftxui::text(change.time),
+                    ftxui::text(std::string{ core::file_change_event_time(change) }),
                     ftxui::text(core::file_change_status_text(change.status)) |
                         ftxui::color(file_change_status_color(change.status)),
                     ftxui::text(change.size),

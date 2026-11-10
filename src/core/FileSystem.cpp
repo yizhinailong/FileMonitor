@@ -25,6 +25,8 @@ namespace file_monitor::core {
 
         using SystemTime = std::chrono::system_clock::time_point;
 
+        constexpr std::string_view TIME_RANGE_SEPARATOR{ " -> " };
+
         auto read_creation_time(std::filesystem::path const& path)
             -> std::optional<SystemTime> {
             WIN32_FILE_ATTRIBUTE_DATA attributes{};
@@ -138,8 +140,9 @@ namespace file_monitor::core {
                 return event_time_text;
             }
             return std::format(
-                "{} -> {}",
+                "{}{}{}",
                 format_event_time(*creation_time),
+                TIME_RANGE_SEPARATOR,
                 event_time_text
             );
         }
@@ -339,6 +342,15 @@ namespace file_monitor::core {
                 return "移动";
         }
         return "未知";
+    }
+
+    auto file_change_event_time(FileChange const& change) -> std::string_view {
+        std::string_view const time{ change.time };
+        auto const separator{ time.rfind(TIME_RANGE_SEPARATOR) };
+        if (separator == std::string_view::npos) {
+            return time;
+        }
+        return time.substr(separator + TIME_RANGE_SEPARATOR.size());
     }
 
 } // namespace file_monitor::core
