@@ -95,4 +95,11 @@ namespace file_monitor::core::utils {
         return true;
     }
 
+    auto paths_equal(
+        std::filesystem::path const& left,
+        std::filesystem::path const& right
+    ) -> bool {
+        return path_is_within(left, right) && path_is_within(right, left);
+    }
+
 } // namespace file_monitor::core::utils

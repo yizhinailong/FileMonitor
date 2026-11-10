@@ -14,5 +14,9 @@ namespace file_monitor::core::utils {
         std::filesystem::path const& path,
         std::filesystem::path const& directory
     ) -> bool;
+    auto paths_equal(
+        std::filesystem::path const& left,
+        std::filesystem::path const& right
+    ) -> bool;
 
 } // namespace file_monitor::core::utils

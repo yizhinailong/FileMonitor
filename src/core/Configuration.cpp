@@ -60,12 +60,25 @@ namespace file_monitor::core {
                     };
                 }
 
-                auto directory{ utils::utf8_to_path(directory_text).lexically_normal() };
-                if (!std::ranges::contains(directories, directory)) {
-                    directories.emplace_back(std::move(directory));
-                }
+                add_directory(directories, utils::utf8_to_path(directory_text));
             }
             return {};
+        }
+
+        // Directories are stored as absolute paths without a trailing separator,
+        // so a relative input does not depend on the working directory of a later
+        // run and "C:\a\" is not added next to "C:\a".
+        auto normalize_directory(std::filesystem::path directory) -> std::filesystem::path {
+            std::error_code absolute_error;
+            auto absolute_directory{ std::filesystem::absolute(directory, absolute_error) };
+            if (!absolute_error) {
+                directory = std::move(absolute_directory);
+            }
+            directory = directory.lexically_normal();
+            if (directory.has_relative_path() && !directory.has_filename()) {
+                directory = directory.parent_path();
+            }
+            return directory;
         }
 
     } // namespace
@@ -169,8 +182,13 @@ namespace file_monitor::core {
         std::vector<std::filesystem::path>& directories,
         std::filesystem::path directory
     ) -> bool {
-        directory = directory.lexically_normal();
-        if (std::ranges::contains(directories, directory)) {
+        directory = normalize_directory(std::move(directory));
+        auto const is_added{
+            std::ranges::any_of(directories, [&directory](std::filesystem::path const& added) {
+                return utils::paths_equal(added, directory);
+            })
+        };
+        if (is_added) {
             return false;
         }
 
@@ -188,7 +206,7 @@ namespace file_monitor::core {
 
         std::filesystem::path directory;
         try {
-            directory = utils::utf8_to_path(input).lexically_normal();
+            directory = utils::utf8_to_path(input);
         } catch (std::exception const& error) {
             return std::unexpected{ "文件夹路径无效：" + std::string{ error.what() } };
         }
