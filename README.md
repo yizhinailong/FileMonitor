@@ -19,7 +19,7 @@ FileMonitor 是一个面向 Windows 的轻量级文件夹监控工具。它通�
 - Ninja
 - LLVM/Clang，且 `clang-cl` 可用
 - Visual Studio Build Tools 和 Windows SDK
-- `sccache`
+- `ccache`
 - [`just`](https://github.com/casey/just)
 
 首次配置时，CMake 会通过 CPM 自动获取 SDL3、Dear ImGui、spdlog 和 nlohmann/json，因此需要可用的 Git 和网络连接。后续构建可复用 `CPM_SOURCE_CACHE` 中的依赖缓存。

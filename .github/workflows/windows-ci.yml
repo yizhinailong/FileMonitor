@@ -23,7 +23,6 @@ jobs:
       checksum: ${{ steps.package.outputs.checksum }}
     env:
       CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/cpm
-      SCCACHE_GHA_ENABLED: "true"
 
     steps:
       - name: Checkout
@@ -42,10 +41,10 @@ jobs:
         with:
           just-version: "1.58.0"
 
-      - name: Set up sccache
-        uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
-          version: "v0.17.0"
+          key: windows-x64-release
 
       - name: Cache CPM dependencies
         uses: actions/cache@v5
