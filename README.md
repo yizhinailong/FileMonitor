@@ -79,7 +79,7 @@ lld-link: error: failed to write output 'FileMonitor.exe': permission denied
 
 请先关闭正在运行的“文件监控”窗口，再重新构建。
 
-### 未找到 PkgConfig 或 LibUSB
+### 未找到 PkgConfig
 
 这是 SDL 配置阶段针对可选后端的提示，不影响本项目当前使用的 Windows 文件监控和 OpenGL 界面功能。
 

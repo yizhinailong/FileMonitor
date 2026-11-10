@@ -62,7 +62,7 @@ namespace file_monitor::ui {
 
     auto SdlImGuiBackend::Initialize(std::string_view title, int width, int height)
         -> std::expected<void, std::string> {
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
+        if (!SDL_Init(SDL_INIT_VIDEO)) {
             return std::unexpected{ sdl_error("SDL initialization failed") };
         }
         m_sdl_initialized = true;
