@@ -51,6 +51,11 @@ CPMAddPackage(
     "SDL_TRAY OFF"
     "SDL_VULKAN OFF"
     "SDL_OPENGLES OFF"
+    # Skip SDL's doc-comment warnings: with clang-cl they need
+    # /clang:-fcomment-block-commands, which ccache treats as unsupported.
+    "HAVE_GCC_WDOCUMENTATION OFF"
+    "HAVE_GCC_WDOCUMENTATION_UNKNOWN_COMMAND OFF"
+    "HAVE_CLANG_COMMENT_BLOCK_COMMANDS OFF"
 )
 
 CPMAddPackage(
