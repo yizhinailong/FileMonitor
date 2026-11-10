@@ -7,7 +7,7 @@
 #define FILE_MONITOR_STRINGIFY_IMPL(value) #value
 #define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
     namespace {
 
         constexpr std::string_view WINDOW_TITLE = "文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION);
@@ -40,7 +40,7 @@ namespace file_monitor::ui {
         return 0;
     }
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui
 
 #undef FILE_MONITOR_STRINGIFY
 #undef FILE_MONITOR_STRINGIFY_IMPL

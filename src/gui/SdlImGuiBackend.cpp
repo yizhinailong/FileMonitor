@@ -12,7 +12,7 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
     namespace {
 
         auto sdl_error(std::string_view message) -> std::string {
@@ -213,4 +213,4 @@ namespace file_monitor::ui {
         }
     }
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

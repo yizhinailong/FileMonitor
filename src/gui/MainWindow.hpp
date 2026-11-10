@@ -8,7 +8,7 @@
 #include "core/ChangeLogger.hpp"
 #include "core/DirectoryMonitor.hpp"
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
     class MainWindow final {
     public:
         MainWindow();
@@ -38,4 +38,4 @@ namespace file_monitor::ui {
         bool m_scroll_to_latest{ false };
     };
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

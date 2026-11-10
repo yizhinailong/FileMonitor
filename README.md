@@ -95,9 +95,8 @@ lld-link: error: failed to write output 'FileMonitor.exe': permission denied
 
 ```text
 src/
-├── core/    文件扫描、系统变更监控、配置和日志
-├── ui/      SDL3、Dear ImGui 界面及 OpenGL3 后端
-└── main.cpp 程序入口
+├── core/ 文件扫描、系统变更监控、配置和日志
+└── gui/  SDL3、Dear ImGui 界面及 OpenGL3 后端
 ```
 
 ## 许可证

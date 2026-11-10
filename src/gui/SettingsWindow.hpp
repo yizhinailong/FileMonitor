@@ -11,7 +11,7 @@
 
 struct SDL_Window;
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
     struct DirectoryDialogState {
         std::mutex mutex;
         std::vector<std::filesystem::path> selected_directories;
@@ -68,4 +68,4 @@ namespace file_monitor::ui {
         bool m_dialog_open{ false };
     };
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

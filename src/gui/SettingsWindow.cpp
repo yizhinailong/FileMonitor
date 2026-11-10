@@ -12,7 +12,7 @@
 
 #include "core/Utils.hpp"
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
 
     namespace {
 
@@ -437,4 +437,4 @@ namespace file_monitor::ui {
         ImGui::PopID();
     }
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

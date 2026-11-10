@@ -11,7 +11,7 @@
 
 #include "core/Utils.hpp"
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
 
     namespace {
 
@@ -232,4 +232,4 @@ namespace file_monitor::ui {
         m_file_monitor.Start(m_settings_window.Directories(), excluded_directories);
     }
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

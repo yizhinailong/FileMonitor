@@ -7,7 +7,7 @@
 struct SDL_GLContextState;
 struct SDL_Window;
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
 
     class SdlImGuiBackend final {
     public:
@@ -40,4 +40,4 @@ namespace file_monitor::ui {
         bool m_imgui_opengl_initialized{ false };
     };
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui

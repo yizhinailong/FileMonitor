@@ -3,7 +3,7 @@
 #include "MainWindow.hpp"
 #include "SdlImGuiBackend.hpp"
 
-namespace file_monitor::ui {
+namespace file_monitor::gui {
 
     class Application final {
     public:
@@ -14,4 +14,4 @@ namespace file_monitor::ui {
         MainWindow m_main_window;
     };
 
-} // namespace file_monitor::ui
+} // namespace file_monitor::gui
