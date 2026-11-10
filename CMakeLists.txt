@@ -16,6 +16,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 enable_language(RC)
 
+include(cmake/ClangClCcache.cmake)
 include(cmake/Dependencies.cmake)
 
 add_executable(${PROJECT_NAME}
