@@ -9,14 +9,14 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "core/Utils.hpp"
+
 namespace file_monitor::ui {
 
     namespace {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
         constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
-        auto const DATA_DIRECTORY{ std::filesystem::path{ "data" } / "FileMonitor" };
-        auto const CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
 
         auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
             auto const light_theme{ SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT };
@@ -37,8 +37,9 @@ namespace file_monitor::ui {
     } // namespace
 
     MainWindow::MainWindow()
-        : m_settings_window{ CONFIG_PATH },
-          m_change_logger{ DATA_DIRECTORY } {
+        : m_data_directory{ core::utils::executable_directory() / "data" / "FileMonitor" },
+          m_settings_window{ m_data_directory / "config.json" },
+          m_change_logger{ m_data_directory } {
         resetFileMonitor();
     }
 

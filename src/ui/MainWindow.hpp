@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -28,6 +29,7 @@ namespace file_monitor::ui {
 
         std::vector<core::FileChange> m_file_changes;
 
+        std::filesystem::path m_data_directory;
         SettingsWindow m_settings_window;
         core::DirectoryMonitor m_file_monitor;
         core::ChangeLogger m_change_logger;

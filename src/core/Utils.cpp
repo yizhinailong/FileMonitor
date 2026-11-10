@@ -1,5 +1,9 @@
 #include "Utils.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <utility>
+
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -10,6 +14,8 @@
 
 namespace file_monitor::core::utils {
     namespace {
+
+        constexpr auto MAX_EXTENDED_PATH_LENGTH{ std::size_t{ 32'767 } };
 
         auto path_elements_equal(
             std::filesystem::path const& left,
@@ -38,6 +44,30 @@ namespace file_monitor::core::utils {
         return std::filesystem::path{
             std::u8string{ begin, begin + path.size() }
         };
+    }
+
+    auto executable_directory() -> std::filesystem::path {
+        std::wstring module_path(MAX_PATH, L'\0');
+        while (true) {
+            auto const length{
+                GetModuleFileNameW(
+                    nullptr,
+                    module_path.data(),
+                    static_cast<DWORD>(module_path.size())
+                )
+            };
+            if (length == 0) {
+                return {};
+            }
+            if (length < module_path.size()) {
+                module_path.resize(length);
+                return std::filesystem::path{ std::move(module_path) }.parent_path();
+            }
+            if (module_path.size() >= MAX_EXTENDED_PATH_LENGTH) {
+                return {};
+            }
+            module_path.resize(std::min(module_path.size() * 2, MAX_EXTENDED_PATH_LENGTH));
+        }
     }
 
     // Windows file systems treat paths case-insensitively, so path elements are
