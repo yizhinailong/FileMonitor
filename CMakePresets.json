@@ -16,9 +16,6 @@
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
-      "environment": {
-        "CPM_SOURCE_CACHE": "$penv{CPM_SOURCE_CACHE}"
-      },
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
