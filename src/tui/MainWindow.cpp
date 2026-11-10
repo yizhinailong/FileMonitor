@@ -38,9 +38,6 @@ namespace file_monitor::tui {
 
     auto MainWindow::Update() -> bool {
         auto const update{ m_session.Update() };
-        if (update.changes_added) {
-            m_change_table.ScrollToLatest();
-        }
         return update.changes_added || update.errors_changed;
     }
 

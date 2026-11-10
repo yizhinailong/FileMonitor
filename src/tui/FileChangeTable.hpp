@@ -16,7 +16,6 @@ namespace file_monitor::tui {
 
         auto Render() -> ftxui::Element;
         auto OnEvent(ftxui::Event event) -> bool;
-        auto ScrollToLatest() -> void;
 
     private:
         [[nodiscard]]

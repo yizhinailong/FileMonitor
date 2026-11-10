@@ -126,7 +126,15 @@ namespace file_monitor::tui {
         auto const widths{ measure_columns(changes) };
 
         auto const last_first_row{ lastFirstRow() };
-        m_first_row = m_follow_latest ? last_first_row : std::min(m_first_row, last_first_row);
+        if (!m_follow_latest) {
+            m_first_row = std::min(m_first_row, last_first_row);
+            // Clearing the changes or enlarging the terminal can bring the
+            // bottom into view; follow new changes again from there.
+            m_follow_latest = m_first_row == last_first_row;
+        }
+        if (m_follow_latest) {
+            m_first_row = last_first_row;
+        }
 
         auto const fixed_columns_width{ widths.time + widths.status + widths.size + 3 * COLUMN_GAP };
         auto const path_column_width{ m_body_box.x_max - m_body_box.x_min + 1 - fixed_columns_width };
@@ -205,7 +213,7 @@ namespace file_monitor::tui {
             m_first_row = 0;
             m_follow_latest = lastFirstRow() == 0;
         } else if (event == ftxui::Event::End) {
-            ScrollToLatest();
+            m_follow_latest = true;
         } else if (event == ftxui::Event::ArrowLeft) {
             scrollColumns(-HORIZONTAL_SCROLL_STEP);
         } else if (event == ftxui::Event::ArrowRight) {
@@ -231,10 +239,6 @@ namespace file_monitor::tui {
             }
         }
         return true;
-    }
-
-    auto FileChangeTable::ScrollToLatest() -> void {
-        m_follow_latest = true;
     }
 
     auto FileChangeTable::visibleRowCount() const -> std::size_t {

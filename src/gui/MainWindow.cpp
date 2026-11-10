@@ -128,6 +128,9 @@ namespace file_monitor::gui {
                 ImGui::TableSetupColumn("绝对路径", ImGuiTableColumnFlags_WidthStretch, 1.0F);
                 ImGui::TableHeadersRow();
 
+                // Follow new changes only while the list is scrolled to the
+                // bottom, so reading older changes is not interrupted.
+                auto const following_latest{ ImGui::GetScrollY() >= ImGui::GetScrollMaxY() };
                 auto const changes{ m_session.Changes() };
                 ImGuiListClipper clipper;
                 clipper.Begin(static_cast<int>(changes.size()));
@@ -138,10 +141,10 @@ namespace file_monitor::gui {
                         renderFileChangeRow(changes[static_cast<std::size_t>(item_index)]);
                     }
                 }
-                if (m_scroll_to_latest) {
+                if (m_scroll_to_latest && following_latest) {
                     ImGui::SetScrollHereY(1.0F);
-                    m_scroll_to_latest = false;
                 }
+                m_scroll_to_latest = false;
                 ImGui::EndTable();
             }
         }
