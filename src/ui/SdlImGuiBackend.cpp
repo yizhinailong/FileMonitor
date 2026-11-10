@@ -7,17 +7,13 @@
 #include <string>
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_opengl.h>
 #include <imgui.h>
+#include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlgpu3.h>
 
 namespace file_monitor::ui {
     namespace {
-
-        constexpr auto SHADER_FORMATS = SDL_GPU_SHADERFORMAT_SPIRV |
-                                        SDL_GPU_SHADERFORMAT_DXIL |
-                                        SDL_GPU_SHADERFORMAT_MSL |
-                                        SDL_GPU_SHADERFORMAT_METALLIB;
 
         auto sdl_error(std::string_view message) -> std::string {
             return std::format("{}: {}", message, SDL_GetError());
@@ -25,6 +21,14 @@ namespace file_monitor::ui {
 
         auto log_sdl_error(std::string_view message) -> void {
             std::println(stderr, "{}", sdl_error(message));
+        }
+
+        auto configure_opengl_attributes() -> bool {
+            return SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0) &&
+                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) &&
+                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) &&
+                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) &&
+                   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         }
 
         auto apply_system_theme() -> void {
@@ -63,18 +67,23 @@ namespace file_monitor::ui {
         }
         m_sdl_initialized = true;
 
+        if (!configure_opengl_attributes()) {
+            return std::unexpected{ sdl_error("OpenGL attribute setup failed") };
+        }
+
         std::string const window_title{ title };
         m_window = SDL_CreateWindow(
             window_title.c_str(),
             width,
             height,
-            SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY
+            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN |
+                SDL_WINDOW_HIGH_PIXEL_DENSITY
         );
         if (m_window == nullptr) {
             return std::unexpected{ sdl_error("Window creation failed") };
         }
 
-        if (auto result{ initializeGpu() }; !result) {
+        if (auto result{ initializeOpenGl() }; !result) {
             return result;
         }
         if (auto result{ initializeImGui() }; !result) {
@@ -109,7 +118,7 @@ namespace file_monitor::ui {
             return false;
         }
 
-        ImGui_ImplSDLGPU3_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
         return true;
@@ -118,50 +127,21 @@ namespace file_monitor::ui {
     auto SdlImGuiBackend::EndFrame() -> bool {
         ImGui::Render();
 
-        auto* draw_data{ ImGui::GetDrawData() };
-        auto* command_buffer{ SDL_AcquireGPUCommandBuffer(m_gpu_device) };
-        if (command_buffer == nullptr) {
-            log_sdl_error("GPU command buffer acquisition failed");
+        int framebuffer_width{ 0 };
+        int framebuffer_height{ 0 };
+        if (!SDL_GetWindowSizeInPixels(m_window, &framebuffer_width, &framebuffer_height)) {
+            log_sdl_error("Window pixel size query failed");
             return false;
         }
 
-        SDL_GPUTexture* swapchain_texture{ nullptr };
-        if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-                command_buffer,
-                m_window,
-                &swapchain_texture,
-                nullptr,
-                nullptr
-            )) {
-            SDL_CancelGPUCommandBuffer(command_buffer);
-            log_sdl_error("GPU swapchain texture acquisition failed");
-            return false;
-        }
+        auto const& clear_color{ ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) };
+        glViewport(0, 0, framebuffer_width, framebuffer_height);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        bool const minimized{ draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F };
-        if (swapchain_texture != nullptr && !minimized) {
-            ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
-
-            auto const&            clear_color{ ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) };
-            SDL_GPUColorTargetInfo target_info{};
-            target_info.texture     = swapchain_texture;
-            target_info.clear_color = { clear_color.x, clear_color.y, clear_color.z, clear_color.w };
-            target_info.load_op     = SDL_GPU_LOADOP_CLEAR;
-            target_info.store_op    = SDL_GPU_STOREOP_STORE;
-
-            auto* render_pass{ SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr) };
-            if (render_pass == nullptr) {
-                SDL_CancelGPUCommandBuffer(command_buffer);
-                log_sdl_error("GPU render pass creation failed");
-                return false;
-            }
-
-            ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
-            SDL_EndGPURenderPass(render_pass);
-        }
-
-        if (!SDL_SubmitGPUCommandBuffer(command_buffer)) {
-            log_sdl_error("GPU frame submission failed");
+        if (!SDL_GL_SwapWindow(m_window)) {
+            log_sdl_error("OpenGL buffer swap failed");
             return false;
         }
         return true;
@@ -171,24 +151,18 @@ namespace file_monitor::ui {
         return m_window;
     }
 
-    auto SdlImGuiBackend::initializeGpu() -> std::expected<void, std::string> {
-        m_gpu_device = SDL_CreateGPUDevice(SHADER_FORMATS, false, nullptr);
-        if (m_gpu_device == nullptr) {
-            return std::unexpected{ sdl_error("GPU device creation failed") };
+    auto SdlImGuiBackend::initializeOpenGl() -> std::expected<void, std::string> {
+        m_gl_context = SDL_GL_CreateContext(m_window);
+        if (m_gl_context == nullptr) {
+            return std::unexpected{ sdl_error("OpenGL context creation failed") };
         }
 
-        if (!SDL_ClaimWindowForGPUDevice(m_gpu_device, m_window)) {
-            return std::unexpected{ sdl_error("GPU window claim failed") };
+        if (!SDL_GL_MakeCurrent(m_window, m_gl_context)) {
+            return std::unexpected{ sdl_error("OpenGL context activation failed") };
         }
-        m_window_claimed = true;
 
-        if (!SDL_SetGPUSwapchainParameters(
-                m_gpu_device,
-                m_window,
-                SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
-                SDL_GPU_PRESENTMODE_VSYNC
-            )) {
-            return std::unexpected{ sdl_error("GPU swapchain setup failed") };
+        if (!SDL_GL_SetSwapInterval(1)) {
+            log_sdl_error("OpenGL VSync setup failed");
         }
         return {};
     }
@@ -206,32 +180,21 @@ namespace file_monitor::ui {
             return std::unexpected{ "Chinese font loading failed" };
         }
 
-        if (!ImGui_ImplSDL3_InitForSDLGPU(m_window)) {
+        if (!ImGui_ImplSDL3_InitForOpenGL(m_window, m_gl_context)) {
             return std::unexpected{ "ImGui SDL3 backend initialization failed" };
         }
         m_imgui_sdl_initialized = true;
 
-        ImGui_ImplSDLGPU3_InitInfo init_info{};
-        init_info.Device               = m_gpu_device;
-        init_info.ColorTargetFormat    = SDL_GetGPUSwapchainTextureFormat(m_gpu_device, m_window);
-        init_info.MSAASamples          = SDL_GPU_SAMPLECOUNT_1;
-        init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
-        init_info.PresentMode          = SDL_GPU_PRESENTMODE_VSYNC;
-        if (!ImGui_ImplSDLGPU3_Init(&init_info)) {
-            return std::unexpected{
-                sdl_error("ImGui SDL_GPU backend initialization failed")
-            };
+        if (!ImGui_ImplOpenGL3_Init()) {
+            return std::unexpected{ "ImGui OpenGL3 backend initialization failed" };
         }
-        m_imgui_gpu_initialized = true;
+        m_imgui_opengl_initialized = true;
         return {};
     }
 
     auto SdlImGuiBackend::shutdown() -> void {
-        if (m_gpu_device != nullptr) {
-            SDL_WaitForGPUIdle(m_gpu_device);
-        }
-        if (m_imgui_gpu_initialized) {
-            ImGui_ImplSDLGPU3_Shutdown();
+        if (m_imgui_opengl_initialized) {
+            ImGui_ImplOpenGL3_Shutdown();
         }
         if (m_imgui_sdl_initialized) {
             ImGui_ImplSDL3_Shutdown();
@@ -239,11 +202,8 @@ namespace file_monitor::ui {
         if (m_imgui_context_created) {
             ImGui::DestroyContext();
         }
-        if (m_window_claimed) {
-            SDL_ReleaseWindowFromGPUDevice(m_gpu_device, m_window);
-        }
-        if (m_gpu_device != nullptr) {
-            SDL_DestroyGPUDevice(m_gpu_device);
+        if (m_gl_context != nullptr) {
+            SDL_GL_DestroyContext(m_gl_context);
         }
         if (m_window != nullptr) {
             SDL_DestroyWindow(m_window);

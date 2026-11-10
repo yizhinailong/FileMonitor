@@ -40,13 +40,15 @@ CPMAddPackage(
     DOWNLOAD_ONLY YES
 )
 
+find_package(OpenGL REQUIRED)
+
 add_library(imgui STATIC
     "${imgui_SOURCE_DIR}/imgui.cpp"
     "${imgui_SOURCE_DIR}/imgui_draw.cpp"
     "${imgui_SOURCE_DIR}/imgui_tables.cpp"
     "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
     "${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp"
-    "${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp"
     "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp"
 )
 add_library(imgui::imgui ALIAS imgui)
@@ -59,12 +61,14 @@ target_include_directories(imgui
 
 target_link_libraries(imgui
     PUBLIC
+    OpenGL::GL
     SDL3::SDL3-static
 )
 
 set(PROJECT_DEPENDENCIES
     imgui::imgui
     nlohmann_json::nlohmann_json
+    OpenGL::GL
     SDL3::SDL3-static
     spdlog::spdlog
 )

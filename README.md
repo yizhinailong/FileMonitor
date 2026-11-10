@@ -81,14 +81,14 @@ lld-link: error: failed to write output 'FileMonitor.exe': permission denied
 
 ### 未找到 PkgConfig 或 LibUSB
 
-这是 SDL 配置阶段针对可选后端的提示，不影响本项目当前使用的 Windows 文件监控和 GPU 界面功能。
+这是 SDL 配置阶段针对可选后端的提示，不影响本项目当前使用的 Windows 文件监控和 OpenGL 界面功能。
 
 ## 项目结构
 
 ```text
 src/
 ├── core/    文件扫描、系统变更监控、配置和日志
-├── ui/      SDL3、Dear ImGui 界面及 GPU 后端
+├── ui/      SDL3、Dear ImGui 界面及 OpenGL3 后端
 └── main.cpp 程序入口
 ```
 
