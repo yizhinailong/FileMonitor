@@ -3,7 +3,11 @@ include_guard(GLOBAL)
 include("${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
 
 CPMAddPackage(
-    URI "gh:gabime/spdlog@1.17.0"
+    NAME spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v1.17.0
+    EXCLUDE_FROM_ALL YES
+    SYSTEM YES
     OPTIONS
     "SPDLOG_BUILD_EXAMPLE OFF"
     "SPDLOG_BUILD_TESTS OFF"
@@ -12,7 +16,11 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
-    URI "gh:nlohmann/json@3.12.0"
+    NAME json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.12.0
+    EXCLUDE_FROM_ALL YES
+    SYSTEM YES
     OPTIONS
     "JSON_BuildTests OFF"
     "JSON_Install OFF"
@@ -20,7 +28,7 @@ CPMAddPackage(
 
 CPMAddPackage(
     NAME SDL3
-    GITHUB_REPOSITORY libsdl-org/SDL
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
     GIT_TAG release-3.4.20
     OPTIONS
     "SDL_SHARED OFF"
@@ -47,7 +55,7 @@ CPMAddPackage(
 
 CPMAddPackage(
     NAME imgui
-    GITHUB_REPOSITORY ocornut/imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG v1.93.0
     DOWNLOAD_ONLY YES
 )
