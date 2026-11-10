@@ -10,7 +10,7 @@ build profile="debug":
     cmake -E copy_if_different "./build/windows-{{ profile }}/compile_commands.json" "./build/compile_commands.json"
 
 [windows]
-install profile="release": (build profile)
+publish profile="release": (build profile)
     cmake --install "./build/windows-{{ profile }}" --prefix "dist"
 
 [windows]

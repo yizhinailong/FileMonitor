@@ -42,10 +42,10 @@ just build release
 生成可分发的 Release 程序：
 
 ```powershell
-just install
+just publish
 ```
 
-安装结果位于 `dist/FileMonitor.exe`。
+发布结果位于 `dist/FileMonitor.exe`。
 
 不使用 `just` 时，可以直接调用 CMake：
 

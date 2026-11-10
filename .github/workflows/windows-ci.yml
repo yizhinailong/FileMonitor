@@ -53,8 +53,8 @@ jobs:
           path: ${{ env.CPM_SOURCE_CACHE }}
           key: windows-cpm-${{ hashFiles('cmake/Dependencies.cmake') }}
 
-      - name: Build and install
-        run: just install
+      - name: Build and publish
+        run: just publish
 
       - name: Verify installation
         shell: pwsh
