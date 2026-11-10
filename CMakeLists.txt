@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 4.3.0)
 
-project(FileMonitor
+project(
+    FileMonitor
     VERSION 0.4.5
     LANGUAGES C CXX
 )
