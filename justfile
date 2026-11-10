@@ -16,3 +16,6 @@ publish profile="release": (build profile)
 [windows]
 run profile="debug": (build profile)
     @./build/windows-{{ profile }}/FileMonitor.exe
+
+clean:
+    @cmake -E rm -rf "./build" "./dist"

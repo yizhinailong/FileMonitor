@@ -47,6 +47,14 @@ just publish
 
 发布结果位于 `dist/FileMonitor.exe`。
 
+清理构建目录 `build/` 和发布目录 `dist/`：
+
+```powershell
+just clean
+```
+
+清理后下次构建会重新配置并完整编译，依赖仍从 `CPM_SOURCE_CACHE` 缓存中读取。
+
 不使用 `just` 时，可以直接调用 CMake：
 
 ```powershell
