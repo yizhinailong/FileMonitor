@@ -15,7 +15,7 @@ namespace file_monitor::core {
     namespace {
 
         auto change_event_date(std::string_view time) -> std::string {
-            auto       date_offset{ std::size_t{ 0 } };
+            auto date_offset{ std::size_t{ 0 } };
             auto const separator{ time.rfind(" -> ") };
             if (separator != std::string_view::npos) {
                 date_offset = separator + 4;
@@ -89,7 +89,7 @@ namespace file_monitor::core {
                     error_message = message;
                 });
 
-                logger       = std::move(new_logger);
+                logger = std::move(new_logger);
                 current_date = date;
             } catch (spdlog::spdlog_ex const& exception) {
                 return std::unexpected{
@@ -103,9 +103,9 @@ namespace file_monitor::core {
             return {};
         }
 
-        std::filesystem::path           log_directory;
-        std::string                     current_date;
-        std::string                     error_message;
+        std::filesystem::path log_directory;
+        std::string current_date;
+        std::string error_message;
         std::shared_ptr<spdlog::logger> logger;
     };
 

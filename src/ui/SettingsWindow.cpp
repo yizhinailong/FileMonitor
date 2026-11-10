@@ -22,8 +22,8 @@ namespace file_monitor::ui {
 
         auto error_text_color() -> ImVec4 {
             return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ?
-                       ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } :
-                       ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
+                ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } :
+                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
         }
 
         auto render_error(std::string_view label, std::string_view message) -> void {
@@ -41,7 +41,7 @@ namespace file_monitor::ui {
         }
 
         auto SDLCALL directory_dialog_callback(
-            void*              userdata,
+            void* userdata,
             char const* const* file_list,
             int /*filter*/
         ) -> void {
@@ -49,7 +49,7 @@ namespace file_monitor::ui {
                 static_cast<DirectoryDialogContext*>(userdata) } };
 
             std::vector<std::filesystem::path> selected_directories;
-            std::string                        error_message;
+            std::string error_message;
             if (file_list == nullptr) {
                 error_message = SDL_GetError();
             } else {
@@ -60,8 +60,8 @@ namespace file_monitor::ui {
 
             auto const lock{ std::scoped_lock{ context->state->mutex } };
             context->state->selected_directories = std::move(selected_directories);
-            context->state->error_message        = std::move(error_message);
-            context->state->completed            = true;
+            context->state->error_message = std::move(error_message);
+            context->state->completed = true;
         }
 
     } // namespace
@@ -83,8 +83,8 @@ namespace file_monitor::ui {
 
     auto SettingsWindow::Open() -> void {
         m_pending_configuration = m_configuration;
-        m_monitored_editor      = {};
-        m_excluded_editor       = {};
+        m_monitored_editor = {};
+        m_excluded_editor = {};
         m_dialog_error_message.clear();
         ImGui::OpenPopup("设置##SettingsWindow");
     }
@@ -96,7 +96,7 @@ namespace file_monitor::ui {
         consumeDirectorySelection();
 
         auto const* viewport{ ImGui::GetMainViewport() };
-        auto const  popup_size{
+        auto const popup_size{
             ImVec2{
                    std::min(760.0F, viewport->WorkSize.x - 32.0F),
                    std::min(500.0F, viewport->WorkSize.y - 32.0F) }
@@ -160,7 +160,7 @@ namespace file_monitor::ui {
                 m_configuration_error_message = save_result.error();
             } else {
                 m_configuration_error_message.clear();
-                m_configuration       = m_pending_configuration;
+                m_configuration = m_pending_configuration;
                 configuration_changed = true;
                 ImGui::CloseCurrentPopup();
             }
@@ -195,7 +195,7 @@ namespace file_monitor::ui {
         }
 
         std::error_code check_error;
-        auto const      is_directory{ std::filesystem::is_directory(directory, check_error) };
+        auto const is_directory{ std::filesystem::is_directory(directory, check_error) };
         if (check_error) {
             editor.error_message = "检查文件夹失败：" + check_error.message();
             return;
@@ -214,7 +214,7 @@ namespace file_monitor::ui {
     }
 
     auto SettingsWindow::addPendingDirectory(
-        DirectoryGroup        group,
+        DirectoryGroup group,
         std::filesystem::path directory
     ) -> bool {
         directory = directory.lexically_normal();
@@ -229,7 +229,7 @@ namespace file_monitor::ui {
 
     auto SettingsWindow::consumeDirectorySelection() -> void {
         std::vector<std::filesystem::path> selected_directories;
-        std::string                        error_message;
+        std::string error_message;
         {
             auto const lock{ std::scoped_lock{ m_dialog_state->mutex } };
             if (!m_dialog_state->completed) {
@@ -237,13 +237,13 @@ namespace file_monitor::ui {
             }
 
             m_dialog_state->completed = false;
-            selected_directories      = std::move(m_dialog_state->selected_directories);
-            error_message             = std::move(m_dialog_state->error_message);
+            selected_directories = std::move(m_dialog_state->selected_directories);
+            error_message = std::move(m_dialog_state->error_message);
             m_dialog_state->selected_directories.clear();
             m_dialog_state->error_message.clear();
         }
 
-        m_dialog_open          = false;
+        m_dialog_open = false;
         m_dialog_error_message = std::move(error_message);
 
         for (auto& directory : selected_directories) {
@@ -257,15 +257,15 @@ namespace file_monitor::ui {
     }
 
     auto SettingsWindow::openDirectoryDialog(DirectoryGroup group) -> void {
-        m_dialog_open          = true;
-        m_dialog_group         = group;
+        m_dialog_open = true;
+        m_dialog_group = group;
         m_dialog_error_message = {};
 
         auto context{ std::make_unique<DirectoryDialogContext>() };
         context->state = m_dialog_state;
 
         auto const& directories{ pendingDirectories(group) };
-        auto const  default_location_text{
+        auto const default_location_text{
             directories.empty() ? std::string{} : core::utils::path_to_utf8(directories.back())
         };
         auto const* default_location{
@@ -283,12 +283,12 @@ namespace file_monitor::ui {
     auto SettingsWindow::pendingDirectories(DirectoryGroup group)
         -> std::vector<std::filesystem::path>& {
         return group == DirectoryGroup::Monitored ?
-                   m_pending_configuration.directories :
-                   m_pending_configuration.excluded_directories;
+            m_pending_configuration.directories :
+            m_pending_configuration.excluded_directories;
     }
 
     auto SettingsWindow::renderDirectoryEditor(
-        DirectoryGroup   group,
+        DirectoryGroup group,
         std::string_view input_hint,
         std::string_view empty_text
     ) -> void {
@@ -299,7 +299,7 @@ namespace file_monitor::ui {
         constexpr auto ADD_BUTTON_WIDTH{ 72.0F };
         constexpr auto SELECT_BUTTON_WIDTH{ 104.0F };
         constexpr auto CLEAR_BUTTON_WIDTH{ 72.0F };
-        auto const     button_spacing{ ImGui::GetStyle().ItemSpacing.x * 3.0F };
+        auto const button_spacing{ ImGui::GetStyle().ItemSpacing.x * 3.0F };
         ImGui::SetNextItemWidth(
             std::max(
                 1.0F,
@@ -355,15 +355,15 @@ namespace file_monitor::ui {
         }
 
         constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
-                                     ImGuiTableFlags_RowBg |
-                                     ImGuiTableFlags_Resizable |
-                                     ImGuiTableFlags_ScrollX |
-                                     ImGuiTableFlags_ScrollY |
-                                     ImGuiTableFlags_SizingFixedFit;
+            ImGuiTableFlags_RowBg |
+            ImGuiTableFlags_Resizable |
+            ImGuiTableFlags_ScrollX |
+            ImGuiTableFlags_ScrollY |
+            ImGuiTableFlags_SizingFixedFit;
         constexpr auto ACTION_COLUMN_WIDTH{ 72.0F };
         constexpr auto MIN_PATH_COLUMN_WIDTH{ 520.0F };
         constexpr auto MAX_PATH_COLUMN_WIDTH{ 2000.0F };
-        auto           path_column_width{ MIN_PATH_COLUMN_WIDTH };
+        auto path_column_width{ MIN_PATH_COLUMN_WIDTH };
         for (auto const& directory : directories) {
             auto const path_text{ core::utils::path_to_utf8(directory) };
             path_column_width = std::max(

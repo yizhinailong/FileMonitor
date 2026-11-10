@@ -15,10 +15,10 @@ namespace file_monitor::core {
         explicit ChangeLogger(std::filesystem::path log_directory);
         ~ChangeLogger();
 
-        ChangeLogger(ChangeLogger const&)                    = delete;
-        ChangeLogger(ChangeLogger&&)                         = delete;
+        ChangeLogger(ChangeLogger const&) = delete;
+        ChangeLogger(ChangeLogger&&) = delete;
         auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
-        auto operator=(ChangeLogger&&) -> ChangeLogger&      = delete;
+        auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
 
         auto Write(std::span<FileChange const> changes)
             -> std::expected<void, std::string>;

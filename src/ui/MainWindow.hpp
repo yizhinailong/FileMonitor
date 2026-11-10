@@ -28,12 +28,12 @@ namespace file_monitor::ui {
 
         std::vector<core::FileChange> m_file_changes;
 
-        SettingsWindow         m_settings_window;
+        SettingsWindow m_settings_window;
         core::DirectoryMonitor m_file_monitor;
-        core::ChangeLogger     m_change_logger;
-        std::string            m_log_error_message;
-        std::string            m_monitor_error_message;
-        bool                   m_scroll_to_latest{ false };
+        core::ChangeLogger m_change_logger;
+        std::string m_log_error_message;
+        std::string m_monitor_error_message;
+        bool m_scroll_to_latest{ false };
     };
 
 } // namespace file_monitor::ui

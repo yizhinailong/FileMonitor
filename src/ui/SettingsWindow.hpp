@@ -13,10 +13,10 @@ struct SDL_Window;
 
 namespace file_monitor::ui {
     struct DirectoryDialogState {
-        std::mutex                         mutex;
+        std::mutex mutex;
         std::vector<std::filesystem::path> selected_directories;
-        std::string                        error_message;
-        bool                               completed{ false };
+        std::string error_message;
+        bool completed{ false };
     };
 
     class SettingsWindow final {
@@ -49,23 +49,23 @@ namespace file_monitor::ui {
         auto openDirectoryDialog(DirectoryGroup group) -> void;
         auto pendingDirectories(DirectoryGroup group) -> std::vector<std::filesystem::path>&;
         auto renderDirectoryEditor(
-            DirectoryGroup   group,
+            DirectoryGroup group,
             std::string_view input_hint,
             std::string_view empty_text
         ) -> void;
 
         std::filesystem::path m_config_path;
-        core::Configuration   m_configuration;
-        core::Configuration   m_pending_configuration;
+        core::Configuration m_configuration;
+        core::Configuration m_pending_configuration;
 
         std::shared_ptr<DirectoryDialogState> m_dialog_state;
-        SDL_Window*                           m_parent_window{ nullptr };
-        DirectoryEditorState                  m_monitored_editor;
-        DirectoryEditorState                  m_excluded_editor;
-        DirectoryGroup                        m_dialog_group{ DirectoryGroup::Monitored };
-        std::string                           m_dialog_error_message;
-        std::string                           m_configuration_error_message;
-        bool                                  m_dialog_open{ false };
+        SDL_Window* m_parent_window{ nullptr };
+        DirectoryEditorState m_monitored_editor;
+        DirectoryEditorState m_excluded_editor;
+        DirectoryGroup m_dialog_group{ DirectoryGroup::Monitored };
+        std::string m_dialog_error_message;
+        std::string m_configuration_error_message;
+        bool m_dialog_open{ false };
     };
 
 } // namespace file_monitor::ui

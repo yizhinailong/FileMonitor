@@ -15,10 +15,10 @@ namespace file_monitor::core {
         DirectoryMonitor();
         ~DirectoryMonitor();
 
-        DirectoryMonitor(DirectoryMonitor const&)                    = delete;
-        DirectoryMonitor(DirectoryMonitor&&)                         = delete;
+        DirectoryMonitor(DirectoryMonitor const&) = delete;
+        DirectoryMonitor(DirectoryMonitor&&) = delete;
         auto operator=(DirectoryMonitor const&) -> DirectoryMonitor& = delete;
-        auto operator=(DirectoryMonitor&&) -> DirectoryMonitor&      = delete;
+        auto operator=(DirectoryMonitor&&) -> DirectoryMonitor& = delete;
 
         auto Start(
             std::span<std::filesystem::path const> directories,

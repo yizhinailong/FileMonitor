@@ -19,14 +19,14 @@ namespace file_monitor::core::detail {
 
     struct DirectoryWatchEvent {
         DirectoryWatchEventKind kind;
-        std::filesystem::path   root;
-        std::filesystem::path   path;
-        std::filesystem::path   previous_path;
+        std::filesystem::path root;
+        std::filesystem::path path;
+        std::filesystem::path previous_path;
     };
 
     struct DirectoryWatchCallbacks {
         std::function<void(DirectoryWatchEvent, std::stop_token)> on_event;
-        std::function<void(std::string)>                          on_error;
+        std::function<void(std::string)> on_error;
     };
 
     class DirectoryWatchBackend final {
@@ -34,10 +34,10 @@ namespace file_monitor::core::detail {
         explicit DirectoryWatchBackend(DirectoryWatchCallbacks callbacks);
         ~DirectoryWatchBackend();
 
-        DirectoryWatchBackend(DirectoryWatchBackend const&)                    = delete;
-        DirectoryWatchBackend(DirectoryWatchBackend&&)                         = delete;
+        DirectoryWatchBackend(DirectoryWatchBackend const&) = delete;
+        DirectoryWatchBackend(DirectoryWatchBackend&&) = delete;
         auto operator=(DirectoryWatchBackend const&) -> DirectoryWatchBackend& = delete;
-        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend&      = delete;
+        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend& = delete;
 
         auto Start(std::span<std::filesystem::path const> directories) -> void;
         auto RequestStop() noexcept -> void;

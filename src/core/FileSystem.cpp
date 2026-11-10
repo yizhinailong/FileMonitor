@@ -37,7 +37,7 @@ namespace file_monitor::core {
             }
 
             ULARGE_INTEGER windows_time{};
-            windows_time.LowPart  = attributes.ftCreationTime.dwLowDateTime;
+            windows_time.LowPart = attributes.ftCreationTime.dwLowDateTime;
             windows_time.HighPart = attributes.ftCreationTime.dwHighDateTime;
 
             constexpr auto WINDOWS_EPOCH_OFFSET_TICKS{
@@ -57,7 +57,7 @@ namespace file_monitor::core {
         auto read_file_size(std::filesystem::directory_entry const& entry)
             -> std::optional<std::uintmax_t> {
             std::error_code size_error;
-            auto const      size{ entry.file_size(size_error) };
+            auto const size{ entry.file_size(size_error) };
             if (size_error) {
                 return std::nullopt;
             }
@@ -67,7 +67,7 @@ namespace file_monitor::core {
         auto read_modified_time(std::filesystem::directory_entry const& entry)
             -> std::optional<std::filesystem::file_time_type> {
             std::error_code time_error;
-            auto const      modified_time{ entry.last_write_time(time_error) };
+            auto const modified_time{ entry.last_write_time(time_error) };
             if (time_error) {
                 return std::nullopt;
             }
@@ -80,10 +80,10 @@ namespace file_monitor::core {
             }
 
             constexpr std::array UNITS{ "B", "KB", "MB", "GB", "TB", "PB" };
-            constexpr auto       UNIT_SIZE{ 1024.0 };
+            constexpr auto UNIT_SIZE{ 1024.0 };
 
-            auto       display_size{ static_cast<double>(*size) };
-            auto       unit_index{ std::size_t{ 0 } };
+            auto display_size{ static_cast<double>(*size) };
+            auto unit_index{ std::size_t{ 0 } };
             auto const last_unit_index{ UNITS.size() - 1 };
             while (display_size >= UNIT_SIZE && unit_index < last_unit_index) {
                 display_size /= UNIT_SIZE;
@@ -109,7 +109,7 @@ namespace file_monitor::core {
                     .count()
             };
             auto const time_value{ std::chrono::system_clock::to_time_t(whole_seconds) };
-            std::tm    local_time{};
+            std::tm local_time{};
             auto const conversion_failed{ localtime_s(&local_time, &time_value) != 0 };
             std::array<char, 20> local_time_text{};
             if (conversion_failed ||
@@ -129,9 +129,9 @@ namespace file_monitor::core {
         }
 
         auto format_change_time(
-            FileChangeStatus          status,
+            FileChangeStatus status,
             std::optional<SystemTime> creation_time,
-            SystemTime                event_time
+            SystemTime event_time
         ) -> std::string {
             auto event_time_text{ format_event_time(event_time) };
             if (status != FileChangeStatus::Removed || !creation_time) {
@@ -146,7 +146,7 @@ namespace file_monitor::core {
 
         auto absolute_path_to_utf8(std::filesystem::path const& path) -> std::string {
             std::error_code absolute_error;
-            auto const      absolute_path{ std::filesystem::absolute(path, absolute_error) };
+            auto const absolute_path{ std::filesystem::absolute(path, absolute_error) };
             return utils::path_to_utf8(absolute_error ? path : absolute_path);
         }
 
@@ -163,8 +163,8 @@ namespace file_monitor::core {
 
         auto add_file_change(
             std::vector<FileChange>& changes,
-            FileChangeStatus         status,
-            FileState const&         file
+            FileChangeStatus status,
+            FileState const& file
         ) -> void {
             changes.emplace_back(make_file_change(status, file));
         }
@@ -172,34 +172,34 @@ namespace file_monitor::core {
     } // namespace
 
     auto read_file_state(std::filesystem::path const& path) -> FileState {
-        std::error_code                  entry_error;
+        std::error_code entry_error;
         std::filesystem::directory_entry entry{ path, entry_error };
         if (entry_error) {
             return FileState{
                 .creation_time = std::nullopt,
                 .modified_time = std::nullopt,
-                .size          = std::nullopt,
+                .size = std::nullopt,
                 .absolute_path = absolute_path_to_utf8(path),
-                .is_directory  = false
+                .is_directory = false
             };
         }
 
         std::error_code type_error;
-        auto const      is_directory{ entry.is_directory(type_error) && !type_error };
+        auto const is_directory{ entry.is_directory(type_error) && !type_error };
 
         return FileState{
             .creation_time = read_creation_time(path),
             .modified_time = read_modified_time(entry),
-            .size          = is_directory ? std::nullopt : read_file_size(entry),
+            .size = is_directory ? std::nullopt : read_file_size(entry),
             .absolute_path = absolute_path_to_utf8(path),
-            .is_directory  = is_directory
+            .is_directory = is_directory
         };
     }
 
     auto scan_files(
         std::span<std::filesystem::path const> directories,
         std::span<std::filesystem::path const> excluded_directories,
-        std::stop_token                        stop_token
+        std::stop_token stop_token
     ) -> std::vector<FileState> {
         std::vector<FileState> files;
 
@@ -212,8 +212,8 @@ namespace file_monitor::core {
                             path.lexically_relative(excluded_directory)
                         };
                         return relative_path == "." ||
-                               (!relative_path.empty() && !relative_path.is_absolute() &&
-                                *relative_path.begin() != "..");
+                            (!relative_path.empty() && !relative_path.is_absolute() &&
+                             *relative_path.begin() != "..");
                     }
                 );
             }
@@ -228,7 +228,7 @@ namespace file_monitor::core {
             }
 
             std::error_code iteration_error;
-            auto            iterator{
+            auto iterator{
                 std::filesystem::
                     recursive_directory_iterator{
                                                  directory,
@@ -238,9 +238,9 @@ namespace file_monitor::core {
             auto const end{ std::filesystem::recursive_directory_iterator{} };
 
             while (!stop_token.stop_requested() && !iteration_error && iterator != end) {
-                auto const      path{ iterator->path().lexically_normal() };
+                auto const path{ iterator->path().lexically_normal() };
                 std::error_code type_error;
-                auto const      is_regular_file{ iterator->is_regular_file(type_error) };
+                auto const is_regular_file{ iterator->is_regular_file(type_error) };
                 if (!type_error) {
                     auto const is_directory{ iterator->is_directory(type_error) };
                     if (!type_error && is_directory && path_is_excluded(path)) {
@@ -270,8 +270,8 @@ namespace file_monitor::core {
         std::span<FileState const> current_files
     ) -> std::vector<FileChange> {
         std::vector<FileChange> changes;
-        auto                    previous_index{ std::size_t{ 0 } };
-        auto                    current_index{ std::size_t{ 0 } };
+        auto previous_index{ std::size_t{ 0 } };
+        auto current_index{ std::size_t{ 0 } };
 
         while (previous_index < previous_files.size() && current_index < current_files.size()) {
             auto const& previous{ previous_files[previous_index] };
@@ -315,14 +315,14 @@ namespace file_monitor::core {
     auto make_file_change(
         FileChangeStatus status,
         FileState const& file,
-        std::string      previous_absolute_path
+        std::string previous_absolute_path
     ) -> FileChange {
         auto const event_time{ std::chrono::system_clock::now() };
         return FileChange{
-            .time                   = format_change_time(status, file.creation_time, event_time),
-            .status                 = status,
-            .size                   = file.is_directory ? "-" : format_file_size(file.size),
-            .absolute_path          = format_change_path(file.absolute_path, file.is_directory),
+            .time = format_change_time(status, file.creation_time, event_time),
+            .status = status,
+            .size = file.is_directory ? "-" : format_file_size(file.size),
+            .absolute_path = format_change_path(file.absolute_path, file.is_directory),
             .previous_absolute_path = format_change_path(
                 std::move(previous_absolute_path),
                 file.is_directory

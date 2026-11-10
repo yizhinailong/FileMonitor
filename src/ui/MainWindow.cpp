@@ -15,8 +15,8 @@ namespace file_monitor::ui {
 
         constexpr auto MAX_FILE_CHANGES{ std::size_t{ 1000 } };
         constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
-        auto const     DATA_DIRECTORY{ std::filesystem::path{ "data" } / "FileMonitor" };
-        auto const     CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
+        auto const DATA_DIRECTORY{ std::filesystem::path{ "data" } / "FileMonitor" };
+        auto const CONFIG_PATH{ DATA_DIRECTORY / "config.json" };
 
         auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
             auto const light_theme{ SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT };
@@ -54,9 +54,9 @@ namespace file_monitor::ui {
         ImGui::SetNextWindowSize(viewport->WorkSize);
 
         constexpr auto WINDOW_FLAGS = ImGuiWindowFlags_NoDecoration |
-                                      ImGuiWindowFlags_NoMove |
-                                      ImGuiWindowFlags_NoSavedSettings |
-                                      ImGuiWindowFlags_NoBringToFrontOnFocus;
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0F, 0.0F });
         ImGui::Begin("FileMonitorMainWindow", nullptr, WINDOW_FLAGS);
@@ -128,14 +128,14 @@ namespace file_monitor::ui {
 
     auto MainWindow::renderFileListPanel(float width, float height) -> void {
         if (ImGui::BeginChild("FileListPanel", { width, height }, true)) {
-            auto const     available_width{ ImGui::GetContentRegionAvail().x };
+            auto const available_width{ ImGui::GetContentRegionAvail().x };
             constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
-                                         ImGuiTableFlags_RowBg |
-                                         ImGuiTableFlags_Resizable |
-                                         ImGuiTableFlags_ScrollX |
-                                         ImGuiTableFlags_ScrollY;
-            auto const     preferred_path_width{ calculatePathColumnWidth() };
-            auto const     table_content_width{
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_ScrollX |
+                ImGuiTableFlags_ScrollY;
+            auto const preferred_path_width{ calculatePathColumnWidth() };
+            auto const table_content_width{
                 std::max(
                     available_width,
                     FIXED_COLUMNS_WIDTH + preferred_path_width
@@ -205,7 +205,7 @@ namespace file_monitor::ui {
     }
 
     auto MainWindow::calculatePathColumnWidth() const -> float {
-        auto       path_width{ ImGui::CalcTextSize("绝对路径").x };
+        auto path_width{ ImGui::CalcTextSize("绝对路径").x };
         auto const rename_separator_width{ ImGui::CalcTextSize(" -> ").x };
         for (auto const& change : m_file_changes) {
             auto text_width{ ImGui::CalcTextSize(change.absolute_path.c_str()).x };

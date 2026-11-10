@@ -11,7 +11,7 @@ namespace file_monitor::ui {
 
     private:
         SdlImGuiBackend m_backend;
-        MainWindow      m_main_window;
+        MainWindow m_main_window;
     };
 
 } // namespace file_monitor::ui

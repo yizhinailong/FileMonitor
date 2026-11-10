@@ -16,7 +16,7 @@ namespace file_monitor::core {
         -> std::expected<Configuration, std::string>;
     auto save_configuration(
         std::filesystem::path const& config_path,
-        Configuration const&         configuration
+        Configuration const& configuration
     ) -> std::expected<void, std::string>;
 
 } // namespace file_monitor::core

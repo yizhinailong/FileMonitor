@@ -34,7 +34,7 @@ namespace file_monitor::core::detail {
                 reset();
             }
 
-            UniqueHandle(UniqueHandle const&)                    = delete;
+            UniqueHandle(UniqueHandle const&) = delete;
             auto operator=(UniqueHandle const&) -> UniqueHandle& = delete;
 
             UniqueHandle(UniqueHandle&& other) noexcept
@@ -71,7 +71,7 @@ namespace file_monitor::core::detail {
         class DirectoryWatcher final {
         public:
             DirectoryWatcher(
-                std::filesystem::path          root,
+                std::filesystem::path root,
                 DirectoryWatchCallbacks const& callbacks
             )
                 : m_root{ std::move(root) },
@@ -85,10 +85,10 @@ namespace file_monitor::core::detail {
                 }
             }
 
-            DirectoryWatcher(DirectoryWatcher const&)                    = delete;
-            DirectoryWatcher(DirectoryWatcher&&)                         = delete;
+            DirectoryWatcher(DirectoryWatcher const&) = delete;
+            DirectoryWatcher(DirectoryWatcher&&) = delete;
             auto operator=(DirectoryWatcher const&) -> DirectoryWatcher& = delete;
-            auto operator=(DirectoryWatcher&&) -> DirectoryWatcher&      = delete;
+            auto operator=(DirectoryWatcher&&) -> DirectoryWatcher& = delete;
 
             auto Start() -> bool {
                 if (!initializeHandles()) {
@@ -169,10 +169,10 @@ namespace file_monitor::core::detail {
 
             auto beginRead() -> std::optional<DWORD> {
                 ResetEvent(m_io_event.Get());
-                m_overlapped        = {};
+                m_overlapped = {};
                 m_overlapped.hEvent = m_io_event.Get();
 
-                DWORD      ignored_bytes{};
+                DWORD ignored_bytes{};
                 auto const read_started{
                     ReadDirectoryChangesW(
                         m_directory_handle.Get(),
@@ -206,26 +206,26 @@ namespace file_monitor::core::detail {
             }
 
             auto emitEvent(
-                DirectoryWatchEventKind      kind,
-                std::filesystem::path        path,
-                std::stop_token              stop_token,
+                DirectoryWatchEventKind kind,
+                std::filesystem::path path,
+                std::stop_token stop_token,
                 std::filesystem::path const& previous_path = {}
             ) -> void {
                 m_callbacks.on_event(
                     DirectoryWatchEvent{
-                        .kind          = kind,
-                        .root          = m_root,
-                        .path          = std::move(path),
+                        .kind = kind,
+                        .root = m_root,
+                        .path = std::move(path),
                         .previous_path = previous_path },
                     stop_token
                 );
             }
 
             auto processNotification(
-                DWORD                                 action,
-                std::filesystem::path const&          path,
+                DWORD action,
+                std::filesystem::path const& path,
                 std::optional<std::filesystem::path>& pending_rename,
-                std::stop_token                       stop_token
+                std::stop_token stop_token
             ) -> void {
                 if (pending_rename && action != FILE_ACTION_RENAMED_NEW_NAME) {
                     emitEvent(
@@ -268,12 +268,12 @@ namespace file_monitor::core::detail {
             }
 
             auto processNotifications(
-                std::span<std::byte const>            bytes,
+                std::span<std::byte const> bytes,
                 std::optional<std::filesystem::path>& pending_rename,
-                std::stop_token                       stop_token
+                std::stop_token stop_token
             ) -> bool {
                 constexpr auto HEADER_SIZE{ offsetof(FILE_NOTIFY_INFORMATION, FileName) };
-                auto           offset{ std::size_t{ 0 } };
+                auto offset{ std::size_t{ 0 } };
 
                 while (offset < bytes.size()) {
                     auto const remaining{ bytes.size() - offset };
@@ -331,7 +331,7 @@ namespace file_monitor::core::detail {
 
                 while (!stop_token.stop_requested()) {
                     std::array const wait_handles{ m_stop_event.Get(), m_io_event.Get() };
-                    auto const       wait_result{
+                    auto const wait_result{
                         WaitForMultipleObjects(
                             static_cast<DWORD>(wait_handles.size()),
                             wait_handles.data(),
@@ -350,7 +350,7 @@ namespace file_monitor::core::detail {
                         return;
                     }
 
-                    DWORD      transferred_bytes{};
+                    DWORD transferred_bytes{};
                     auto const read_completed{
                         GetOverlappedResult(
                             m_directory_handle.Get(),
@@ -396,13 +396,13 @@ namespace file_monitor::core::detail {
                 }
             }
 
-            std::filesystem::path          m_root;
+            std::filesystem::path m_root;
             DirectoryWatchCallbacks const& m_callbacks;
-            UniqueHandle                   m_directory_handle;
-            UniqueHandle                   m_stop_event;
-            UniqueHandle                   m_io_event;
+            UniqueHandle m_directory_handle;
+            UniqueHandle m_stop_event;
+            UniqueHandle m_io_event;
             alignas(DWORD) std::array<std::byte, 64 * 1024> m_buffer{};
-            OVERLAPPED   m_overlapped{};
+            OVERLAPPED m_overlapped{};
             std::jthread m_thread;
         };
 
@@ -413,7 +413,7 @@ namespace file_monitor::core::detail {
             : callbacks{ std::move(watch_callbacks) } {
         }
 
-        DirectoryWatchCallbacks                        callbacks;
+        DirectoryWatchCallbacks callbacks;
         std::vector<std::unique_ptr<DirectoryWatcher>> watchers;
     };
 

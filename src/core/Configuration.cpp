@@ -16,9 +16,9 @@ namespace file_monitor::core {
     namespace {
 
         auto config_error(
-            std::string_view             operation,
+            std::string_view operation,
             std::filesystem::path const& config_path,
-            std::string_view             detail
+            std::string_view detail
         ) -> std::string {
             return std::format(
                 "{} {}：{}",
@@ -29,10 +29,10 @@ namespace file_monitor::core {
         }
 
         auto load_directories(
-            nlohmann::json const&               config_data,
-            std::string_view                    key,
+            nlohmann::json const& config_data,
+            std::string_view key,
             std::vector<std::filesystem::path>& directories,
-            bool                                required
+            bool required
         ) -> std::expected<void, std::string> {
             auto const directory_values{ config_data.find(key) };
             if (directory_values == config_data.end()) {
@@ -72,7 +72,7 @@ namespace file_monitor::core {
     auto load_configuration(std::filesystem::path const& config_path)
         -> std::expected<Configuration, std::string> {
         std::error_code exists_error;
-        auto const      config_exists{ std::filesystem::exists(config_path, exists_error) };
+        auto const config_exists{ std::filesystem::exists(config_path, exists_error) };
         if (exists_error) {
             return std::unexpected{
                 config_error("检查配置文件失败", config_path, exists_error.message())
@@ -100,7 +100,7 @@ namespace file_monitor::core {
         }
 
         Configuration configuration;
-        auto const    directories_result{
+        auto const directories_result{
             load_directories(config_data, "directories", configuration.directories, true)
         };
         if (!directories_result) {
@@ -130,7 +130,7 @@ namespace file_monitor::core {
 
     auto save_configuration(
         std::filesystem::path const& config_path,
-        Configuration const&         configuration
+        Configuration const& configuration
     ) -> std::expected<void, std::string> {
         auto const parent_path{ config_path.parent_path() };
         if (!parent_path.empty()) {
@@ -144,13 +144,13 @@ namespace file_monitor::core {
         }
 
         nlohmann::json config_data;
-        config_data["directories"]          = configuration.directories |
-                                              std::views::transform(utils::path_to_utf8) |
-                                              std::ranges::to<std::vector<std::string>>();
+        config_data["directories"] = configuration.directories |
+            std::views::transform(utils::path_to_utf8) |
+            std::ranges::to<std::vector<std::string>>();
 
         config_data["excluded_directories"] = configuration.excluded_directories |
-                                              std::views::transform(utils::path_to_utf8) |
-                                              std::ranges::to<std::vector<std::string>>();
+            std::views::transform(utils::path_to_utf8) |
+            std::ranges::to<std::vector<std::string>>();
 
         std::ofstream output{ config_path, std::ios::binary | std::ios::trunc };
         if (!output) {

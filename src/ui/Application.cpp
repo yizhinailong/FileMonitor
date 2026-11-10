@@ -10,9 +10,9 @@
 namespace file_monitor::ui {
     namespace {
 
-        constexpr std::string_view WINDOW_TITLE  = "文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION);
-        constexpr int              WINDOW_WIDTH  = 960;
-        constexpr int              WINDOW_HEIGHT = 640;
+        constexpr std::string_view WINDOW_TITLE = "文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION);
+        constexpr int WINDOW_WIDTH = 960;
+        constexpr int WINDOW_HEIGHT = 640;
 
     } // namespace
 

@@ -25,10 +25,10 @@ namespace file_monitor::ui {
 
         auto configure_opengl_attributes() -> bool {
             return SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0) &&
-                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) &&
-                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) &&
-                   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) &&
-                   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+                SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) &&
+                SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) &&
+                SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) &&
+                SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         }
 
         auto apply_system_theme() -> void {
@@ -174,7 +174,7 @@ namespace file_monitor::ui {
         apply_system_theme();
 
         auto& io{ ImGui::GetIO() };
-        io.IniFilename  = nullptr;
+        io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         if (!load_chinese_font(io)) {
             return std::unexpected{ "Chinese font loading failed" };

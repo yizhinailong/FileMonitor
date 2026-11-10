@@ -14,10 +14,10 @@ namespace file_monitor::ui {
         SdlImGuiBackend() = default;
         ~SdlImGuiBackend();
 
-        SdlImGuiBackend(SdlImGuiBackend const&)                    = delete;
+        SdlImGuiBackend(SdlImGuiBackend const&) = delete;
         auto operator=(SdlImGuiBackend const&) -> SdlImGuiBackend& = delete;
-        SdlImGuiBackend(SdlImGuiBackend&&)                         = delete;
-        auto operator=(SdlImGuiBackend&&) -> SdlImGuiBackend&      = delete;
+        SdlImGuiBackend(SdlImGuiBackend&&) = delete;
+        auto operator=(SdlImGuiBackend&&) -> SdlImGuiBackend& = delete;
 
         auto Initialize(std::string_view title, int width, int height)
             -> std::expected<void, std::string>;
@@ -32,12 +32,12 @@ namespace file_monitor::ui {
         auto initializeImGui() -> std::expected<void, std::string>;
         auto shutdown() -> void;
 
-        SDL_Window*         m_window{ nullptr };
+        SDL_Window* m_window{ nullptr };
         SDL_GLContextState* m_gl_context{ nullptr };
-        bool                m_sdl_initialized{ false };
-        bool                m_imgui_context_created{ false };
-        bool                m_imgui_sdl_initialized{ false };
-        bool                m_imgui_opengl_initialized{ false };
+        bool m_sdl_initialized{ false };
+        bool m_imgui_context_created{ false };
+        bool m_imgui_sdl_initialized{ false };
+        bool m_imgui_opengl_initialized{ false };
     };
 
 } // namespace file_monitor::ui
