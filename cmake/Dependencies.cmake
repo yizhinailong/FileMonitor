@@ -90,10 +90,13 @@ target_link_libraries(imgui
     SDL3::SDL3-static
 )
 
-set(PROJECT_DEPENDENCIES
-    imgui::imgui
+set(CORE_DEPENDENCIES
     nlohmann_json::nlohmann_json
+    spdlog::spdlog
+)
+
+set(GUI_DEPENDENCIES
+    imgui::imgui
     OpenGL::GL
     SDL3::SDL3-static
-    spdlog::spdlog
 )

@@ -20,15 +20,39 @@ enable_language(RC)
 include(cmake/ClangClCcache.cmake)
 include(cmake/Dependencies.cmake)
 
-file(GLOB_RECURSE PROJECT_SOURCES
+file(GLOB_RECURSE CORE_SOURCES
     CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.hpp"
+)
+
+file(GLOB_RECURSE GUI_SOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/*.hpp"
+)
+
+add_library(
+    ${PROJECT_NAME}Core
+    STATIC
+    ${CORE_SOURCES}
+)
+
+target_include_directories(
+    ${PROJECT_NAME}Core
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(
+    ${PROJECT_NAME}Core
+    PRIVATE
+    ${CORE_DEPENDENCIES}
 )
 
 add_executable(
     ${PROJECT_NAME}
-    ${PROJECT_SOURCES}
+    ${GUI_SOURCES}
     app.rc
 )
 
@@ -36,12 +60,6 @@ set_target_properties(
     ${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     WIN32_EXECUTABLE TRUE
-)
-
-target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_compile_definitions(
@@ -53,7 +71,8 @@ target_compile_definitions(
 target_link_libraries(
     ${PROJECT_NAME}
     PRIVATE
-    ${PROJECT_DEPENDENCIES}
+    ${PROJECT_NAME}Core
+    ${GUI_DEPENDENCIES}
 )
 
 install(
