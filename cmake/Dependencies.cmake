@@ -21,7 +21,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME SDL3
     GITHUB_REPOSITORY libsdl-org/SDL
-    GIT_TAG release-3.4.14
+    GIT_TAG release-3.4.20
     OPTIONS
     "SDL_SHARED OFF"
     "SDL_STATIC ON"
@@ -48,7 +48,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME imgui
     GITHUB_REPOSITORY ocornut/imgui
-    GIT_TAG v1.92.9
+    GIT_TAG v1.93.0
     DOWNLOAD_ONLY YES
 )
 
