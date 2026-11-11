@@ -16,6 +16,8 @@ namespace file_monitor::gui {
 
     namespace {
 
+        constexpr auto POPUP_NAME{ "设置##SettingsWindow" };
+
         struct DirectoryDialogContext {
             std::shared_ptr<DirectoryDialogState> state;
         };
@@ -55,7 +57,7 @@ namespace file_monitor::gui {
         m_monitored_editor = {};
         m_excluded_editor = {};
         m_dialog_error_message.clear();
-        ImGui::OpenPopup("设置##SettingsWindow");
+        m_open_requested = true;
     }
 
     auto SettingsWindow::Update() -> bool {
@@ -63,6 +65,11 @@ namespace file_monitor::gui {
     }
 
     auto SettingsWindow::Render(core::MonitorSession& session) -> void {
+        if (m_open_requested) {
+            m_open_requested = false;
+            ImGui::OpenPopup(POPUP_NAME);
+        }
+
         auto const* viewport{ ImGui::GetMainViewport() };
         auto const popup_size{
             ImVec2{
@@ -73,7 +80,7 @@ namespace file_monitor::gui {
         ImGui::SetNextWindowSize(popup_size, ImGuiCond_Appearing);
 
         if (!ImGui::BeginPopupModal(
-                "设置##SettingsWindow",
+                POPUP_NAME,
                 nullptr,
                 ImGuiWindowFlags_NoSavedSettings
             )) {

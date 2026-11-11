@@ -69,6 +69,17 @@ namespace file_monitor::gui {
         } else {
             ImGui::StyleColorsDark();
         }
+
+        auto& style{ ImGui::GetStyle() };
+        style.WindowPadding = { 12.0F, 10.0F };
+        style.FramePadding = { 10.0F, 5.0F };
+        style.CellPadding = { 8.0F, 4.0F };
+        style.ItemSpacing = { 8.0F, 8.0F };
+        style.WindowRounding = 6.0F;
+        style.ChildRounding = 4.0F;
+        style.FrameRounding = 4.0F;
+        style.PopupRounding = 4.0F;
+        style.GrabRounding = 4.0F;
     }
 
     auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
@@ -85,6 +96,14 @@ namespace file_monitor::gui {
                 return themed(MAGENTA);
         }
         return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+    }
+
+    auto success_color() -> ImVec4 {
+        return themed(GREEN);
+    }
+
+    auto warning_color() -> ImVec4 {
+        return themed(YELLOW);
     }
 
     auto error_color() -> ImVec4 {

@@ -1,12 +1,15 @@
 #pragma once
 
-#include <cstdint>
+#include <imgui.h>
 
+#include "ChangeTable.hpp"
 #include "SettingsWindow.hpp"
-#include "core/FileSystem.hpp"
 #include "core/MonitorSession.hpp"
 
 namespace file_monitor::gui {
+
+    // The window content from top to bottom: a toolbar, the session errors if
+    // there are any, the change table and a status bar.
     class MainWindow final {
     public:
         [[nodiscard]]
@@ -20,22 +23,16 @@ namespace file_monitor::gui {
         auto Render() -> void;
 
     private:
-        auto renderSettingsPanel(float width, float height) -> void;
-        auto renderErrorPanel(float width) -> void;
-        auto renderFileListPanel(float width, float height) -> void;
-        auto renderFileChangeRow(core::FileChange const& change) -> void;
-        [[nodiscard]]
-        auto calculatePathColumnWidth() const -> float;
+        auto renderToolbar() -> void;
+        auto renderErrors() -> void;
+        // Takes the place of the change table while it has no rows.
+        auto renderEmptyState(ImVec2 size) -> void;
+        auto renderStatusBar() -> void;
+        auto openSettings() -> void;
 
         core::MonitorSession m_session;
+        ChangeTable m_change_table{ m_session };
         SettingsWindow m_settings_window;
-        bool m_scroll_to_latest{ false };
-        // The change table as it was in the previous frame, used to keep its
-        // rows in place when the session drops the oldest changes.
-        std::uint64_t m_first_change_sequence{ 0 };
-        float m_table_scroll_y{ 0.0F };
-        float m_table_row_height{ 0.0F };
-        bool m_table_following_latest{ true };
     };
 
 } // namespace file_monitor::gui

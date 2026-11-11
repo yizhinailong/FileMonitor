@@ -23,6 +23,9 @@ namespace file_monitor::gui {
     class SettingsWindow final {
     public:
         auto SetParentWindow(SDL_Window* window) -> void;
+        // Shows the window from the next Render() on. It can be called from
+        // anywhere, unlike ImGui::OpenPopup(), which has to run where the
+        // popup is drawn.
         auto Open(core::Configuration const& configuration) -> void;
         // Takes the folders picked in the system dialog, which reports them
         // from another thread; returns whether it had any result.
@@ -63,6 +66,7 @@ namespace file_monitor::gui {
         DirectoryGroup m_dialog_group{ DirectoryGroup::Monitored };
         std::string m_dialog_error_message;
         bool m_dialog_open{ false };
+        bool m_open_requested{ false };
     };
 
 } // namespace file_monitor::gui
