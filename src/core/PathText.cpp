@@ -126,4 +126,12 @@ namespace file_monitor::core {
         );
     }
 
+    auto directory_text(std::string_view path) -> std::string_view {
+        auto const separator{ path.find_last_of("\\/") };
+        if (separator == std::string_view::npos) {
+            return {};
+        }
+        return path.substr(0, separator + 1);
+    }
+
 } // namespace file_monitor::core

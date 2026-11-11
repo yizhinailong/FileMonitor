@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstddef>
 #include <format>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -15,6 +16,7 @@
 #include "Style.hpp"
 #include "Widgets.hpp"
 #include "core/FileSystem.hpp"
+#include "core/PathText.hpp"
 #include "core/Shell.hpp"
 
 namespace file_monitor::gui {
@@ -24,6 +26,9 @@ namespace file_monitor::gui {
         constexpr auto SETTINGS_LABEL{ "设置" };
         constexpr auto COPY_PATH_LABEL{ "复制路径" };
         constexpr auto SHOW_IN_EXPLORER_LABEL{ "打开位置" };
+        constexpr auto CLEAR_FILTERS_LABEL{ "清除过滤" };
+        constexpr auto FILTER_HINT{ "过滤路径 (Ctrl+F)" };
+        constexpr auto FILTER_WIDTH{ 220.0F };
         constexpr auto NOTICE_DURATION{ std::chrono::seconds{ 3 } };
 
         struct MonitorState {
@@ -162,17 +167,60 @@ namespace file_monitor::gui {
         }
 
         auto const& style{ ImGui::GetStyle() };
+        auto const row_width{ ImGui::GetContentRegionAvail().x };
+        auto const settings_width{ button_width(SETTINGS_LABEL) };
+        auto const statuses_width{
+            row_width - FILTER_WIDTH - settings_width - style.ItemSpacing.x * 4.0F
+        };
+
+        ImGui::SetNextItemWidth(FILTER_WIDTH);
+        if (m_focus_filter) {
+            ImGui::SetKeyboardFocusHere();
+            m_focus_filter = false;
+        }
+        if (ImGui::InputTextWithHint(
+                "##Filter",
+                FILTER_HINT,
+                &m_filter_text,
+                ImGuiInputTextFlags_EscapeClearsAll
+            )) {
+            applyPathFilter();
+        }
+        ImGui::SameLine();
+
+        // The status counts toggle their status. A hidden status loses its
+        // color. The area is clipped in front of the settings button when the
+        // window is narrow.
+        auto& filter{ m_change_table.Filter() };
+        auto const statuses_start{ ImGui::GetCursorScreenPos() };
+        ImGui::PushClipRect(
+            statuses_start,
+            { statuses_start.x + std::max(statuses_width, 0.0F), statuses_start.y + ImGui::GetFrameHeight() },
+            true
+        );
         ImGui::AlignTextToFramePadding();
         for (auto const status : core::FILE_CHANGE_STATUSES) {
-            ImGui::PushStyleColor(ImGuiCol_Text, file_change_status_color(status));
-            draw_text(core::file_change_status_text(status));
+            auto const shows{ filter.ShowsStatus(status) };
+            ImGui::PushStyleColor(
+                ImGuiCol_TextLink,
+                shows ? file_change_status_color(status) : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)
+            );
+            auto const label{ std::format(
+                "{} {}",
+                core::file_change_status_text(status),
+                counts[static_cast<std::size_t>(std::to_underlying(status))]
+            ) };
+            if (ImGui::TextLink(label.c_str())) {
+                filter.ToggleStatus(status);
+                m_change_table.Refresh();
+            }
+            ImGui::SetItemTooltip(shows ? "点击隐藏这一类变更" : "点击显示这一类变更");
             ImGui::PopStyleColor();
-            ImGui::SameLine(0.0F, style.ItemInnerSpacing.x);
-            draw_text(std::to_string(counts[static_cast<std::size_t>(std::to_underlying(status))]));
             ImGui::SameLine(0.0F, style.ItemSpacing.x * 2.0F);
         }
+        ImGui::PopClipRect();
 
-        align_right(button_width(SETTINGS_LABEL));
+        align_right(settings_width);
         if (ImGui::Button(SETTINGS_LABEL)) {
             openSettings();
         }
@@ -191,14 +239,28 @@ namespace file_monitor::gui {
     auto MainWindow::renderEmptyState(ImVec2 size) -> void {
         if (ImGui::BeginChild("NoChanges", size, ImGuiChildFlags_Borders)) {
             auto const monitoring{ !m_session.CurrentConfiguration().directories.empty() };
-            std::string_view const message{ monitoring ? "正在监控，还没有文件变更" : "尚未添加监控文件夹" };
-            auto const button_height{ monitoring ? 0.0F : ImGui::GetFrameHeightWithSpacing() };
+            auto const filtered{ !m_session.Changes().empty() };
+            std::string_view message;
+            if (filtered) {
+                message = "没有符合过滤条件的变更";
+            } else if (monitoring) {
+                message = "正在监控，还没有文件变更";
+            } else {
+                message = "尚未添加监控文件夹";
+            }
+            auto const shows_button{ filtered || !monitoring };
+            auto const button_height{ shows_button ? ImGui::GetFrameHeightWithSpacing() : 0.0F };
             auto const free_height{ ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - button_height };
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max(free_height * 0.5F, 0.0F));
 
             align_center(text_width(message));
             draw_disabled_text(message);
-            if (!monitoring) {
+            if (filtered) {
+                align_center(button_width(CLEAR_FILTERS_LABEL));
+                if (ImGui::Button(CLEAR_FILTERS_LABEL)) {
+                    clearFilters();
+                }
+            } else if (!monitoring) {
                 align_center(button_width(ADD_DIRECTORY_LABEL));
                 if (ImGui::Button(ADD_DIRECTORY_LABEL)) {
                     openSettings();
@@ -286,7 +348,11 @@ namespace file_monitor::gui {
         if (m_change_table.RowCount() == 0) {
             return;
         }
-        auto const count_text{ std::format("{} 条变更", m_change_table.RowCount()) };
+        auto const count_text{
+            m_change_table.Filter().IsActive() ?
+                std::format("显示 {} / {} 条变更", m_change_table.RowCount(), m_session.Changes().size()) :
+                std::format("{} 条变更", m_change_table.RowCount())
+        };
         ImGui::SameLine();
         if (m_change_table.FollowsLatest()) {
             auto const follow_text{ count_text + "    跟随最新" };
@@ -325,6 +391,34 @@ namespace file_monitor::gui {
         if (focused && !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGuiKey_End, false)) {
             m_change_table.ScrollToLatest();
         }
+
+        // The rest only counts while no text is being typed.
+        if (ImGui::GetIO().WantTextInput) {
+            return;
+        }
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_F) || ImGui::IsKeyPressed(ImGuiKey_Slash, false)) {
+            m_focus_filter = true;
+        }
+        for (auto const [index, status] : std::views::enumerate(core::FILE_CHANGE_STATUSES)) {
+            if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_1 + index), false)) {
+                m_change_table.Filter().ToggleStatus(status);
+                m_change_table.Refresh();
+            }
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_0, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+            clearFilters();
+        }
+    }
+
+    auto MainWindow::applyPathFilter() -> void {
+        m_change_table.Filter().SetPathText(m_filter_text);
+        m_change_table.Refresh();
+    }
+
+    auto MainWindow::clearFilters() -> void {
+        m_filter_text.clear();
+        m_change_table.Filter().Clear();
+        m_change_table.Refresh();
     }
 
     auto MainWindow::run(ChangeAction action) -> void {
@@ -349,6 +443,11 @@ namespace file_monitor::gui {
                 } else {
                     showNotice("无法打开资源管理器", true);
                 }
+                break;
+            case ChangeAction::FilterDirectory:
+                m_filter_text = std::string{ core::directory_text(change->absolute_path) };
+                applyPathFilter();
+                showNotice("只看这个文件夹");
                 break;
         }
     }

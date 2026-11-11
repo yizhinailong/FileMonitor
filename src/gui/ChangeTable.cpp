@@ -38,28 +38,53 @@ namespace file_monitor::gui {
     ChangeTable::ChangeTable(core::MonitorSession const& session)
         : m_session{ session } {}
 
+    auto ChangeTable::Filter() -> core::ChangeFilter& {
+        return m_filter;
+    }
+
     auto ChangeTable::Refresh() -> void {
+        auto const changes{ m_session.Changes() };
         auto const first_sequence{ m_session.FirstChangeSequence() };
         // None of the changes of the last refresh is left, for example because
         // saving the settings cleared the list: follow the new changes.
         if (first_sequence >= m_end_sequence) {
             m_follows_latest = true;
         }
-        m_end_sequence = first_sequence + m_session.Changes().size();
-        if (m_selected_sequence && *m_selected_sequence < first_sequence) {
-            m_selected_sequence.reset();
+        m_end_sequence = first_sequence + changes.size();
+
+        m_rows.clear();
+        for (auto index{ std::size_t{ 0 } }; index < changes.size(); ++index) {
+            if (m_filter.Matches(changes[index])) {
+                m_rows.push_back(index);
+            }
+        }
+
+        if (m_selected_sequence) {
+            if (*m_selected_sequence < first_sequence || *m_selected_sequence >= m_end_sequence) {
+                // The selected change was dropped.
+                m_selected_sequence.reset();
+            } else if (!std::ranges::contains(m_rows, selectedChangeIndex())) {
+                // A selected change that stops matching, for example because
+                // the filter changed, gives its place to the next matching
+                // change, or to the last one when none follows.
+                auto const row{ rowAtOrAfter(*m_selected_sequence) };
+                selectRow(row < m_rows.size() ? row : (m_rows.empty() ? 0 : m_rows.size() - 1));
+            }
         }
     }
 
     auto ChangeTable::Render(ImVec2 size) -> ChangeAction {
         auto const changes{ m_session.Changes() };
         auto const first_sequence{ m_session.FirstChangeSequence() };
+        auto const row_count{ m_rows.size() };
 
         // Dropping the oldest changes moves the remaining rows up. While
         // older changes are being read, scroll to where the first visible row
         // went so it stays in place.
-        if (!m_follows_latest && m_row_height > 0.0F) {
-            auto const top_row{ static_cast<float>(rowAtOrAfter(m_top_sequence)) };
+        if (!m_follows_latest && m_row_height > 0.0F && row_count > 0) {
+            auto const top_row{
+                static_cast<float>(std::min(rowAtOrAfter(m_top_sequence), row_count - 1))
+            };
             auto const scroll_y{ top_row * m_row_height + m_top_offset };
             if (std::abs(scroll_y - m_scroll_y) > SCROLL_TOLERANCE) {
                 ImGui::SetNextWindowScroll({ -1.0F, scroll_y });
@@ -85,7 +110,7 @@ namespace file_monitor::gui {
             ImGui::BeginMultiSelect(
                 ImGuiMultiSelectFlags_SingleSelect | ImGuiMultiSelectFlags_ClearOnClickVoid,
                 m_selected_sequence ? 1 : 0,
-                static_cast<int>(changes.size())
+                static_cast<int>(row_count)
             )
         };
         applySelectionRequests(*multi_select);
@@ -99,11 +124,10 @@ namespace file_monitor::gui {
         ImGui::PushStyleColor(ImGuiCol_NavCursor, ImVec4{});
         auto action{ ChangeAction::None };
         ImGuiListClipper clipper;
-        clipper.Begin(static_cast<int>(changes.size()));
+        clipper.Begin(static_cast<int>(row_count));
         while (clipper.Step()) {
             for (auto row{ clipper.DisplayStart }; row < clipper.DisplayEnd; ++row) {
-                auto const index{ static_cast<std::size_t>(row) };
-                auto const row_action{ renderRow(changes[index], first_sequence + index) };
+                auto const row_action{ renderRow(static_cast<std::size_t>(row)) };
                 if (row_action != ChangeAction::None) {
                     action = row_action;
                 }
@@ -118,11 +142,9 @@ namespace file_monitor::gui {
 
         m_scroll_y = ImGui::GetScrollY();
         m_row_height = clipper.ItemsHeight;
-        if (m_row_height > 0.0F) {
-            auto const top_row{
-                std::min(static_cast<std::size_t>(m_scroll_y / m_row_height), changes.size() - 1)
-            };
-            m_top_sequence = first_sequence + top_row;
+        if (m_row_height > 0.0F && row_count > 0) {
+            auto const top_row{ std::min(static_cast<std::size_t>(m_scroll_y / m_row_height), row_count - 1) };
+            m_top_sequence = rowSequence(top_row);
             m_top_offset = m_scroll_y - static_cast<float>(top_row) * m_row_height;
         }
         ImGui::EndTable();
@@ -138,11 +160,16 @@ namespace file_monitor::gui {
         if (!m_selected_sequence || *m_selected_sequence < first_sequence || *m_selected_sequence >= m_end_sequence) {
             return nullptr;
         }
-        return &m_session.Changes()[static_cast<std::size_t>(*m_selected_sequence - first_sequence)];
+        auto const index{ selectedChangeIndex() };
+        auto const row{ std::ranges::lower_bound(m_rows, index) };
+        if (row == m_rows.end() || *row != index) {
+            return nullptr;
+        }
+        return &m_session.Changes()[index];
     }
 
     auto ChangeTable::RowCount() const -> std::size_t {
-        return m_session.Changes().size();
+        return m_rows.size();
     }
 
     auto ChangeTable::FollowsLatest() const -> bool {
@@ -153,11 +180,16 @@ namespace file_monitor::gui {
         if (m_follows_latest) {
             return 0;
         }
-        auto const first_unseen{ std::max(m_unseen_sequence, m_session.FirstChangeSequence()) };
-        return static_cast<std::size_t>(m_end_sequence - std::min(first_unseen, m_end_sequence));
+        auto const first_sequence{ m_session.FirstChangeSequence() };
+        auto const first_unseen{ std::max(m_unseen_sequence, first_sequence) };
+        auto const first_row{ std::ranges::lower_bound(m_rows, static_cast<std::size_t>(first_unseen - first_sequence)) };
+        return static_cast<std::size_t>(m_rows.end() - first_row);
     }
 
-    auto ChangeTable::renderRow(core::FileChange const& change, std::uint64_t sequence) -> ChangeAction {
+    auto ChangeTable::renderRow(std::size_t row) -> ChangeAction {
+        auto const& change{ m_session.Changes()[m_rows[row]] };
+        auto const sequence{ rowSequence(row) };
+
         auto action{ ChangeAction::None };
         ImGui::PushID(static_cast<int>(sequence));
         ImGui::TableNextRow();
@@ -197,6 +229,10 @@ namespace file_monitor::gui {
             if (ImGui::MenuItem("在资源管理器中显示", "O")) {
                 action = ChangeAction::ShowInExplorer;
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("只看这个文件夹")) {
+                action = ChangeAction::FilterDirectory;
+            }
             ImGui::EndPopup();
         }
 
@@ -223,6 +259,10 @@ namespace file_monitor::gui {
         }
         ImGui::PopID();
         return action;
+    }
+
+    auto ChangeTable::selectRow(std::size_t row) -> void {
+        m_selected_sequence = row < m_rows.size() ? std::optional{ rowSequence(row) } : std::nullopt;
     }
 
     auto ChangeTable::applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void {
@@ -257,12 +297,21 @@ namespace file_monitor::gui {
         }
     }
 
+    auto ChangeTable::selectedChangeIndex() const -> std::size_t {
+        return static_cast<std::size_t>(*m_selected_sequence - m_session.FirstChangeSequence());
+    }
+
+    auto ChangeTable::rowSequence(std::size_t row) const -> std::uint64_t {
+        return m_session.FirstChangeSequence() + m_rows[row];
+    }
+
     auto ChangeTable::rowAtOrAfter(std::uint64_t sequence) const -> std::size_t {
         auto const first_sequence{ m_session.FirstChangeSequence() };
         if (sequence <= first_sequence) {
             return 0;
         }
-        return std::min(static_cast<std::size_t>(sequence - first_sequence), m_session.Changes().size() - 1);
+        auto const index{ static_cast<std::size_t>(sequence - first_sequence) };
+        return static_cast<std::size_t>(std::ranges::lower_bound(m_rows, index) - m_rows.begin());
     }
 
 } // namespace file_monitor::gui

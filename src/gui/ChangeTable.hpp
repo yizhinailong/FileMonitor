@@ -3,9 +3,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include <imgui.h>
 
+#include "core/ChangeFilter.hpp"
 #include "core/FileSystem.hpp"
 #include "core/MonitorSession.hpp"
 
@@ -16,11 +18,13 @@ namespace file_monitor::gui {
         None,
         CopyPath,
         CopyPreviousPath,
-        ShowInExplorer
+        ShowInExplorer,
+        // Show only the changes in the directory of the change.
+        FilterDirectory
     };
 
-    // The table of the changes kept by the session, one of which can be
-    // selected. Scrolled to the bottom it follows new changes; scrolled
+    // The table of the changes kept by the session that match a filter, one
+    // of which can be selected. Scrolled to the bottom it follows new changes; scrolled
     // elsewhere it keeps its rows in place when the session drops the oldest
     // changes. The selection and the first visible row are remembered by
     // sequence number for that.
@@ -28,8 +32,11 @@ namespace file_monitor::gui {
     public:
         explicit ChangeTable(core::MonitorSession const& session);
 
-        // Brings the table up to date with the session. Call once per frame
-        // before the functions below.
+        // Changing the filter takes effect with the next Refresh().
+        [[nodiscard]]
+        auto Filter() -> core::ChangeFilter&;
+        // Brings the table up to date with the session and the filter. Call
+        // once per frame before the functions below.
         auto Refresh() -> void;
         // Draws the table, which must have rows. A click or the arrow keys
         // select a change; a double click or the context menu of a change
@@ -41,22 +48,35 @@ namespace file_monitor::gui {
         // The selected change, or nullptr.
         [[nodiscard]]
         auto SelectedChange() const -> core::FileChange const*;
+        // The number of changes that match the filter.
         [[nodiscard]]
         auto RowCount() const -> std::size_t;
         [[nodiscard]]
         auto FollowsLatest() const -> bool;
-        // The changes added since the table stopped following new changes.
+        // The matching changes added since the table stopped following new
+        // changes.
         [[nodiscard]]
         auto NewChangeCount() const -> std::size_t;
 
     private:
-        auto renderRow(core::FileChange const& change, std::uint64_t sequence) -> ChangeAction;
+        auto renderRow(std::size_t row) -> ChangeAction;
+        auto selectRow(std::size_t row) -> void;
+        [[nodiscard]]
+        auto selectedChangeIndex() const -> std::size_t;
         auto applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void;
         auto updateFollowing(float scroll_y, float scroll_max_y) -> void;
+        [[nodiscard]]
+        auto rowSequence(std::size_t row) const -> std::uint64_t;
+        // The first row with this sequence number or a later one; RowCount()
+        // if there is none.
         [[nodiscard]]
         auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t;
 
         core::MonitorSession const& m_session;
+        core::ChangeFilter m_filter;
+        // Indices into m_session.Changes() of the changes that match the
+        // filter, oldest first.
+        std::vector<std::size_t> m_rows;
         std::optional<std::uint64_t> m_selected_sequence;
         // The sequence number after the last change of the last refresh.
         std::uint64_t m_end_sequence{ 0 };

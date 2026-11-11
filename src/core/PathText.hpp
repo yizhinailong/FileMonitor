@@ -19,5 +19,9 @@ namespace file_monitor::core {
     // The path of a change in at most `width`. A rename within one directory
     // names the directory once: "D:\proj\old.txt -> new.txt".
     auto change_path_text(FileChange const& change, float width, TextWidth text_width) -> std::string;
+    // The directory a path lies in, with its last separator: "D:\a\" for
+    // "D:\a\b.txt". A path that ends with a separator, as the path of a
+    // changed directory does, is returned as it is.
+    auto directory_text(std::string_view path) -> std::string_view;
 
 } // namespace file_monitor::core

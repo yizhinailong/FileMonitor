@@ -36,6 +36,8 @@ namespace file_monitor::gui {
         auto renderDetails(float height) -> void;
         auto renderStatusBar() -> void;
         auto handleShortcuts() -> void;
+        auto applyPathFilter() -> void;
+        auto clearFilters() -> void;
         // Does what was asked for with the selected change, if there is one.
         auto run(ChangeAction action) -> void;
         auto showNotice(std::string_view text, bool failed = false) -> void;
@@ -49,6 +51,9 @@ namespace file_monitor::gui {
         std::string m_notice;
         bool m_notice_failed{ false };
         std::chrono::steady_clock::time_point m_notice_end;
+        // The text of the filter box; the table filters by it as it changes.
+        std::string m_filter_text;
+        bool m_focus_filter{ false };
     };
 
 } // namespace file_monitor::gui
