@@ -38,8 +38,9 @@ namespace file_monitor::tui {
                 case core::FileChangeStatus::Modified:
                     return ftxui::Color::Yellow;
                 case core::FileChangeStatus::Renamed:
+                    return ftxui::Color::Cyan;
                 case core::FileChangeStatus::Moved:
-                    return ftxui::Color::Yellow;
+                    return ftxui::Color::Magenta;
             }
             return ftxui::Color::Default;
         }
