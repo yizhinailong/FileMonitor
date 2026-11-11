@@ -37,8 +37,12 @@ namespace file_monitor::tui {
         std::vector<bool> shown(m_hints.size(), false);
         auto used_width{ 0 };
         for (auto const index : by_priority) {
+            auto const& hint{ m_hints[index] };
+            if (hint.available && !hint.available()) {
+                continue;
+            }
             auto const gap{ used_width == 0 ? 0 : HINT_GAP };
-            auto const required_width{ gap + hint_width(m_hints[index]) };
+            auto const required_width{ gap + hint_width(hint) };
             if (used_width + required_width <= width) {
                 used_width += required_width;
                 shown[index] = true;

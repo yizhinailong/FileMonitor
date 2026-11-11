@@ -19,6 +19,8 @@ namespace file_monitor::tui {
         // When the line is too narrow, hints with a lower priority are hidden
         // first.
         int priority{ 0 };
+        // Hides the hint while it returns false.
+        std::function<bool()> available;
     };
 
     // A line of key hints such as "s 设置  q 退出".
