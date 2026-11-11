@@ -4,6 +4,7 @@
 #include <format>
 #include <print>
 #include <string>
+#include <utility>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
@@ -12,6 +13,7 @@
 #include <imgui_impl_sdl3.h>
 
 #include "Style.hpp"
+#include "core/Utils.hpp"
 
 namespace file_monitor::gui {
     namespace {
@@ -106,6 +108,19 @@ namespace file_monitor::gui {
             if (event.type == SDL_EVENT_SYSTEM_THEME_CHANGED) {
                 apply_system_theme();
             }
+            // A drop from File Explorer lists its files before it reports
+            // where they were dropped.
+            if (event.type == SDL_EVENT_DROP_FILE && event.drop.data != nullptr) {
+                m_drop_files.emplace_back(core::utils::utf8_to_path(event.drop.data));
+            } else if (event.type == SDL_EVENT_DROP_POSITION) {
+                m_drop_x = event.drop.x;
+                m_drop_y = event.drop.y;
+            } else if (event.type == SDL_EVENT_DROP_COMPLETE) {
+                for (auto& path : m_drop_files) {
+                    m_dropped_files.push_back({ std::move(path), m_drop_x, m_drop_y });
+                }
+                m_drop_files.clear();
+            }
             if (event.type == SDL_EVENT_QUIT ||
                 (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                  event.window.windowID == SDL_GetWindowID(m_window))) {
@@ -125,6 +140,10 @@ namespace file_monitor::gui {
             return FrameAction::Render;
         }
         return FrameAction::Skip;
+    }
+
+    auto SdlImGuiBackend::TakeDroppedFiles() -> std::vector<DroppedFile> {
+        return std::exchange(m_dropped_files, {});
     }
 
     auto SdlImGuiBackend::BeginFrame() -> void {

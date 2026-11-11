@@ -2,8 +2,12 @@
 
 #include <cstdint>
 #include <expected>
+#include <filesystem>
 #include <string>
 #include <string_view>
+#include <vector>
+
+#include "Drop.hpp"
 
 struct SDL_GLContextState;
 struct SDL_Window;
@@ -33,6 +37,9 @@ namespace file_monitor::gui {
         // `content_changed`; without either the call waits for an event for a
         // short time and skips the frame, so an idle window costs nothing.
         auto NextFrame(bool content_changed) -> FrameAction;
+        // The files and folders dropped onto the window since the last call.
+        [[nodiscard]]
+        auto TakeDroppedFiles() -> std::vector<DroppedFile>;
         auto BeginFrame() -> void;
         auto EndFrame() -> bool;
         [[nodiscard]]
@@ -51,6 +58,12 @@ namespace file_monitor::gui {
         std::uint64_t m_active_until{ 0 };
         // Frames still to draw for changed content.
         int m_content_frame_count{ 0 };
+        // The files of a drop in progress, which SDL reports before it
+        // reports where the drop ended.
+        std::vector<std::filesystem::path> m_drop_files;
+        std::vector<DroppedFile> m_dropped_files;
+        float m_drop_x{ 0.0F };
+        float m_drop_y{ 0.0F };
         bool m_sdl_initialized{ false };
         bool m_imgui_context_created{ false };
         bool m_imgui_sdl_initialized{ false };

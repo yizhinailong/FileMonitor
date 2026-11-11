@@ -31,6 +31,7 @@ namespace file_monitor::gui {
             // meanwhile still reach the log.
             auto const content_changed{ m_main_window.Update() };
             auto const action{ m_backend.NextFrame(content_changed) };
+            m_main_window.DropFiles(m_backend.TakeDroppedFiles());
             if (action == FrameAction::Quit) {
                 return 0;
             }

@@ -8,6 +8,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 
 #include <misc/cpp/imgui_stdlib.h>
@@ -114,6 +115,30 @@ namespace file_monitor::gui {
             m_notice.clear();
         }
         return update.changes_added || update.errors_changed || directories_selected || notice_ended;
+    }
+
+    auto MainWindow::DropFiles(std::vector<DroppedFile> const& files) -> void {
+        if (files.empty()) {
+            return;
+        }
+        if (m_settings_window.IsOpen()) {
+            m_settings_window.DropFiles(files);
+            return;
+        }
+
+        std::error_code error;
+        std::vector<std::filesystem::path> directories;
+        for (auto const& file : files) {
+            if (std::filesystem::is_directory(file.path, error)) {
+                directories.push_back(file.path);
+            }
+        }
+        if (directories.empty()) {
+            showNotice("只能拖入文件夹", true);
+            return;
+        }
+        m_settings_window.OpenWithDirectories(m_session.CurrentConfiguration(), std::move(directories));
+        showNotice("拖入的文件夹已加入监控列表，保存后生效");
     }
 
     auto MainWindow::Render() -> void {

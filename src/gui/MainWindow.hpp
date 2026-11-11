@@ -3,10 +3,12 @@
 #include <chrono>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <imgui.h>
 
 #include "ChangeTable.hpp"
+#include "Drop.hpp"
 #include "SettingsWindow.hpp"
 #include "core/MonitorSession.hpp"
 
@@ -26,6 +28,9 @@ namespace file_monitor::gui {
         [[nodiscard]]
         auto Update() -> bool;
         auto Render() -> void;
+        // Opens the settings with the dropped folders added to the monitored
+        // ones, or adds them to the list of the open settings they fell on.
+        auto DropFiles(std::vector<DroppedFile> const& files) -> void;
 
     private:
         auto renderToolbar() -> void;
