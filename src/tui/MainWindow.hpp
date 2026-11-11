@@ -2,12 +2,14 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include "FileChangeTable.hpp"
+#include "KeyHintBar.hpp"
 #include "SettingsWindow.hpp"
 #include "core/MonitorSession.hpp"
 
@@ -24,14 +26,18 @@ namespace file_monitor::tui {
 
     private:
         auto renderMainView() -> ftxui::Element;
+        [[nodiscard]]
+        auto renderHeader(int width) const -> ftxui::Element;
+        auto renderFooter(int width) -> ftxui::Element;
+        auto keyHints() -> std::vector<KeyHint>;
         auto openSettings() -> void;
         auto closeSettings() -> void;
 
         core::MonitorSession& m_session;
         std::function<void()> m_on_quit;
         FileChangeTable m_change_table;
+        KeyHintBar m_key_hints;
         std::shared_ptr<SettingsWindow> m_settings_window;
-        ftxui::Component m_settings_button;
         int m_page{ 0 };
     };
 

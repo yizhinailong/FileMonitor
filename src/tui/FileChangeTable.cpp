@@ -12,6 +12,7 @@
 #include <ftxui/screen/string.hpp>
 #include <ftxui/screen/terminal.hpp>
 
+#include "Widgets.hpp"
 #include "core/FileSystem.hpp"
 
 namespace file_monitor::tui {
@@ -28,22 +29,6 @@ namespace file_monitor::tui {
             int size{ 0 };
             int path{ 0 };
         };
-
-        auto file_change_status_color(core::FileChangeStatus status) -> ftxui::Color {
-            switch (status) {
-                case core::FileChangeStatus::Added:
-                    return ftxui::Color::Green;
-                case core::FileChangeStatus::Removed:
-                    return ftxui::Color::Red;
-                case core::FileChangeStatus::Modified:
-                    return ftxui::Color::Yellow;
-                case core::FileChangeStatus::Renamed:
-                    return ftxui::Color::Cyan;
-                case core::FileChangeStatus::Moved:
-                    return ftxui::Color::Magenta;
-            }
-            return ftxui::Color::Default;
-        }
 
         auto file_change_path_text(core::FileChange const& change) -> std::string {
             if (change.previous_absolute_path.empty()) {
@@ -191,11 +176,24 @@ namespace file_monitor::tui {
             ) |
             ftxui::bold
         };
+        auto body{
+            rows.empty() ?
+                ftxui::text(emptyText()) | ftxui::dim :
+                ftxui::vbox(std::move(rows))
+        };
         return ftxui::vbox({
             std::move(header),
             ftxui::separatorLight(),
-            ftxui::vbox(std::move(rows)) | ftxui::yframe | ftxui::flex | ftxui::reflect(m_body_box),
+            std::move(body) | ftxui::yframe | ftxui::flex | ftxui::reflect(m_body_box),
         });
+    }
+
+    auto FileChangeTable::FollowsLatest() const -> bool {
+        return m_follow_latest;
+    }
+
+    auto FileChangeTable::FollowLatest() -> void {
+        m_follow_latest = true;
     }
 
     auto FileChangeTable::OnEvent(ftxui::Event event) -> bool {
@@ -271,6 +269,13 @@ namespace file_monitor::tui {
 
     auto FileChangeTable::scrollColumns(int column_count) -> void {
         m_first_column = std::max(0, m_first_column + column_count);
+    }
+
+    auto FileChangeTable::emptyText() const -> std::string_view {
+        if (m_session.CurrentConfiguration().directories.empty()) {
+            return "尚未添加监控文件夹，按 s 打开设置添加";
+        }
+        return "正在等待文件变更";
     }
 
 } // namespace file_monitor::tui
