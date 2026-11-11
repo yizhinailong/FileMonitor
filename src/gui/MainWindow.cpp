@@ -120,6 +120,17 @@ namespace file_monitor::gui {
                 )
             };
 
+            // Dropping the oldest changes moves the remaining rows up. While
+            // older changes are being read, scroll up by as many rows so the
+            // visible rows stay where they are.
+            auto const first_change_sequence{ m_session.FirstChangeSequence() };
+            auto const dropped_count{ first_change_sequence - m_first_change_sequence };
+            m_first_change_sequence = first_change_sequence;
+            if (dropped_count > 0 && !m_table_following_latest && m_table_row_height > 0.0F) {
+                auto const dropped_height{ static_cast<float>(dropped_count) * m_table_row_height };
+                ImGui::SetNextWindowScroll({ -1.0F, std::max(0.0F, m_table_scroll_y - dropped_height) });
+            }
+
             if (ImGui::BeginTable("Files", 4, TABLE_FLAGS, { available_width, 0.0F }, table_content_width)) {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, 380.0F);
@@ -145,6 +156,9 @@ namespace file_monitor::gui {
                     ImGui::SetScrollHereY(1.0F);
                 }
                 m_scroll_to_latest = false;
+                m_table_scroll_y = ImGui::GetScrollY();
+                m_table_row_height = clipper.ItemsHeight;
+                m_table_following_latest = following_latest;
                 ImGui::EndTable();
             }
         }
