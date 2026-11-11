@@ -54,6 +54,11 @@ namespace file_monitor::tui {
         [[nodiscard]]
         auto IsFiltered() const -> bool;
 
+        // The selected change, or nullptr when no change matches. Brings the
+        // list up to date with the session first.
+        [[nodiscard]]
+        auto SelectedChange() -> core::FileChange const*;
+
         // The queries below describe the list as of the last Render().
         [[nodiscard]]
         auto FollowsLatest() const -> bool;
@@ -76,6 +81,8 @@ namespace file_monitor::tui {
         auto selectRow(std::size_t row) -> void;
         auto moveSelection(std::ptrdiff_t row_count) -> void;
         auto scrollToSelection() -> void;
+        [[nodiscard]]
+        auto selectedChange() const -> core::FileChange const*;
         [[nodiscard]]
         auto visibleRowCount() const -> std::size_t;
         [[nodiscard]]

@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 
+#include <ftxui/component/mouse.hpp>
 #include <ftxui/screen/color.hpp>
 #include <ftxui/screen/terminal.hpp>
 
@@ -31,6 +32,16 @@ namespace file_monitor::tui {
         }
 
     } // namespace
+
+    auto is_user_input(ftxui::Event event) -> bool {
+        if (event == ftxui::Event::Custom) {
+            return false;
+        }
+        if (event.is_mouse()) {
+            return event.mouse().motion == ftxui::Mouse::Pressed;
+        }
+        return true;
+    }
 
     auto error_text(std::string_view message) -> ftxui::Element {
         if (message.empty()) {

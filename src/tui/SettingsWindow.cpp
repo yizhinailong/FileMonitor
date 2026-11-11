@@ -24,18 +24,6 @@ namespace file_monitor::tui {
 
         constexpr auto GAP{ 2 };
 
-        // Keys and clicks, as opposed to mouse moves and the redraw requests
-        // of the session poller.
-        auto is_user_input(ftxui::Event event) -> bool {
-            if (event == ftxui::Event::Custom) {
-                return false;
-            }
-            if (event.is_mouse()) {
-                return event.mouse().motion == ftxui::Mouse::Pressed;
-            }
-            return true;
-        }
-
         auto is_click(ftxui::Event event) -> bool {
             return event.is_mouse() &&
                 event.mouse().button == ftxui::Mouse::Left &&

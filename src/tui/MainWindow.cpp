@@ -16,6 +16,7 @@
 #include <ftxui/screen/color.hpp>
 #include <ftxui/screen/string.hpp>
 
+#include "Shell.hpp"
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 #include "core/FileSystem.hpp"
@@ -97,6 +98,9 @@ namespace file_monitor::tui {
 
     auto MainWindow::OnEvent(ftxui::Event event) -> bool {
         if (m_page == MAIN_PAGE) {
+            if (is_user_input(event)) {
+                m_notice.clear();
+            }
             return m_editing_filter ? onFilterEvent(std::move(event)) : onMainEvent(std::move(event));
         }
         return ComponentBase::OnEvent(std::move(event));
@@ -109,6 +113,14 @@ namespace file_monitor::tui {
         }
         if (event == ftxui::Event::Character('s')) {
             openSettings();
+            return true;
+        }
+        if (event == ftxui::Event::Character('y')) {
+            copySelectedPath();
+            return true;
+        }
+        if (event == ftxui::Event::Character('o')) {
+            showSelectedChange();
             return true;
         }
         if (event == ftxui::Event::Character('/')) {
@@ -261,7 +273,12 @@ namespace file_monitor::tui {
         auto const hints_width{ std::max(width - left.width - ftxui::string_width(status) - GAP, 0) };
         left.elements.push_back(m_key_hints.Render(hints_width));
         left.elements.push_back(ftxui::filler());
-        left.elements.push_back(ftxui::text(std::move(status)) | ftxui::dim);
+        if (m_notice.empty()) {
+            left.elements.push_back(ftxui::text(std::move(status)) | ftxui::dim);
+        } else {
+            auto const notice_color{ m_notice_failed ? ftxui::Color::Red : ftxui::Color::Green };
+            left.elements.push_back(ftxui::text(m_notice) | ftxui::color(notice_color));
+        }
         return ftxui::hbox(std::move(left.elements));
     }
 
@@ -280,12 +297,15 @@ namespace file_monitor::tui {
 
     auto MainWindow::keyHints() -> std::vector<KeyHint> {
         auto const is_filtered{ [this] { return m_change_list.IsFiltered(); } };
+        auto const has_selection{ [this] { return m_change_list.SelectedChange() != nullptr; } };
         return {
             { .key = "↑↓", .label = "选择", .priority = 4 },
             { .key = "/", .label = "过滤", .action = [this] { m_editing_filter = true; }, .priority = 3 },
             { .key = "1-5", .label = "状态", .priority = 1 },
             { .key = "0", .label = "清除过滤", .action = [this] { clearFilters(); }, .priority = 3, .available = is_filtered },
             { .key = "Enter", .label = "详情", .action = [this] { m_change_list.ToggleDetails(); }, .priority = 2 },
+            { .key = "y", .label = "复制路径", .action = [this] { copySelectedPath(); }, .priority = 1, .available = has_selection },
+            { .key = "o", .label = "打开位置", .action = [this] { showSelectedChange(); }, .priority = 1, .available = has_selection },
             { .key = "End", .label = "最新", .action = [this] { m_change_list.FollowLatest(); }, .priority = 3 },
             { .key = "s", .label = "设置", .action = [this] { openSettings(); }, .priority = 5 },
             { .key = "q", .label = "退出", .action = [this] { m_on_quit(); }, .priority = 5 },
@@ -327,6 +347,24 @@ namespace file_monitor::tui {
     auto MainWindow::clearFilters() -> void {
         m_filter_text.clear();
         m_change_list.ClearFilters();
+    }
+
+    auto MainWindow::copySelectedPath() -> void {
+        auto const* change{ m_change_list.SelectedChange() };
+        if (change == nullptr) {
+            return;
+        }
+        m_notice_failed = !copy_to_clipboard(change->absolute_path);
+        m_notice = m_notice_failed ? "无法复制路径" : "已复制路径";
+    }
+
+    auto MainWindow::showSelectedChange() -> void {
+        auto const* change{ m_change_list.SelectedChange() };
+        if (change == nullptr) {
+            return;
+        }
+        m_notice_failed = !show_in_explorer(change->absolute_path);
+        m_notice = m_notice_failed ? "无法打开资源管理器" : "已在资源管理器中打开";
     }
 
     auto MainWindow::openSettings() -> void {

@@ -41,6 +41,8 @@ namespace file_monitor::tui {
         // Clears the path filter and stops editing it.
         auto cancelFilterEdit() -> void;
         auto clearFilters() -> void;
+        auto copySelectedPath() -> void;
+        auto showSelectedChange() -> void;
         auto openSettings() -> void;
         auto closeSettings() -> void;
 
@@ -52,6 +54,10 @@ namespace file_monitor::tui {
         std::string m_filter_text;
         ftxui::Component m_filter_input;
         bool m_editing_filter{ false };
+        // The outcome of copying or showing a path, shown in the footer until
+        // the next key or click.
+        std::string m_notice;
+        bool m_notice_failed{ false };
         // The status counts of the header, which toggle the status filters.
         std::array<ftxui::Box, STATUS_COUNT> m_status_boxes{};
         std::shared_ptr<SettingsWindow> m_settings_window;

@@ -175,11 +175,12 @@ namespace file_monitor::tui {
     }
 
     auto ChangeList::RenderDetails(int width) const -> ftxui::Element {
-        if (!m_show_details || m_rows.empty()) {
+        auto const* selected_change{ selectedChange() };
+        if (!m_show_details || selected_change == nullptr) {
             return ftxui::emptyElement();
         }
 
-        auto const& change{ m_session.Changes()[m_rows[m_selected_row]] };
+        auto const& change{ *selected_change };
         ftxui::Elements lines{
             ftxui::separatorLight(),
             ftxui::hbox({
@@ -276,6 +277,11 @@ namespace file_monitor::tui {
 
     auto ChangeList::IsFiltered() const -> bool {
         return !m_path_filter.empty() || std::ranges::contains(m_hidden_statuses, true);
+    }
+
+    auto ChangeList::SelectedChange() -> core::FileChange const* {
+        refresh();
+        return selectedChange();
     }
 
     auto ChangeList::FollowsLatest() const -> bool {
@@ -375,6 +381,13 @@ namespace file_monitor::tui {
         // Do not leave rows empty below the last change.
         m_first_visible_row = std::min(first_row, last_first_row);
         m_first_visible_sequence = rowSequence(m_first_visible_row);
+    }
+
+    auto ChangeList::selectedChange() const -> core::FileChange const* {
+        if (m_rows.empty()) {
+            return nullptr;
+        }
+        return &m_session.Changes()[m_rows[m_selected_row]];
     }
 
     auto ChangeList::visibleRowCount() const -> std::size_t {

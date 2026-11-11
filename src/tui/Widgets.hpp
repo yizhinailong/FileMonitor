@@ -2,6 +2,7 @@
 
 #include <string_view>
 
+#include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include "core/FileSystem.hpp"
@@ -9,6 +10,10 @@
 
 namespace file_monitor::tui {
 
+    // Keys and clicks, as opposed to mouse moves and the redraw requests of
+    // the session poller.
+    [[nodiscard]]
+    auto is_user_input(ftxui::Event event) -> bool;
     auto error_text(std::string_view message) -> ftxui::Element;
     auto error_text(std::string_view label, std::string_view message) -> ftxui::Element;
     auto session_error_text(core::MonitorSession const& session) -> ftxui::Element;
