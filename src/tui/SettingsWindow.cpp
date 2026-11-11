@@ -15,6 +15,7 @@
 #include <ftxui/screen/color.hpp>
 #include <ftxui/screen/string.hpp>
 
+#include "PathCompletion.hpp"
 #include "Widgets.hpp"
 #include "core/Utils.hpp"
 
@@ -163,6 +164,10 @@ namespace file_monitor::tui {
             addInputDirectory();
             return true;
         }
+        if (event == ftxui::Event::Tab) {
+            completeInput();
+            return true;
+        }
         if (event.is_mouse()) {
             return m_monitored_list.OnEvent(event) || m_excluded_list.OnEvent(event);
         }
@@ -210,6 +215,18 @@ namespace file_monitor::tui {
         rows.push_back(m_excluded_list.Render(m_focus == Focus::Excluded, width) | ftxui::flex);
         rows.push_back(ftxui::separatorLight());
         rows.push_back(renderInputLine());
+        if (!m_completions.empty()) {
+            auto const candidates{
+                m_completions | std::views::join_with(std::string_view{ "  " }) | std::ranges::to<std::string>()
+            };
+            rows.push_back(
+                ftxui::hbox({
+                    ftxui::text(std::format("{} 个匹配：", m_completions.size())),
+                    ftxui::text(candidates),
+                }) |
+                ftxui::dim
+            );
+        }
         rows.push_back(error_text(m_input_error));
         rows.push_back(ftxui::separatorLight());
         rows.push_back(renderFooter(width));
@@ -253,6 +270,7 @@ namespace file_monitor::tui {
     auto SettingsWindow::inputHints() -> std::vector<KeyHint> {
         std::vector<KeyHint> hints;
         hints.push_back({ .key = "Enter", .label = "添加", .action = [this] { addInputDirectory(); }, .priority = 5 });
+        hints.push_back({ .key = "Tab", .label = "补全", .action = [this] { completeInput(); }, .priority = 3 });
         hints.push_back({ .key = "Esc", .label = "返回列表", .action = [this] { focusList(); }, .priority = 4 });
         hints.push_back({ .key = "Ctrl+S", .label = "保存", .action = [this] { save(); }, .priority = 5 });
         return hints;
@@ -265,6 +283,7 @@ namespace file_monitor::tui {
         option.cursor_position = &m_input_cursor;
         option.on_change = [this] {
             m_input_error.clear();
+            m_completions.clear();
         };
         option.transform = [](ftxui::InputState state) {
             if (state.is_placeholder) {
@@ -293,6 +312,7 @@ namespace file_monitor::tui {
         m_input.clear();
         m_input_cursor = 0;
         m_input_error.clear();
+        m_completions.clear();
     }
 
     auto SettingsWindow::switchList() -> void {
@@ -317,8 +337,24 @@ namespace file_monitor::tui {
         m_input.clear();
         m_input_cursor = 0;
         m_input_error.clear();
+        m_completions.clear();
         targetList().SelectLast();
         refreshWarnings();
+    }
+
+    auto SettingsWindow::completeInput() -> void {
+        auto completion{ complete_directory_path(m_input) };
+        if (!completion.matched) {
+            m_input_error = "没有以此开头的文件夹";
+            m_completions.clear();
+            return;
+        }
+        // Assigning the text directly does not run on_change, which would
+        // clear the candidates again.
+        m_input = std::move(completion.text);
+        m_input_cursor = static_cast<int>(m_input.size());
+        m_input_error.clear();
+        m_completions = std::move(completion.candidates);
     }
 
     auto SettingsWindow::removeSelectedDirectory() -> void {

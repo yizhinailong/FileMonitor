@@ -53,6 +53,7 @@ namespace file_monitor::tui {
         auto focusList() -> void;
         auto switchList() -> void;
         auto addInputDirectory() -> void;
+        auto completeInput() -> void;
         auto removeSelectedDirectory() -> void;
         auto refreshWarnings() -> void;
         [[nodiscard]]
@@ -73,6 +74,9 @@ namespace file_monitor::tui {
         std::string m_input;
         int m_input_cursor{ 0 };
         std::string m_input_error;
+        // The directories that the last Tab press could complete the input
+        // with.
+        std::vector<std::string> m_completions;
         ftxui::Component m_input_field;
         ftxui::Box m_input_box{ .x_min = 0, .x_max = -1, .y_min = 0, .y_max = -1 };
         bool m_confirm_discard{ false };
