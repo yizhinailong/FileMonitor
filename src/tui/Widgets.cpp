@@ -3,10 +3,9 @@
 #include <algorithm>
 #include <format>
 #include <ranges>
+#include <string>
 #include <utility>
 
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/component_options.hpp>
 #include <ftxui/screen/color.hpp>
 #include <ftxui/screen/terminal.hpp>
 
@@ -32,35 +31,6 @@ namespace file_monitor::tui {
         }
 
     } // namespace
-
-    auto make_button(
-        std::string label,
-        std::function<void()> on_click,
-        std::function<bool()> enabled
-    ) -> ftxui::Component {
-        auto is_enabled{ [enabled = std::move(enabled)] {
-            return !enabled || enabled();
-        } };
-
-        ftxui::ButtonOption option;
-        option.label = std::move(label);
-        option.on_click = [on_click = std::move(on_click), is_enabled] {
-            if (is_enabled()) {
-                on_click();
-            }
-        };
-        option.transform = [is_enabled](ftxui::EntryState const& state) {
-            auto element{ ftxui::text(" " + state.label + " ") | ftxui::hcenter | ftxui::borderLight };
-            if (!is_enabled()) {
-                return element | ftxui::dim;
-            }
-            if (state.focused) {
-                element |= ftxui::inverted;
-            }
-            return element;
-        };
-        return ftxui::Button(std::move(option));
-    }
 
     auto error_text(std::string_view message) -> ftxui::Element {
         if (message.empty()) {
