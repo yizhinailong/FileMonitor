@@ -1,12 +1,8 @@
-#include "Shell.hpp"
+#include "Clipboard.hpp"
 
 #include <algorithm>
-#include <cstdint>
-#include <filesystem>
-#include <format>
+#include <cstddef>
 #include <string>
-#include <system_error>
-#include <utility>
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -15,7 +11,6 @@
     #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include <shellapi.h>
 
 namespace file_monitor::tui {
     namespace {
@@ -30,19 +25,6 @@ namespace file_monitor::tui {
             std::wstring wide(static_cast<std::size_t>(std::max(size, 0)), L'\0');
             MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wide.data(), size);
             return wide;
-        }
-
-        auto run_explorer(std::wstring const& arguments) -> bool {
-            auto const result{
-                ShellExecuteW(nullptr, L"open", L"explorer.exe", arguments.c_str(), nullptr, SW_SHOWNORMAL)
-            };
-            // ShellExecuteW returns a value above 32 on success.
-            return reinterpret_cast<std::intptr_t>(result) > 32;
-        }
-
-        auto path_exists(std::filesystem::path const& path) -> bool {
-            std::error_code error;
-            return std::filesystem::exists(path, error);
         }
 
     } // namespace
@@ -69,27 +51,6 @@ namespace file_monitor::tui {
         }
         CloseClipboard();
         return copied;
-    }
-
-    auto show_in_explorer(std::string_view path_text) -> bool {
-        std::filesystem::path path{ to_wide(path_text) };
-        // Directories in the change list end with a separator.
-        if (!path.has_filename()) {
-            path = path.parent_path();
-        }
-        if (path_exists(path)) {
-            return run_explorer(std::format(L"/select,\"{}\"", path.native()));
-        }
-
-        auto directory{ path.parent_path() };
-        while (!path_exists(directory)) {
-            auto parent{ directory.parent_path() };
-            if (parent == directory) {
-                return false;
-            }
-            directory = std::move(parent);
-        }
-        return run_explorer(std::format(L"\"{}\"", directory.native()));
     }
 
 } // namespace file_monitor::tui

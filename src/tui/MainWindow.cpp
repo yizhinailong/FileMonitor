@@ -16,10 +16,11 @@
 #include <ftxui/screen/color.hpp>
 #include <ftxui/screen/string.hpp>
 
-#include "Shell.hpp"
+#include "Clipboard.hpp"
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 #include "core/FileSystem.hpp"
+#include "core/Shell.hpp"
 
 #define FILE_MONITOR_STRINGIFY_IMPL(value) #value
 #define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)
@@ -363,7 +364,7 @@ namespace file_monitor::tui {
         if (change == nullptr) {
             return;
         }
-        m_notice_failed = !show_in_explorer(change->absolute_path);
+        m_notice_failed = !core::show_in_explorer(change->absolute_path);
         m_notice = m_notice_failed ? "无法打开资源管理器" : "已在资源管理器中打开";
     }
 
