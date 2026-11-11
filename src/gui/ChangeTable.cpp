@@ -22,6 +22,9 @@ namespace file_monitor::gui {
         };
         // Half a pixel, the precision to which scroll positions are compared.
         constexpr auto SCROLL_TOLERANCE{ 0.5F };
+        // Selecting a change can make the details below the table higher in
+        // the next frame, which hides the last visible row.
+        constexpr auto REVEAL_FRAME_COUNT{ 2 };
 
         auto full_path_text(core::FileChange const& change) -> std::string {
             if (change.previous_absolute_path.empty()) {
@@ -43,9 +46,12 @@ namespace file_monitor::gui {
             m_follows_latest = true;
         }
         m_end_sequence = first_sequence + m_session.Changes().size();
+        if (m_selected_sequence && *m_selected_sequence < first_sequence) {
+            m_selected_sequence.reset();
+        }
     }
 
-    auto ChangeTable::Render(ImVec2 size) -> void {
+    auto ChangeTable::Render(ImVec2 size) -> ChangeAction {
         auto const changes{ m_session.Changes() };
         auto const first_sequence{ m_session.FirstChangeSequence() };
 
@@ -61,7 +67,7 @@ namespace file_monitor::gui {
         }
 
         if (!ImGui::BeginTable("Changes", COLUMN_COUNT, TABLE_FLAGS, size)) {
-            return;
+            return ChangeAction::None;
         }
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("时间", ImGuiTableColumnFlags_WidthFixed, text_width("00:00:00.000"));
@@ -72,14 +78,40 @@ namespace file_monitor::gui {
 
         updateFollowing(ImGui::GetScrollY(), ImGui::GetScrollMaxY());
 
+        // Dear ImGui turns clicks and the arrow keys into requests to change
+        // the selection. It identifies a row by the value given to
+        // SetNextItemSelectionUserData(), here the sequence number.
+        auto* multi_select{
+            ImGui::BeginMultiSelect(
+                ImGuiMultiSelectFlags_SingleSelect | ImGuiMultiSelectFlags_ClearOnClickVoid,
+                m_selected_sequence ? 1 : 0,
+                static_cast<int>(changes.size())
+            )
+        };
+        applySelectionRequests(*multi_select);
+
+        // The rows draw the background of the selected one themselves. The
+        // frame around the row that has the keyboard focus is left out, as
+        // that row is the selected one.
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{});
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, hovered_row_color());
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, hovered_row_color());
+        ImGui::PushStyleColor(ImGuiCol_NavCursor, ImVec4{});
+        auto action{ ChangeAction::None };
         ImGuiListClipper clipper;
         clipper.Begin(static_cast<int>(changes.size()));
         while (clipper.Step()) {
             for (auto row{ clipper.DisplayStart }; row < clipper.DisplayEnd; ++row) {
                 auto const index{ static_cast<std::size_t>(row) };
-                renderRow(changes[index], first_sequence + index);
+                auto const row_action{ renderRow(changes[index], first_sequence + index) };
+                if (row_action != ChangeAction::None) {
+                    action = row_action;
+                }
             }
         }
+        ImGui::PopStyleColor(4);
+        m_reveal_frame_count = std::max(m_reveal_frame_count - 1, 0);
+        applySelectionRequests(*ImGui::EndMultiSelect());
         if (m_follows_latest) {
             ImGui::SetScrollHereY(1.0F);
         }
@@ -94,10 +126,19 @@ namespace file_monitor::gui {
             m_top_offset = m_scroll_y - static_cast<float>(top_row) * m_row_height;
         }
         ImGui::EndTable();
+        return action;
     }
 
     auto ChangeTable::ScrollToLatest() -> void {
         m_scroll_to_latest = true;
+    }
+
+    auto ChangeTable::SelectedChange() const -> core::FileChange const* {
+        auto const first_sequence{ m_session.FirstChangeSequence() };
+        if (!m_selected_sequence || *m_selected_sequence < first_sequence || *m_selected_sequence >= m_end_sequence) {
+            return nullptr;
+        }
+        return &m_session.Changes()[static_cast<std::size_t>(*m_selected_sequence - first_sequence)];
     }
 
     auto ChangeTable::RowCount() const -> std::size_t {
@@ -116,14 +157,50 @@ namespace file_monitor::gui {
         return static_cast<std::size_t>(m_end_sequence - std::min(first_unseen, m_end_sequence));
     }
 
-    auto ChangeTable::renderRow(core::FileChange const& change, std::uint64_t sequence) -> void {
+    auto ChangeTable::renderRow(core::FileChange const& change, std::uint64_t sequence) -> ChangeAction {
+        auto action{ ChangeAction::None };
+        ImGui::PushID(static_cast<int>(sequence));
         ImGui::TableNextRow();
         // Shade every other change rather than every other row, so a row keeps
         // its shade when the changes above it are dropped.
         auto const row_color{ sequence % 2 == 0 ? ImGuiCol_TableRowBg : ImGuiCol_TableRowBgAlt };
         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(row_color));
 
+        auto const selected{ m_selected_sequence == sequence };
+        if (selected) {
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::GetColorU32(selected_row_color()));
+        }
+
+        // The row is one selectable item behind the texts of its cells.
         ImGui::TableSetColumnIndex(0);
+        ImGui::SetNextItemSelectionUserData(static_cast<ImGuiSelectionUserData>(sequence));
+        ImGui::Selectable(
+            "##Change",
+            selected,
+            ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap
+        );
+        auto const table_bottom{ ImGui::GetWindowPos().y + ImGui::GetWindowHeight() };
+        if (selected && m_reveal_frame_count > 0 && ImGui::GetItemRectMax().y > table_bottom) {
+            ImGui::SetScrollHereY(1.0F);
+        }
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            action = ChangeAction::ShowInExplorer;
+        }
+        // A right click selects the row before it opens the menu.
+        if (ImGui::BeginPopupContextItem()) {
+            if (ImGui::MenuItem("复制路径", "Ctrl+C")) {
+                action = ChangeAction::CopyPath;
+            }
+            if (!change.previous_absolute_path.empty() && ImGui::MenuItem("复制原路径")) {
+                action = ChangeAction::CopyPreviousPath;
+            }
+            if (ImGui::MenuItem("在资源管理器中显示", "O")) {
+                action = ChangeAction::ShowInExplorer;
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::SameLine(0.0F, 0.0F);
         draw_text(core::file_change_time_of_day(change));
         ImGui::SetItemTooltip("%s", change.time.c_str());
 
@@ -143,6 +220,24 @@ namespace file_monitor::gui {
         draw_text(path_text);
         if (auto const full_text{ full_path_text(change) }; full_text != path_text) {
             ImGui::SetItemTooltip("%s", full_text.c_str());
+        }
+        ImGui::PopID();
+        return action;
+    }
+
+    auto ChangeTable::applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void {
+        for (auto const& request : multi_select.Requests) {
+            if (request.Type == ImGuiSelectionRequestType_SetAll) {
+                // Selecting all is not possible with a single selection.
+                if (!request.Selected) {
+                    m_selected_sequence.reset();
+                }
+            } else if (request.Selected) {
+                m_selected_sequence = static_cast<std::uint64_t>(request.RangeFirstItem);
+                m_reveal_frame_count = REVEAL_FRAME_COUNT + 1;
+            } else if (m_selected_sequence == static_cast<std::uint64_t>(request.RangeFirstItem)) {
+                m_selected_sequence.reset();
+            }
         }
     }
 

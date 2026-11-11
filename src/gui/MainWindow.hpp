@@ -1,5 +1,9 @@
 #pragma once
 
+#include <chrono>
+#include <string>
+#include <string_view>
+
 #include <imgui.h>
 
 #include "ChangeTable.hpp"
@@ -9,7 +13,8 @@
 namespace file_monitor::gui {
 
     // The window content from top to bottom: a toolbar, the session errors if
-    // there are any, the change table and a status bar.
+    // there are any, the change table, the details of the selected change and
+    // a status bar.
     class MainWindow final {
     public:
         [[nodiscard]]
@@ -25,14 +30,25 @@ namespace file_monitor::gui {
     private:
         auto renderToolbar() -> void;
         auto renderErrors() -> void;
-        // Takes the place of the change table while it has no rows.
+        // Takes the place of the change table and the details while the table
+        // has no rows.
         auto renderEmptyState(ImVec2 size) -> void;
+        auto renderDetails(float height) -> void;
         auto renderStatusBar() -> void;
+        auto handleShortcuts() -> void;
+        // Does what was asked for with the selected change, if there is one.
+        auto run(ChangeAction action) -> void;
+        auto showNotice(std::string_view text, bool failed = false) -> void;
         auto openSettings() -> void;
 
         core::MonitorSession m_session;
         ChangeTable m_change_table{ m_session };
         SettingsWindow m_settings_window;
+        // The outcome of the last action, shown in the status bar for a few
+        // seconds.
+        std::string m_notice;
+        bool m_notice_failed{ false };
+        std::chrono::steady_clock::time_point m_notice_end;
     };
 
 } // namespace file_monitor::gui

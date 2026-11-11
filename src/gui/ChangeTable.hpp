@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include <imgui.h>
 
@@ -10,10 +11,19 @@
 
 namespace file_monitor::gui {
 
-    // The table of the changes kept by the session. Scrolled to the bottom it
-    // follows new changes; scrolled elsewhere it keeps its rows in place when
-    // the session drops the oldest changes, by remembering the sequence
-    // number of its first visible row.
+    // What the user asked to do with the selected change.
+    enum class ChangeAction {
+        None,
+        CopyPath,
+        CopyPreviousPath,
+        ShowInExplorer
+    };
+
+    // The table of the changes kept by the session, one of which can be
+    // selected. Scrolled to the bottom it follows new changes; scrolled
+    // elsewhere it keeps its rows in place when the session drops the oldest
+    // changes. The selection and the first visible row are remembered by
+    // sequence number for that.
     class ChangeTable final {
     public:
         explicit ChangeTable(core::MonitorSession const& session);
@@ -21,11 +31,16 @@ namespace file_monitor::gui {
         // Brings the table up to date with the session. Call once per frame
         // before the functions below.
         auto Refresh() -> void;
-        // Draws the table, which must have rows.
-        auto Render(ImVec2 size) -> void;
+        // Draws the table, which must have rows. A click or the arrow keys
+        // select a change; a double click or the context menu of a change
+        // ask for an action.
+        auto Render(ImVec2 size) -> ChangeAction;
         // Scrolls to the newest change, which makes the table follow again.
         auto ScrollToLatest() -> void;
 
+        // The selected change, or nullptr.
+        [[nodiscard]]
+        auto SelectedChange() const -> core::FileChange const*;
         [[nodiscard]]
         auto RowCount() const -> std::size_t;
         [[nodiscard]]
@@ -35,18 +50,22 @@ namespace file_monitor::gui {
         auto NewChangeCount() const -> std::size_t;
 
     private:
-        auto renderRow(core::FileChange const& change, std::uint64_t sequence) -> void;
+        auto renderRow(core::FileChange const& change, std::uint64_t sequence) -> ChangeAction;
+        auto applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void;
         auto updateFollowing(float scroll_y, float scroll_max_y) -> void;
         [[nodiscard]]
         auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t;
 
         core::MonitorSession const& m_session;
+        std::optional<std::uint64_t> m_selected_sequence;
         // The sequence number after the last change of the last refresh.
         std::uint64_t m_end_sequence{ 0 };
         // The first sequence number added after the table stopped following.
         std::uint64_t m_unseen_sequence{ 0 };
         bool m_follows_latest{ true };
         bool m_scroll_to_latest{ false };
+        // Frames in which a newly selected row is still scrolled into view.
+        int m_reveal_frame_count{ 0 };
         // The scroll position of the last frame: the first visible row and how
         // far it is scrolled out of view.
         std::uint64_t m_top_sequence{ 0 };

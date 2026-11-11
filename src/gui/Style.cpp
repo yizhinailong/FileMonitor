@@ -6,6 +6,8 @@ namespace file_monitor::gui {
     namespace {
 
         constexpr auto FONT_SIZE{ 18.0F };
+        constexpr auto SELECTED_ROW_ALPHA{ 0.45F };
+        constexpr auto HOVERED_ROW_ALPHA{ 0.15F };
 
         // A color for each theme.
         struct ThemeColor {
@@ -71,6 +73,9 @@ namespace file_monitor::gui {
         }
 
         auto& style{ ImGui::GetStyle() };
+        // Menus and the settings window cover text, which shows through the
+        // default background.
+        style.Colors[ImGuiCol_PopupBg].w = 1.0F;
         style.WindowPadding = { 12.0F, 10.0F };
         style.FramePadding = { 10.0F, 5.0F };
         style.CellPadding = { 8.0F, 4.0F };
@@ -96,6 +101,18 @@ namespace file_monitor::gui {
                 return themed(MAGENTA);
         }
         return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+    }
+
+    auto selected_row_color() -> ImVec4 {
+        auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
+        color.w = SELECTED_ROW_ALPHA;
+        return color;
+    }
+
+    auto hovered_row_color() -> ImVec4 {
+        auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
+        color.w = HOVERED_ROW_ALPHA;
+        return color;
     }
 
     auto success_color() -> ImVec4 {

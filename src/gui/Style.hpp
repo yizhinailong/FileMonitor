@@ -21,6 +21,13 @@ namespace file_monitor::gui {
 
     [[nodiscard]]
     auto file_change_status_color(core::FileChangeStatus status) -> ImVec4;
+    // The backgrounds of the selected row of a list and of the row under the
+    // pointer. The pointer does not hide which row is selected, as it does
+    // with the colors Dear ImGui uses for both by default.
+    [[nodiscard]]
+    auto selected_row_color() -> ImVec4;
+    [[nodiscard]]
+    auto hovered_row_color() -> ImVec4;
     [[nodiscard]]
     auto success_color() -> ImVec4;
     [[nodiscard]]
