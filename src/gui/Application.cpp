@@ -27,6 +27,9 @@ namespace file_monitor::gui {
         m_main_window.Settings().SetParentWindow(m_backend.NativeWindow());
 
         while (m_backend.ProcessEvents()) {
+            // Before the check for a minimized window, so the changes made
+            // meanwhile still reach the log.
+            m_main_window.Update();
             if (!m_backend.BeginFrame()) {
                 continue;
             }

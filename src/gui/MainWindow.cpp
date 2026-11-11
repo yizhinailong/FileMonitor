@@ -36,11 +36,13 @@ namespace file_monitor::gui {
         return m_settings_window;
     }
 
-    auto MainWindow::Render() -> void {
+    auto MainWindow::Update() -> void {
         if (m_session.Update().changes_added) {
             m_scroll_to_latest = true;
         }
+    }
 
+    auto MainWindow::Render() -> void {
         auto const* viewport{ ImGui::GetMainViewport() };
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);

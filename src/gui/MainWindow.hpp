@@ -12,6 +12,9 @@ namespace file_monitor::gui {
         [[nodiscard]]
         auto Settings() -> SettingsWindow&;
 
+        // Takes the new changes from the monitor and writes them to the log.
+        // Call this also while the window is minimized and Render() is not.
+        auto Update() -> void;
         auto Render() -> void;
 
     private:
