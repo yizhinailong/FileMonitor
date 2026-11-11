@@ -58,9 +58,11 @@ namespace file_monitor::gui {
         ImGui::OpenPopup("设置##SettingsWindow");
     }
 
-    auto SettingsWindow::Render(core::MonitorSession& session) -> void {
-        consumeDirectorySelection();
+    auto SettingsWindow::Update() -> bool {
+        return consumeDirectorySelection();
+    }
 
+    auto SettingsWindow::Render(core::MonitorSession& session) -> void {
         auto const* viewport{ ImGui::GetMainViewport() };
         auto const popup_size{
             ImVec2{
@@ -136,13 +138,13 @@ namespace file_monitor::gui {
         editor.error_message.clear();
     }
 
-    auto SettingsWindow::consumeDirectorySelection() -> void {
+    auto SettingsWindow::consumeDirectorySelection() -> bool {
         std::vector<std::filesystem::path> selected_directories;
         std::string error_message;
         {
             auto const lock{ std::scoped_lock{ m_dialog_state->mutex } };
             if (!m_dialog_state->completed) {
-                return;
+                return false;
             }
 
             m_dialog_state->completed = false;
@@ -158,6 +160,7 @@ namespace file_monitor::gui {
         for (auto& directory : selected_directories) {
             core::add_directory(pendingDirectories(m_dialog_group), std::move(directory));
         }
+        return true;
     }
 
     auto SettingsWindow::directoryEditor(DirectoryGroup group)

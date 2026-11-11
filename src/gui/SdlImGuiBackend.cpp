@@ -15,6 +15,16 @@
 namespace file_monitor::gui {
     namespace {
 
+        // How long an idle window waits for an event before it looks for new
+        // file changes.
+        constexpr auto IDLE_WAIT_MS{ Sint32{ 100 } };
+        // Frames follow an event for this long: the interface reacts to input
+        // a frame late, and a tooltip only appears once the pointer has
+        // rested.
+        constexpr auto ACTIVE_PERIOD_MS{ Uint64{ 1000 } };
+        // The frame after the one that shows new content scrolls to it.
+        constexpr auto CONTENT_FRAME_COUNT{ 2 };
+
         auto sdl_error(std::string_view message) -> std::string {
             return std::format("{}: {}", message, SDL_GetError());
         }
@@ -92,12 +102,24 @@ namespace file_monitor::gui {
 
         SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         SDL_ShowWindow(m_window);
+        m_active_until = SDL_GetTicks() + ACTIVE_PERIOD_MS;
         return {};
     }
 
-    auto SdlImGuiBackend::ProcessEvents() -> bool {
+    auto SdlImGuiBackend::NextFrame(bool content_changed) -> FrameAction {
+        if (content_changed) {
+            m_content_frame_count = CONTENT_FRAME_COUNT;
+        }
+
+        auto const drawing{
+            !isMinimized() && (m_content_frame_count > 0 || SDL_GetTicks() < m_active_until)
+        };
         SDL_Event event{};
-        while (SDL_PollEvent(&event)) {
+        auto has_event{ drawing ? SDL_PollEvent(&event) : SDL_WaitEventTimeout(&event, IDLE_WAIT_MS) };
+        if (has_event) {
+            m_active_until = SDL_GetTicks() + ACTIVE_PERIOD_MS;
+        }
+        for (; has_event; has_event = SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_SYSTEM_THEME_CHANGED) {
                 apply_system_theme();
@@ -105,23 +127,28 @@ namespace file_monitor::gui {
             if (event.type == SDL_EVENT_QUIT ||
                 (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                  event.window.windowID == SDL_GetWindowID(m_window))) {
-                return false;
+                return FrameAction::Quit;
             }
         }
 
-        return true;
+        if (isMinimized()) {
+            return FrameAction::Skip;
+        }
+        if (m_content_frame_count > 0) {
+            --m_content_frame_count;
+            return FrameAction::Render;
+        }
+        // The cursor of a focused text input blinks.
+        if (SDL_GetTicks() < m_active_until || ImGui::GetIO().WantTextInput) {
+            return FrameAction::Render;
+        }
+        return FrameAction::Skip;
     }
 
-    auto SdlImGuiBackend::BeginFrame() -> bool {
-        if ((SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED) != 0) {
-            SDL_Delay(10);
-            return false;
-        }
-
+    auto SdlImGuiBackend::BeginFrame() -> void {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
-        return true;
     }
 
     auto SdlImGuiBackend::EndFrame() -> bool {
@@ -190,6 +217,10 @@ namespace file_monitor::gui {
         }
         m_imgui_opengl_initialized = true;
         return {};
+    }
+
+    auto SdlImGuiBackend::isMinimized() const -> bool {
+        return (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED) != 0;
     }
 
     auto SdlImGuiBackend::shutdown() -> void {

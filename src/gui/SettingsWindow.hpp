@@ -24,6 +24,10 @@ namespace file_monitor::gui {
     public:
         auto SetParentWindow(SDL_Window* window) -> void;
         auto Open(core::Configuration const& configuration) -> void;
+        // Takes the folders picked in the system dialog, which reports them
+        // from another thread; returns whether it had any result.
+        [[nodiscard]]
+        auto Update() -> bool;
         auto Render(core::MonitorSession& session) -> void;
 
     private:
@@ -38,7 +42,7 @@ namespace file_monitor::gui {
         };
 
         auto addManualDirectory(DirectoryGroup group) -> void;
-        auto consumeDirectorySelection() -> void;
+        auto consumeDirectorySelection() -> bool;
         auto directoryEditor(DirectoryGroup group) -> DirectoryEditorState&;
         auto openDirectoryDialog(DirectoryGroup group) -> void;
         auto pendingDirectories(DirectoryGroup group) -> std::vector<std::filesystem::path>&;

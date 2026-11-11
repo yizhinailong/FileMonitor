@@ -26,21 +26,24 @@ namespace file_monitor::gui {
         }
         m_main_window.Settings().SetParentWindow(m_backend.NativeWindow());
 
-        while (m_backend.ProcessEvents()) {
-            // Before the check for a minimized window, so the changes made
+        while (true) {
+            // On every pass, also for a minimized window, so the changes made
             // meanwhile still reach the log.
-            m_main_window.Update();
-            if (!m_backend.BeginFrame()) {
+            auto const content_changed{ m_main_window.Update() };
+            auto const action{ m_backend.NextFrame(content_changed) };
+            if (action == FrameAction::Quit) {
+                return 0;
+            }
+            if (action == FrameAction::Skip) {
                 continue;
             }
 
+            m_backend.BeginFrame();
             m_main_window.Render();
             if (!m_backend.EndFrame()) {
                 return 1;
             }
         }
-
-        return 0;
     }
 
 } // namespace file_monitor::gui

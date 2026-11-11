@@ -36,10 +36,13 @@ namespace file_monitor::gui {
         return m_settings_window;
     }
 
-    auto MainWindow::Update() -> void {
-        if (m_session.Update().changes_added) {
+    auto MainWindow::Update() -> bool {
+        auto const update{ m_session.Update() };
+        if (update.changes_added) {
             m_scroll_to_latest = true;
         }
+        auto const directories_selected{ m_settings_window.Update() };
+        return update.changes_added || update.errors_changed || directories_selected;
     }
 
     auto MainWindow::Render() -> void {
