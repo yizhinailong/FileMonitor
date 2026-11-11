@@ -14,6 +14,7 @@
 
 #include "Style.hpp"
 #include "core/Utils.hpp"
+#include "core/WindowLayout.hpp"
 
 namespace file_monitor::gui {
     namespace {
@@ -48,6 +49,39 @@ namespace file_monitor::gui {
             apply_theme(SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ? Theme::Light : Theme::Dark);
         }
 
+        auto window_layout_path() -> std::filesystem::path {
+            return core::utils::data_directory() / "window-layout.json";
+        }
+
+        // The scale Windows reports for the display the window is on.
+        auto display_scale(SDL_Window* window) -> float {
+            auto const scale{ SDL_GetWindowDisplayScale(window) };
+            return scale > 0.0F ? scale : 1.0F;
+        }
+
+        // Whether the window would at least partly be on one of the displays;
+        // a layout saved on a display that is gone would leave it out of
+        // reach otherwise.
+        auto is_on_a_display(core::WindowLayout const& layout) -> bool {
+            auto const window{
+                SDL_Rect{ layout.x, layout.y, layout.width, layout.height }
+            };
+            auto display_count{ 0 };
+            auto* const displays{ SDL_GetDisplays(&display_count) };
+            auto visible{ false };
+            for (auto index{ 0 }; index < display_count && !visible; ++index) {
+                SDL_Rect bounds{};
+                if (SDL_GetDisplayUsableBounds(displays[index], &bounds)) {
+                    visible = window.x < bounds.x + bounds.w &&
+                        bounds.x < window.x + window.w &&
+                        window.y < bounds.y + bounds.h &&
+                        bounds.y < window.y + window.h;
+                }
+            }
+            SDL_free(displays);
+            return visible;
+        }
+
     } // namespace
 
     SdlImGuiBackend::~SdlImGuiBackend() {
@@ -65,11 +99,13 @@ namespace file_monitor::gui {
             return std::unexpected{ sdl_error("OpenGL attribute setup failed") };
         }
 
+        auto const scale{ SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()) };
+        auto const window_scale{ scale > 0.0F ? scale : 1.0F };
         std::string const window_title{ title };
         m_window = SDL_CreateWindow(
             window_title.c_str(),
-            width,
-            height,
+            static_cast<int>(static_cast<float>(width) * window_scale),
+            static_cast<int>(static_cast<float>(height) * window_scale),
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN |
                 SDL_WINDOW_HIGH_PIXEL_DENSITY
         );
@@ -84,10 +120,33 @@ namespace file_monitor::gui {
             return result;
         }
 
-        SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        applySavedLayout();
         SDL_ShowWindow(m_window);
         m_active_until = SDL_GetTicks() + ACTIVE_PERIOD_MS;
         return {};
+    }
+
+    auto SdlImGuiBackend::applySavedLayout() -> void {
+        auto const layout{ core::load_window_layout(window_layout_path()) };
+        if (!layout) {
+            SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            return;
+        }
+        SDL_SetWindowSize(m_window, layout->width, layout->height);
+        if (is_on_a_display(*layout)) {
+            SDL_SetWindowPosition(m_window, layout->x, layout->y);
+        } else {
+            SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        }
+        if (layout->maximized) {
+            SDL_MaximizeWindow(m_window);
+        }
+    }
+
+    auto SdlImGuiBackend::saveLayout() -> void {
+        core::WindowLayout layout{ m_normal_layout };
+        layout.maximized = (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MAXIMIZED) != 0;
+        core::save_window_layout(window_layout_path(), layout);
     }
 
     auto SdlImGuiBackend::NextFrame(bool content_changed) -> FrameAction {
@@ -107,6 +166,9 @@ namespace file_monitor::gui {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_SYSTEM_THEME_CHANGED) {
                 apply_system_theme();
+            }
+            if (event.type == SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED) {
+                set_scale(display_scale(m_window));
             }
             // A drop from File Explorer lists its files before it reports
             // where they were dropped.
@@ -130,6 +192,12 @@ namespace file_monitor::gui {
 
         if (isMinimized()) {
             return FrameAction::Skip;
+        }
+        // The size to restore the window to, should it close while maximized
+        // or minimized.
+        if ((SDL_GetWindowFlags(m_window) & SDL_WINDOW_MAXIMIZED) == 0) {
+            SDL_GetWindowPosition(m_window, &m_normal_layout.x, &m_normal_layout.y);
+            SDL_GetWindowSize(m_window, &m_normal_layout.width, &m_normal_layout.height);
         }
         if (m_content_frame_count > 0) {
             --m_content_frame_count;
@@ -201,6 +269,7 @@ namespace file_monitor::gui {
         m_imgui_context_created = true;
         apply_system_theme();
 
+        set_scale(display_scale(m_window));
         auto& io{ ImGui::GetIO() };
         io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -238,6 +307,7 @@ namespace file_monitor::gui {
             SDL_GL_DestroyContext(m_gl_context);
         }
         if (m_window != nullptr) {
+            saveLayout();
             SDL_DestroyWindow(m_window);
         }
         if (m_sdl_initialized) {

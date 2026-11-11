@@ -18,6 +18,10 @@ namespace file_monitor::gui {
     // Sets the sizes and colors of Dear ImGui and the colors of the functions
     // below.
     auto apply_theme(Theme theme) -> void;
+    // Scales the sizes and the text of the interface, for a display that
+    // reports this scale through Windows; 1 is 100%. The current theme is
+    // applied again.
+    auto set_scale(float scale) -> void;
 
     [[nodiscard]]
     auto file_change_status_color(core::FileChangeStatus status) -> ImVec4;

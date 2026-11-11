@@ -15,7 +15,7 @@ namespace file_monitor::core {
     } // namespace
 
     MonitorSession::MonitorSession()
-        : m_data_directory{ utils::executable_directory() / "data" / "FileMonitor" },
+        : m_data_directory{ utils::data_directory() },
           m_change_logger{ m_data_directory } {
         auto configuration{ load_configuration(m_data_directory / CONFIG_FILE_NAME) };
         if (configuration) {

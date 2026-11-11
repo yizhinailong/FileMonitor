@@ -70,6 +70,10 @@ namespace file_monitor::core::utils {
         }
     }
 
+    auto data_directory() -> std::filesystem::path {
+        return executable_directory() / "data" / "FileMonitor";
+    }
+
     // Windows file systems treat paths case-insensitively, so path elements are
     // compared the same way; a trailing separator on directory is ignored.
     auto path_is_within(

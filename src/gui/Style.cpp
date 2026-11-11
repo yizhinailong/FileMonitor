@@ -1,5 +1,6 @@
 #include "Style.hpp"
 
+#include <algorithm>
 #include <array>
 
 namespace file_monitor::gui {
@@ -41,6 +42,7 @@ namespace file_monitor::gui {
         };
 
         auto current_theme{ Theme::Dark };
+        auto current_scale{ 1.0F };
 
         auto themed(ThemeColor const& color) -> ImVec4 {
             return current_theme == Theme::Light ? color.light : color.dark;
@@ -73,18 +75,27 @@ namespace file_monitor::gui {
         }
 
         auto& style{ ImGui::GetStyle() };
+        // The sizes are set again rather than scaled, so that applying the
+        // theme once more does not scale them once more.
+        auto const scale{ current_scale };
         // Menus and the settings window cover text, which shows through the
         // default background.
         style.Colors[ImGuiCol_PopupBg].w = 1.0F;
-        style.WindowPadding = { 12.0F, 10.0F };
-        style.FramePadding = { 10.0F, 5.0F };
-        style.CellPadding = { 8.0F, 4.0F };
-        style.ItemSpacing = { 8.0F, 8.0F };
-        style.WindowRounding = 6.0F;
-        style.ChildRounding = 4.0F;
-        style.FrameRounding = 4.0F;
-        style.PopupRounding = 4.0F;
-        style.GrabRounding = 4.0F;
+        style.WindowPadding = { 12.0F * scale, 10.0F * scale };
+        style.FramePadding = { 10.0F * scale, 5.0F * scale };
+        style.CellPadding = { 8.0F * scale, 4.0F * scale };
+        style.ItemSpacing = { 8.0F * scale, 8.0F * scale };
+        style.WindowRounding = 6.0F * scale;
+        style.ChildRounding = 4.0F * scale;
+        style.FrameRounding = 4.0F * scale;
+        style.PopupRounding = 4.0F * scale;
+        style.GrabRounding = 4.0F * scale;
+        style.FontScaleDpi = scale;
+    }
+
+    auto set_scale(float scale) -> void {
+        current_scale = std::max(scale, 0.5F);
+        apply_theme(current_theme);
     }
 
     auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {

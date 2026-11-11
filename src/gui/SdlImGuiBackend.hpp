@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Drop.hpp"
+#include "core/WindowLayout.hpp"
 
 struct SDL_GLContextState;
 struct SDL_Window;
@@ -50,6 +51,10 @@ namespace file_monitor::gui {
         auto initializeImGui() -> std::expected<void, std::string>;
         [[nodiscard]]
         auto isMinimized() const -> bool;
+        // Puts the window where it was when it closed last time, or in the
+        // middle of the primary display.
+        auto applySavedLayout() -> void;
+        auto saveLayout() -> void;
         auto shutdown() -> void;
 
         SDL_Window* m_window{ nullptr };
@@ -64,6 +69,9 @@ namespace file_monitor::gui {
         std::vector<DroppedFile> m_dropped_files;
         float m_drop_x{ 0.0F };
         float m_drop_y{ 0.0F };
+        // The size and position of the window while it is neither minimized
+        // nor maximized, which is what a saved layout restores.
+        core::WindowLayout m_normal_layout;
         bool m_sdl_initialized{ false };
         bool m_imgui_context_created{ false };
         bool m_imgui_sdl_initialized{ false };
