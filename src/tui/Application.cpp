@@ -17,8 +17,7 @@ namespace file_monitor::tui {
 
     Application::Application()
         : m_screen{ ftxui::App::Fullscreen() },
-          m_main_window{ ftxui::Make<MainWindow>(m_session, m_screen.ExitLoopClosure()) } {
-    }
+          m_main_window{ ftxui::Make<MainWindow>(m_session, m_screen.ExitLoopClosure()) } {}
 
     auto Application::Run() -> int {
         // FTXUI leaves the loop on Ctrl+C and then re-raises SIGINT with the
