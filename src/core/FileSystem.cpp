@@ -353,6 +353,15 @@ namespace file_monitor::core {
         return time.substr(separator + TIME_RANGE_SEPARATOR.size());
     }
 
+    auto file_change_time_of_day(FileChange const& change) -> std::string_view {
+        auto const time{ file_change_event_time(change) };
+        auto const separator{ time.find(' ') };
+        if (separator == std::string_view::npos) {
+            return time;
+        }
+        return time.substr(separator + 1);
+    }
+
     auto file_change_creation_time(FileChange const& change) -> std::string_view {
         std::string_view const time{ change.time };
         auto const separator{ time.rfind(TIME_RANGE_SEPARATOR) };

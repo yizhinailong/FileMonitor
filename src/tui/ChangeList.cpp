@@ -66,7 +66,7 @@ namespace file_monitor::tui {
 
         auto change_row(core::FileChange const& change, int width) -> ftxui::Element {
             return make_row(
-                ftxui::text(std::string{ time_of_day(core::file_change_event_time(change)) }),
+                ftxui::text(std::string{ core::file_change_time_of_day(change) }),
                 file_change_status_element(change.status),
                 ftxui::text(change.size),
                 ftxui::text(change_path_text(change, path_column_width(width))),
