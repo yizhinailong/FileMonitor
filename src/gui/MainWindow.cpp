@@ -3,32 +3,16 @@
 #include <algorithm>
 #include <cstddef>
 
-#include <SDL3/SDL.h>
 #include <imgui.h>
 
 #include "ErrorText.hpp"
+#include "Style.hpp"
 
 namespace file_monitor::gui {
 
     namespace {
 
         constexpr auto FIXED_COLUMNS_WIDTH{ 380.0F + 72.0F + 110.0F };
-
-        auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
-            auto const light_theme{ SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT };
-            switch (status) {
-                case core::FileChangeStatus::Added:
-                    return light_theme ? ImVec4{ 0.05F, 0.45F, 0.15F, 1.0F } : ImVec4{ 0.30F, 0.85F, 0.40F, 1.0F };
-                case core::FileChangeStatus::Removed:
-                    return light_theme ? ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } : ImVec4{ 1.0F, 0.35F, 0.35F, 1.0F };
-                case core::FileChangeStatus::Modified:
-                    return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
-                case core::FileChangeStatus::Renamed:
-                case core::FileChangeStatus::Moved:
-                    return light_theme ? ImVec4{ 0.60F, 0.38F, 0.0F, 1.0F } : ImVec4{ 1.0F, 0.80F, 0.25F, 1.0F };
-            }
-            return ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        }
 
     } // namespace
 

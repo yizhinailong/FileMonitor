@@ -2,25 +2,17 @@
 
 #include <format>
 
-#include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "Style.hpp"
+
 namespace file_monitor::gui {
-    namespace {
-
-        auto error_text_color() -> ImVec4 {
-            return SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ?
-                ImVec4{ 0.75F, 0.10F, 0.10F, 1.0F } :
-                ImVec4{ 0.85F, 0.25F, 0.25F, 1.0F };
-        }
-
-    } // namespace
 
     auto render_error(std::string_view message) -> void {
         if (message.empty()) {
             return;
         }
-        ImGui::PushStyleColor(ImGuiCol_Text, error_text_color());
+        ImGui::PushStyleColor(ImGuiCol_Text, error_color());
         ImGui::TextWrapped("%.*s", static_cast<int>(message.size()), message.data());
         ImGui::PopStyleColor();
     }

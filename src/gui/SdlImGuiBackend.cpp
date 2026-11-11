@@ -1,6 +1,5 @@
 #include "SdlImGuiBackend.hpp"
 
-#include <array>
 #include <cstdio>
 #include <format>
 #include <print>
@@ -11,6 +10,8 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
+
+#include "Style.hpp"
 
 namespace file_monitor::gui {
     namespace {
@@ -42,26 +43,7 @@ namespace file_monitor::gui {
         }
 
         auto apply_system_theme() -> void {
-            if (SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT) {
-                ImGui::StyleColorsLight();
-            } else {
-                ImGui::StyleColorsDark();
-            }
-        }
-
-        auto load_chinese_font(ImGuiIO& io) -> bool {
-            constexpr std::array FONT_PATHS{
-                "C:/Windows/Fonts/msyh.ttc",
-                "C:/Windows/Fonts/simhei.ttf"
-            };
-
-            for (auto const* font_path : FONT_PATHS) {
-                if (auto* font{ io.Fonts->AddFontFromFileTTF(font_path, 18.0F) }) {
-                    io.FontDefault = font;
-                    return true;
-                }
-            }
-            return false;
+            apply_theme(SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ? Theme::Light : Theme::Dark);
         }
 
     } // namespace
@@ -203,7 +185,7 @@ namespace file_monitor::gui {
         auto& io{ ImGui::GetIO() };
         io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        if (!load_chinese_font(io)) {
+        if (!load_font()) {
             return std::unexpected{ "Chinese font loading failed" };
         }
 
