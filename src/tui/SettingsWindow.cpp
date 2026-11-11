@@ -1,12 +1,9 @@
 #include "SettingsWindow.hpp"
 
 #include <algorithm>
-#include <cstddef>
-#include <filesystem>
 #include <format>
 #include <ranges>
 #include <string_view>
-#include <system_error>
 #include <utility>
 
 #include <ftxui/component/component.hpp>
@@ -17,7 +14,7 @@
 
 #include "PathCompletion.hpp"
 #include "Widgets.hpp"
-#include "core/Utils.hpp"
+#include "core/Configuration.hpp"
 
 namespace file_monitor::tui {
     namespace {
@@ -28,43 +25,6 @@ namespace file_monitor::tui {
             return event.is_mouse() &&
                 event.mouse().button == ftxui::Mouse::Left &&
                 event.mouse().motion == ftxui::Mouse::Pressed;
-        }
-
-        auto monitored_directory_warning(
-            std::vector<std::filesystem::path> const& directories,
-            std::size_t index
-        ) -> std::string {
-            auto const& directory{ directories[index] };
-            std::error_code status_error;
-            auto const status{ std::filesystem::status(directory, status_error) };
-            if (status.type() == std::filesystem::file_type::not_found) {
-                return "不存在";
-            }
-            if (status_error) {
-                return "无法访问";
-            }
-            if (!std::filesystem::is_directory(status)) {
-                return "不是文件夹";
-            }
-            for (auto const [other_index, other] : std::views::enumerate(directories)) {
-                if (static_cast<std::size_t>(other_index) != index &&
-                    core::utils::path_is_within(directory, other)) {
-                    return "已在其他监控文件夹中";
-                }
-            }
-            return {};
-        }
-
-        auto excluded_directory_warning(
-            std::vector<std::filesystem::path> const& monitored_directories,
-            std::filesystem::path const& directory
-        ) -> std::string {
-            auto const is_monitored{
-                std::ranges::any_of(monitored_directories, [&](std::filesystem::path const& monitored) {
-                    return core::utils::path_is_within(directory, monitored);
-                })
-            };
-            return is_monitored ? std::string{} : "不在监控文件夹中，不起作用";
         }
 
     } // namespace
@@ -351,21 +311,8 @@ namespace file_monitor::tui {
     }
 
     auto SettingsWindow::refreshWarnings() -> void {
-        auto const& monitored{ m_pending_configuration.directories };
-        m_monitored_list.SetWarnings(
-            std::views::iota(std::size_t{ 0 }, monitored.size()) |
-            std::views::transform([&](std::size_t index) {
-                return monitored_directory_warning(monitored, index);
-            }) |
-            std::ranges::to<std::vector<std::string>>()
-        );
-        m_excluded_list.SetWarnings(
-            m_pending_configuration.excluded_directories |
-            std::views::transform([&](std::filesystem::path const& directory) {
-                return excluded_directory_warning(monitored, directory);
-            }) |
-            std::ranges::to<std::vector<std::string>>()
-        );
+        m_monitored_list.SetWarnings(core::monitored_directory_warnings(m_pending_configuration));
+        m_excluded_list.SetWarnings(core::excluded_directory_warnings(m_pending_configuration));
     }
 
     auto SettingsWindow::hasUnsavedChanges() const -> bool {

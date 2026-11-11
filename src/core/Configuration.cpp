@@ -1,6 +1,7 @@
 #include "Configuration.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <exception>
 #include <format>
 #include <fstream>
@@ -79,6 +80,31 @@ namespace file_monitor::core {
                 directory = directory.parent_path();
             }
             return directory;
+        }
+
+        auto monitored_directory_warning(
+            std::vector<std::filesystem::path> const& directories,
+            std::size_t index
+        ) -> std::string {
+            auto const& directory{ directories[index] };
+            std::error_code status_error;
+            auto const status{ std::filesystem::status(directory, status_error) };
+            if (status.type() == std::filesystem::file_type::not_found) {
+                return "不存在";
+            }
+            if (status_error) {
+                return "无法访问";
+            }
+            if (!std::filesystem::is_directory(status)) {
+                return "不是文件夹";
+            }
+            for (auto const [other_index, other] : std::views::enumerate(directories)) {
+                if (static_cast<std::size_t>(other_index) != index &&
+                    utils::path_is_within(directory, other)) {
+                    return "已在其他监控文件夹中";
+                }
+            }
+            return {};
         }
 
     } // namespace
@@ -223,6 +249,33 @@ namespace file_monitor::core {
             return std::unexpected{ "该文件夹已添加" };
         }
         return {};
+    }
+
+    auto monitored_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
+        auto const& directories{ configuration.directories };
+        std::vector<std::string> warnings;
+        warnings.reserve(directories.size());
+        for (auto index{ std::size_t{ 0 } }; index < directories.size(); ++index) {
+            warnings.push_back(monitored_directory_warning(directories, index));
+        }
+        return warnings;
+    }
+
+    auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
+        std::vector<std::string> warnings;
+        warnings.reserve(configuration.excluded_directories.size());
+        for (auto const& directory : configuration.excluded_directories) {
+            auto const is_monitored{
+                std::ranges::any_of(
+                    configuration.directories,
+                    [&directory](std::filesystem::path const& monitored) {
+                        return utils::path_is_within(directory, monitored);
+                    }
+                )
+            };
+            warnings.emplace_back(is_monitored ? "" : "不在监控文件夹中，不起作用");
+        }
+        return warnings;
     }
 
 } // namespace file_monitor::core
