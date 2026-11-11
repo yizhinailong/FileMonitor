@@ -14,6 +14,7 @@
 #include "ChangeList.hpp"
 #include "KeyHintBar.hpp"
 #include "SettingsWindow.hpp"
+#include "core/FileSystem.hpp"
 #include "core/MonitorSession.hpp"
 
 namespace file_monitor::tui {
@@ -59,7 +60,7 @@ namespace file_monitor::tui {
         std::string m_notice;
         bool m_notice_failed{ false };
         // The status counts of the header, which toggle the status filters.
-        std::array<ftxui::Box, STATUS_COUNT> m_status_boxes{};
+        std::array<ftxui::Box, core::FILE_CHANGE_STATUS_COUNT> m_status_boxes{};
         std::shared_ptr<SettingsWindow> m_settings_window;
         int m_page{ 0 };
     };

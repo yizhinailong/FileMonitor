@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <optional>
@@ -18,6 +19,16 @@ namespace file_monitor::core {
         Renamed,
         Moved
     };
+
+    // The statuses in the order in which the interfaces list them.
+    inline constexpr std::array FILE_CHANGE_STATUSES{
+        FileChangeStatus::Added,
+        FileChangeStatus::Removed,
+        FileChangeStatus::Modified,
+        FileChangeStatus::Renamed,
+        FileChangeStatus::Moved,
+    };
+    inline constexpr auto FILE_CHANGE_STATUS_COUNT{ FILE_CHANGE_STATUSES.size() };
 
     struct FileState {
         std::optional<std::chrono::system_clock::time_point> creation_time;

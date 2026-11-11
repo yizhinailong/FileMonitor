@@ -132,7 +132,7 @@ namespace file_monitor::tui {
             clearFilters();
             return true;
         }
-        for (auto const [index, status] : std::views::enumerate(CHANGE_STATUSES)) {
+        for (auto const [index, status] : std::views::enumerate(core::FILE_CHANGE_STATUSES)) {
             if (event == ftxui::Event::Character(static_cast<char>('1' + index))) {
                 m_change_list.ToggleStatus(status);
                 return true;
@@ -166,7 +166,7 @@ namespace file_monitor::tui {
         if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed) {
             return false;
         }
-        for (auto const [status, box] : std::views::zip(CHANGE_STATUSES, m_status_boxes)) {
+        for (auto const [status, box] : std::views::zip(core::FILE_CHANGE_STATUSES, m_status_boxes)) {
             if (box.Contain(mouse.x, mouse.y)) {
                 m_change_list.ToggleStatus(status);
                 return true;
@@ -218,12 +218,12 @@ namespace file_monitor::tui {
 
         // The number of changes per status. A status hidden by the filter
         // loses its color.
-        std::array<std::size_t, STATUS_COUNT> counts{};
+        std::array<std::size_t, core::FILE_CHANGE_STATUS_COUNT> counts{};
         for (auto const& change : m_session.Changes()) {
             ++counts[status_index(change.status)];
         }
         Line count_line;
-        for (auto&& [status, box] : std::views::zip(CHANGE_STATUSES, m_status_boxes)) {
+        for (auto&& [status, box] : std::views::zip(core::FILE_CHANGE_STATUSES, m_status_boxes)) {
             box = HIDDEN_BOX;
             auto const label{ std::string{ core::file_change_status_text(status) } };
             auto const count{ std::format(" {}", counts[status_index(status)]) };

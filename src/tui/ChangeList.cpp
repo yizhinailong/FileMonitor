@@ -82,18 +82,6 @@ namespace file_monitor::tui {
             return std::format("大小 {}", change.size);
         }
 
-        auto ascii_lower(char character) -> char {
-            if (character >= 'A' && character <= 'Z') {
-                return static_cast<char>(character - 'A' + 'a');
-            }
-            return character;
-        }
-
-        auto contains_ignoring_case(std::string_view text, std::string_view lowercase_part) -> bool {
-            return lowercase_part.empty() ||
-                !std::ranges::search(text, lowercase_part, {}, ascii_lower).empty();
-        }
-
         auto append_labeled_lines(
             ftxui::Elements& lines,
             std::string_view label,
@@ -256,27 +244,23 @@ namespace file_monitor::tui {
     }
 
     auto ChangeList::ToggleStatus(core::FileChangeStatus status) -> void {
-        auto& hidden{ m_hidden_statuses[static_cast<std::size_t>(std::to_underlying(status))] };
-        hidden = !hidden;
+        m_filter.ToggleStatus(status);
     }
 
     auto ChangeList::ShowsStatus(core::FileChangeStatus status) const -> bool {
-        return !m_hidden_statuses[static_cast<std::size_t>(std::to_underlying(status))];
+        return m_filter.ShowsStatus(status);
     }
 
     auto ChangeList::SetPathFilter(std::string_view text) -> void {
-        m_path_filter = text |
-            std::views::transform(ascii_lower) |
-            std::ranges::to<std::string>();
+        m_filter.SetPathText(text);
     }
 
     auto ChangeList::ClearFilters() -> void {
-        m_hidden_statuses.fill(false);
-        m_path_filter.clear();
+        m_filter.Clear();
     }
 
     auto ChangeList::IsFiltered() const -> bool {
-        return !m_path_filter.empty() || std::ranges::contains(m_hidden_statuses, true);
+        return m_filter.IsActive();
     }
 
     auto ChangeList::SelectedChange() -> core::FileChange const* {
@@ -315,7 +299,7 @@ namespace file_monitor::tui {
         m_end_sequence = first_sequence + changes.size();
 
         m_rows = std::views::iota(std::size_t{ 0 }, changes.size()) |
-            std::views::filter([&](std::size_t index) { return matches(changes[index]); }) |
+            std::views::filter([&](std::size_t index) { return m_filter.Matches(changes[index]); }) |
             std::ranges::to<std::vector<std::size_t>>();
         if (m_rows.empty()) {
             m_selected_row = 0;
@@ -327,14 +311,6 @@ namespace file_monitor::tui {
         m_selected_sequence = rowSequence(m_selected_row);
         m_first_visible_row = rowAtOrAfter(m_first_visible_sequence);
         scrollToSelection();
-    }
-
-    auto ChangeList::matches(core::FileChange const& change) const -> bool {
-        if (!ShowsStatus(change.status)) {
-            return false;
-        }
-        return contains_ignoring_case(change.absolute_path, m_path_filter) ||
-            contains_ignoring_case(change.previous_absolute_path, m_path_filter);
     }
 
     auto ChangeList::selectRow(std::size_t row) -> void {
