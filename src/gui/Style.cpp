@@ -25,6 +25,14 @@ namespace file_monitor::gui {
             .light = { 0.60F, 0.38F,  0.0F, 1.0F },
             .dark = {  1.0F, 0.80F, 0.25F, 1.0F }
         };
+        constexpr ThemeColor CYAN{
+            .light = {  0.0F, 0.42F, 0.55F, 1.0F },
+            .dark = { 0.35F, 0.80F, 0.92F, 1.0F }
+        };
+        constexpr ThemeColor MAGENTA{
+            .light = { 0.58F, 0.18F, 0.62F, 1.0F },
+            .dark = { 0.88F, 0.55F, 0.95F, 1.0F }
+        };
         constexpr ThemeColor ERROR_RED{
             .light = { 0.75F, 0.10F, 0.10F, 1.0F },
             .dark = { 0.85F, 0.25F, 0.25F, 1.0F }
@@ -70,9 +78,11 @@ namespace file_monitor::gui {
             case core::FileChangeStatus::Removed:
                 return themed(RED);
             case core::FileChangeStatus::Modified:
-            case core::FileChangeStatus::Renamed :
-            case core::FileChangeStatus::Moved:
                 return themed(YELLOW);
+            case core::FileChangeStatus::Renamed:
+                return themed(CYAN);
+            case core::FileChangeStatus::Moved:
+                return themed(MAGENTA);
         }
         return ImGui::GetStyleColorVec4(ImGuiCol_Text);
     }
