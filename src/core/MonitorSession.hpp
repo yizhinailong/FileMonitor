@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <span>
 #include <string>
@@ -29,6 +30,12 @@ namespace file_monitor::core {
         auto CurrentConfiguration() const -> Configuration const&;
         [[nodiscard]]
         auto Changes() const -> std::span<FileChange const>;
+        // Sequence number of Changes().front(); the change at index i has
+        // number FirstChangeSequence() + i. A change keeps its number while it
+        // stays in the list, and numbers are never reused, not even after the
+        // monitor restarts and clears the list.
+        [[nodiscard]]
+        auto FirstChangeSequence() const -> std::uint64_t;
         [[nodiscard]]
         auto ConfigurationError() const -> std::string const&;
         [[nodiscard]]
@@ -42,6 +49,7 @@ namespace file_monitor::core {
         std::filesystem::path m_data_directory;
         Configuration m_configuration;
         std::vector<FileChange> m_changes;
+        std::uint64_t m_first_change_sequence{ 0 };
         DirectoryMonitor m_monitor;
         ChangeLogger m_change_logger;
         std::string m_configuration_error;

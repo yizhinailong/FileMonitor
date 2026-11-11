@@ -43,6 +43,7 @@ namespace file_monitor::core {
                     m_changes.begin(),
                     m_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
                 );
+                m_first_change_sequence += excess_count;
             }
             update.changes_added = true;
         }
@@ -78,6 +79,10 @@ namespace file_monitor::core {
         return m_changes;
     }
 
+    auto MonitorSession::FirstChangeSequence() const -> std::uint64_t {
+        return m_first_change_sequence;
+    }
+
     auto MonitorSession::ConfigurationError() const -> std::string const& {
         return m_configuration_error;
     }
@@ -91,6 +96,7 @@ namespace file_monitor::core {
     }
 
     auto MonitorSession::restartMonitor() -> void {
+        m_first_change_sequence += m_changes.size();
         m_changes.clear();
         m_monitor_error.clear();
 
