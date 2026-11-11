@@ -7,12 +7,29 @@
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
+#include <ftxui/screen/color.hpp>
 #include <ftxui/screen/terminal.hpp>
 
 namespace file_monitor::tui {
     namespace {
 
         constexpr auto PAGE_MARGIN{ 1 };
+
+        auto file_change_status_color(core::FileChangeStatus status) -> ftxui::Color {
+            switch (status) {
+                case core::FileChangeStatus::Added:
+                    return ftxui::Color::Green;
+                case core::FileChangeStatus::Removed:
+                    return ftxui::Color::Red;
+                case core::FileChangeStatus::Modified:
+                    return ftxui::Color::Yellow;
+                case core::FileChangeStatus::Renamed:
+                    return ftxui::Color::Cyan;
+                case core::FileChangeStatus::Moved:
+                    return ftxui::Color::Magenta;
+            }
+            return ftxui::Color::Default;
+        }
 
     } // namespace
 
@@ -78,20 +95,9 @@ namespace file_monitor::tui {
             !session.LogError().empty();
     }
 
-    auto file_change_status_color(core::FileChangeStatus status) -> ftxui::Color {
-        switch (status) {
-            case core::FileChangeStatus::Added:
-                return ftxui::Color::Green;
-            case core::FileChangeStatus::Removed:
-                return ftxui::Color::Red;
-            case core::FileChangeStatus::Modified:
-                return ftxui::Color::Yellow;
-            case core::FileChangeStatus::Renamed:
-                return ftxui::Color::Cyan;
-            case core::FileChangeStatus::Moved:
-                return ftxui::Color::Magenta;
-        }
-        return ftxui::Color::Default;
+    auto file_change_status_element(core::FileChangeStatus status) -> ftxui::Element {
+        return ftxui::text(std::string{ core::file_change_status_text(status) }) |
+            ftxui::color(file_change_status_color(status));
     }
 
     auto page_width() -> int {

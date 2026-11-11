@@ -82,10 +82,7 @@ namespace file_monitor::tui {
                     std::format(" {}", counts[static_cast<std::size_t>(std::to_underlying(status))])
                 };
                 line.Append(
-                    ftxui::hbox({
-                        ftxui::text(label) | ftxui::color(file_change_status_color(status)),
-                        ftxui::text(count),
-                    }),
+                    ftxui::hbox({ file_change_status_element(status), ftxui::text(count) }),
                     label + count
                 );
             }
@@ -97,7 +94,7 @@ namespace file_monitor::tui {
     MainWindow::MainWindow(core::MonitorSession& session, std::function<void()> on_quit)
         : m_session{ session },
           m_on_quit{ std::move(on_quit) },
-          m_change_table{ session },
+          m_change_list{ session },
           m_key_hints{ keyHints() } {
         m_settings_window = ftxui::Make<SettingsWindow>(m_session, [this] { closeSettings(); });
 
@@ -123,7 +120,7 @@ namespace file_monitor::tui {
                 openSettings();
                 return true;
             }
-            if (m_key_hints.OnEvent(event) || m_change_table.OnEvent(event)) {
+            if (m_key_hints.OnEvent(event) || m_change_list.OnEvent(event)) {
                 return true;
             }
         }
@@ -137,7 +134,8 @@ namespace file_monitor::tui {
             rows.push_back(session_error_text(m_session));
             rows.push_back(ftxui::separatorLight());
         }
-        rows.push_back(m_change_table.Render() | ftxui::flex);
+        rows.push_back(m_change_list.Render(width) | ftxui::flex);
+        rows.push_back(m_change_list.RenderDetails(width));
         rows.push_back(ftxui::separatorLight());
         rows.push_back(renderFooter(width));
         return page(ftxui::vbox(std::move(rows)));
@@ -184,22 +182,33 @@ namespace file_monitor::tui {
     }
 
     auto MainWindow::renderFooter(int width) -> ftxui::Element {
-        std::string_view const status{ m_change_table.FollowsLatest() ? "跟随最新" : "已停止跟随" };
+        std::string status;
+        if (m_change_list.FollowsLatest()) {
+            status = "跟随最新";
+        } else if (auto const new_change_count{ m_change_list.NewChangeCount() }; new_change_count > 0) {
+            status = std::format("有 {} 条新变更", new_change_count);
+        } else {
+            status = "已停止跟随";
+        }
+        if (m_change_list.RowCount() > 0) {
+            status += std::format("  {}/{}", m_change_list.SelectedPosition(), m_change_list.RowCount());
+        }
+
         auto const hints_width{ std::max(width - ftxui::string_width(status) - GAP, 0) };
         return ftxui::hbox({
             m_key_hints.Render(hints_width),
             ftxui::filler(),
-            ftxui::text(std::string{ status }) | ftxui::dim,
+            ftxui::text(std::move(status)) | ftxui::dim,
         });
     }
 
     auto MainWindow::keyHints() -> std::vector<KeyHint> {
         return {
-            { .key = "↑↓", .label = "滚动", .priority = 3 },
-            { .key = "←→", .label = "横向滚动", .priority = 1 },
-            { .key = "End", .label = "最新", .action = [this] { m_change_table.FollowLatest(); }, .priority = 2 },
-            { .key = "s", .label = "设置", .action = [this] { openSettings(); }, .priority = 4 },
-            { .key = "q", .label = "退出", .action = [this] { m_on_quit(); }, .priority = 4 },
+            { .key = "↑↓", .label = "选择", .priority = 4 },
+            { .key = "Enter", .label = "详情", .action = [this] { m_change_list.ToggleDetails(); }, .priority = 2 },
+            { .key = "End", .label = "最新", .action = [this] { m_change_list.FollowLatest(); }, .priority = 3 },
+            { .key = "s", .label = "设置", .action = [this] { openSettings(); }, .priority = 5 },
+            { .key = "q", .label = "退出", .action = [this] { m_on_quit(); }, .priority = 5 },
         };
     }
 

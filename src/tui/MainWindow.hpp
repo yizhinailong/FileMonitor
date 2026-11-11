@@ -8,7 +8,7 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
-#include "FileChangeTable.hpp"
+#include "ChangeList.hpp"
 #include "KeyHintBar.hpp"
 #include "SettingsWindow.hpp"
 #include "core/MonitorSession.hpp"
@@ -35,7 +35,7 @@ namespace file_monitor::tui {
 
         core::MonitorSession& m_session;
         std::function<void()> m_on_quit;
-        FileChangeTable m_change_table;
+        ChangeList m_change_list;
         KeyHintBar m_key_hints;
         std::shared_ptr<SettingsWindow> m_settings_window;
         int m_page{ 0 };

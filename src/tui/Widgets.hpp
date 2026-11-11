@@ -6,7 +6,6 @@
 
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/color.hpp>
 
 #include "core/FileSystem.hpp"
 #include "core/MonitorSession.hpp"
@@ -23,7 +22,8 @@ namespace file_monitor::tui {
     auto session_error_text(core::MonitorSession const& session) -> ftxui::Element;
     [[nodiscard]]
     auto has_session_errors(core::MonitorSession const& session) -> bool;
-    auto file_change_status_color(core::FileChangeStatus status) -> ftxui::Color;
+    // The status text in its color.
+    auto file_change_status_element(core::FileChangeStatus status) -> ftxui::Element;
 
     // A page fills the terminal and keeps one blank column on either side.
     [[nodiscard]]

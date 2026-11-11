@@ -54,5 +54,8 @@ namespace file_monitor::core {
     // A removed file's time reads "created -> removed"; this returns the time of
     // the change itself.
     auto file_change_event_time(FileChange const& change) -> std::string_view;
+    // The creation time of a removed file, or an empty string when the change
+    // has none.
+    auto file_change_creation_time(FileChange const& change) -> std::string_view;
 
 } // namespace file_monitor::core

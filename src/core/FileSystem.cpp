@@ -353,4 +353,13 @@ namespace file_monitor::core {
         return time.substr(separator + TIME_RANGE_SEPARATOR.size());
     }
 
+    auto file_change_creation_time(FileChange const& change) -> std::string_view {
+        std::string_view const time{ change.time };
+        auto const separator{ time.rfind(TIME_RANGE_SEPARATOR) };
+        if (separator == std::string_view::npos) {
+            return {};
+        }
+        return time.substr(0, separator);
+    }
+
 } // namespace file_monitor::core
