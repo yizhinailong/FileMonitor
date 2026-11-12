@@ -16,7 +16,7 @@ FileMonitor 是一个面向 Windows 的轻量级文件夹监控工具。它通�
 ## 环境要求
 
 - Windows 10 或 Windows 11（x64）
-- CMake 4.3 或更高版本
+- CMake 4.4 或更高版本
 - Ninja
 - LLVM/Clang，且 `clang-cl` 可用
 - Visual Studio Build Tools 和 Windows SDK
