@@ -11,8 +11,9 @@
 
 #include "DirectoryList.hpp"
 #include "KeyHintBar.hpp"
-#include "core/Configuration.hpp"
-#include "core/MonitorSession.hpp"
+
+import file_monitor.core.configuration;
+import file_monitor.core.monitor_session;
 
 namespace file_monitor::tui {
 

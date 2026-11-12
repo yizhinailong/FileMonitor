@@ -8,8 +8,6 @@
 #include <system_error>
 #include <utility>
 
-#include "core/Utils.hpp"
-
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -17,6 +15,8 @@
     #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+
+import file_monitor.core.utils;
 
 namespace file_monitor::tui {
     namespace {

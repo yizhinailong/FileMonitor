@@ -9,9 +9,9 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/box.hpp>
 
-#include "core/ChangeFilter.hpp"
-#include "core/FileSystem.hpp"
-#include "core/MonitorSession.hpp"
+import file_monitor.core.change_filter;
+import file_monitor.core.file_system;
+import file_monitor.core.monitor_session;
 
 namespace file_monitor::tui {
 

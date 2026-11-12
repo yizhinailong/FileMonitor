@@ -1,7 +1,12 @@
-#include "ChangeLogger.hpp"
+module;
 
+#include <expected>
+#include <filesystem>
 #include <format>
+#include <memory>
 #include <ranges>
+#include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -9,7 +14,34 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include "Utils.hpp"
+export module file_monitor.core.change_logger;
+
+export import file_monitor.core.file_system;
+import file_monitor.core.utils;
+
+export namespace file_monitor::core {
+
+    class ChangeLogger final {
+    public:
+        explicit ChangeLogger(std::filesystem::path log_directory);
+        ~ChangeLogger();
+
+        ChangeLogger(ChangeLogger const&) = delete;
+        ChangeLogger(ChangeLogger&&) = delete;
+        auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
+        auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
+
+        auto Write(std::span<FileChange const> changes)
+            -> std::expected<void, std::string>;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+    };
+
+} // namespace file_monitor::core
+
+module : private;
 
 namespace file_monitor::core {
     namespace {

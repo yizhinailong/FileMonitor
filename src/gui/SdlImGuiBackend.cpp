@@ -13,8 +13,9 @@
 #include <imgui_impl_sdl3.h>
 
 #include "Style.hpp"
-#include "core/Utils.hpp"
-#include "core/WindowLayout.hpp"
+
+import file_monitor.core.utils;
+import file_monitor.core.window_layout;
 
 namespace file_monitor::gui {
     namespace {

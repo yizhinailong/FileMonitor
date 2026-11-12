@@ -11,7 +11,8 @@
 #include <ftxui/screen/string.hpp>
 
 #include "TextLayout.hpp"
-#include "core/Utils.hpp"
+
+import file_monitor.core.utils;
 
 namespace file_monitor::tui {
     namespace {

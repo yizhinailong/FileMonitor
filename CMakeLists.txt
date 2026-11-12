@@ -20,10 +20,9 @@ enable_language(RC)
 include(cmake/ClangClCcache.cmake)
 include(cmake/Dependencies.cmake)
 
-file(GLOB_RECURSE CORE_SOURCES
+file(GLOB_RECURSE CORE_MODULES
     CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cppm"
 )
 
 file(GLOB_RECURSE GUI_SOURCES
@@ -38,15 +37,9 @@ file(GLOB_RECURSE TUI_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/tui/*.hpp"
 )
 
-file(GLOB_RECURSE CORE_MODULES
-    CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cppm"
-)
-
 add_library(
     ${PROJECT_NAME}Core
     STATIC
-    ${CORE_SOURCES}
 )
 
 target_sources(

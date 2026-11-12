@@ -8,7 +8,8 @@
 #include <vector>
 
 #include "Drop.hpp"
-#include "core/WindowLayout.hpp"
+
+import file_monitor.core.window_layout;
 
 struct SDL_GLContextState;
 struct SDL_Window;

@@ -10,7 +10,8 @@
 #include "ChangeTable.hpp"
 #include "Drop.hpp"
 #include "SettingsWindow.hpp"
-#include "core/MonitorSession.hpp"
+
+import file_monitor.core.monitor_session;
 
 namespace file_monitor::gui {
 

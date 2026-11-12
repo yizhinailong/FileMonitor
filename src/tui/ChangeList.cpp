@@ -11,7 +11,8 @@
 
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
-#include "core/FileSystem.hpp"
+
+import file_monitor.core.file_system;
 
 namespace file_monitor::tui {
     namespace {

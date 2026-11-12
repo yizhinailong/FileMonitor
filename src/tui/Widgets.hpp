@@ -5,8 +5,8 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
-#include "core/FileSystem.hpp"
-#include "core/MonitorSession.hpp"
+import file_monitor.core.file_system;
+import file_monitor.core.monitor_session;
 
 namespace file_monitor::tui {
 

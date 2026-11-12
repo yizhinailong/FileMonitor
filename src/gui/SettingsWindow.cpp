@@ -14,7 +14,8 @@
 #include "ErrorText.hpp"
 #include "Style.hpp"
 #include "Widgets.hpp"
-#include "core/Utils.hpp"
+
+import file_monitor.core.utils;
 
 namespace file_monitor::gui {
     namespace {

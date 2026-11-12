@@ -1,13 +1,12 @@
-#include "Shell.hpp"
+module;
 
 #include <cstdint>
 #include <filesystem>
 #include <format>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
-
-#include "Utils.hpp"
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -17,6 +16,20 @@
 #endif
 #include <Windows.h>
 #include <shellapi.h>
+
+export module file_monitor.core.shell;
+
+import file_monitor.core.utils;
+
+export namespace file_monitor::core {
+
+    // Opens File Explorer with an existing file or directory selected. For a
+    // path that no longer exists, opens its closest existing parent directory.
+    auto show_in_explorer(std::string_view path) -> bool;
+
+} // namespace file_monitor::core
+
+module : private;
 
 namespace file_monitor::core {
     namespace {

@@ -14,7 +14,8 @@
 
 #include "PathCompletion.hpp"
 #include "Widgets.hpp"
-#include "core/Configuration.hpp"
+
+import file_monitor.core.configuration;
 
 namespace file_monitor::tui {
     namespace {

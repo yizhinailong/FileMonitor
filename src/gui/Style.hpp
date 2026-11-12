@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "core/FileSystem.hpp"
+import file_monitor.core.file_system;
 
 namespace file_monitor::gui {
 

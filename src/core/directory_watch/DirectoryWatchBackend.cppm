@@ -1,15 +1,20 @@
+module;
+
 #include <array>
 #include <cstddef>
+#include <filesystem>
 #include <format>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <span>
+#include <stop_token>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include "DirectoryWatchBackend.hpp"
-#include "core/Utils.hpp"
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -18,6 +23,54 @@
     #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+
+export module file_monitor.core.directory_watch_backend;
+
+import file_monitor.core.utils;
+
+export namespace file_monitor::core::detail {
+
+    enum class DirectoryWatchEventKind {
+        Added,
+        Removed,
+        Modified,
+        PathChanged,
+        RescanRequired
+    };
+
+    struct DirectoryWatchEvent {
+        DirectoryWatchEventKind kind;
+        std::filesystem::path root;
+        std::filesystem::path path;
+        std::filesystem::path previous_path;
+    };
+
+    struct DirectoryWatchCallbacks {
+        std::function<void(DirectoryWatchEvent, std::stop_token)> on_event;
+        std::function<void(std::string)> on_error;
+    };
+
+    class DirectoryWatchBackend final {
+    public:
+        explicit DirectoryWatchBackend(DirectoryWatchCallbacks callbacks);
+        ~DirectoryWatchBackend();
+
+        DirectoryWatchBackend(DirectoryWatchBackend const&) = delete;
+        DirectoryWatchBackend(DirectoryWatchBackend&&) = delete;
+        auto operator=(DirectoryWatchBackend const&) -> DirectoryWatchBackend& = delete;
+        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend& = delete;
+
+        auto Start(std::span<std::filesystem::path const> directories) -> void;
+        auto RequestStop() noexcept -> void;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+    };
+
+} // namespace file_monitor::core::detail
+
+module : private;
 
 namespace file_monitor::core::detail {
     namespace {

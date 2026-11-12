@@ -1,17 +1,54 @@
-#include "DirectoryMonitor.hpp"
+module;
 
 #include <algorithm>
 #include <array>
 #include <condition_variable>
+#include <filesystem>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <ranges>
+#include <span>
 #include <stop_token>
+#include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
-#include "Utils.hpp"
-#include "directory_watch/DirectoryWatchBackend.hpp"
+export module file_monitor.core.directory_monitor;
+
+export import file_monitor.core.file_system;
+import file_monitor.core.directory_watch_backend;
+import file_monitor.core.utils;
+
+export namespace file_monitor::core {
+
+    class DirectoryMonitor final {
+    public:
+        DirectoryMonitor();
+        ~DirectoryMonitor();
+
+        DirectoryMonitor(DirectoryMonitor const&) = delete;
+        DirectoryMonitor(DirectoryMonitor&&) = delete;
+        auto operator=(DirectoryMonitor const&) -> DirectoryMonitor& = delete;
+        auto operator=(DirectoryMonitor&&) -> DirectoryMonitor& = delete;
+
+        auto Start(
+            std::span<std::filesystem::path const> directories,
+            std::span<std::filesystem::path const> excluded_directories = {}
+        ) -> void;
+        auto Stop() -> void;
+        auto TakeChanges() -> std::vector<FileChange>;
+        auto TakeError() -> std::string;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+    };
+
+} // namespace file_monitor::core
+
+module : private;
 
 namespace file_monitor::core {
     namespace {

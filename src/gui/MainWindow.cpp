@@ -16,10 +16,10 @@
 #include "ErrorText.hpp"
 #include "Style.hpp"
 #include "Widgets.hpp"
-#include "core/FileSystem.hpp"
-#include "core/Shell.hpp"
 
+import file_monitor.core.file_system;
 import file_monitor.core.path_text;
+import file_monitor.core.shell;
 
 namespace file_monitor::gui {
     namespace {
