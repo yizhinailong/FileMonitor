@@ -14,12 +14,12 @@ module;
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-export module file_monitor.core.change_logger;
+export module file_monitor.core:change_logger;
 
-export import file_monitor.core.file_system;
-import file_monitor.core.utils;
+export import :file_system;
+import :utils;
 
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     class ChangeLogger final {
     public:
@@ -40,8 +40,6 @@ export namespace file_monitor::core {
     };
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

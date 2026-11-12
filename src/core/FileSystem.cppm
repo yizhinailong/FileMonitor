@@ -24,9 +24,9 @@ module;
 #endif
 #include <Windows.h>
 
-export module file_monitor.core.file_system;
+export module file_monitor.core:file_system;
 
-import file_monitor.core.utils;
+import :utils;
 
 export namespace file_monitor::core {
 
@@ -90,8 +90,6 @@ export namespace file_monitor::core {
     auto file_change_creation_time(FileChange const& change) -> std::string_view;
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

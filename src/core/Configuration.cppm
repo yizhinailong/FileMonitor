@@ -16,9 +16,9 @@ module;
 
 #include <nlohmann/json.hpp>
 
-export module file_monitor.core.configuration;
+export module file_monitor.core:configuration;
 
-import file_monitor.core.utils;
+import :utils;
 
 export namespace file_monitor::core {
 
@@ -53,8 +53,6 @@ export namespace file_monitor::core {
     auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string>;
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

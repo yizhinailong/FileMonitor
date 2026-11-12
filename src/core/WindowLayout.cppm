@@ -7,7 +7,7 @@ module;
 
 #include <nlohmann/json.hpp>
 
-export module file_monitor.core.window_layout;
+export module file_monitor.core:window_layout;
 
 export namespace file_monitor::core {
 
@@ -27,8 +27,6 @@ export namespace file_monitor::core {
     auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool;
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

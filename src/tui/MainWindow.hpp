@@ -15,8 +15,7 @@
 #include "KeyHintBar.hpp"
 #include "SettingsWindow.hpp"
 
-import file_monitor.core.file_system;
-import file_monitor.core.monitor_session;
+import file_monitor.core;
 
 namespace file_monitor::tui {
 

@@ -8,9 +8,9 @@ module;
 #include <string_view>
 #include <utility>
 
-export module file_monitor.core.path_text;
+export module file_monitor.core:path_text;
 
-export import file_monitor.core.file_system;
+export import :file_system;
 
 export namespace file_monitor::core {
 
@@ -32,8 +32,6 @@ export namespace file_monitor::core {
     auto directory_text(std::string_view path) -> std::string_view;
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

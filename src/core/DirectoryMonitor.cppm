@@ -15,13 +15,13 @@ module;
 #include <utility>
 #include <vector>
 
-export module file_monitor.core.directory_monitor;
+export module file_monitor.core:directory_monitor;
 
-export import file_monitor.core.file_system;
-import file_monitor.core.directory_watch_backend;
-import file_monitor.core.utils;
+export import :file_system;
+import :directory_watch_backend;
+import :utils;
 
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     class DirectoryMonitor final {
     public:
@@ -48,22 +48,23 @@ export namespace file_monitor::core {
 
 } // namespace file_monitor::core
 
-module : private;
-
 namespace file_monitor::core {
+
+    // Not in the anonymous namespace: DirectoryMonitor::Impl, which is part of
+    // the module interface, holds a MonitorState.
+    using FileCache = std::map<std::string, FileState, std::less<>>;
+
+    struct MonitorState {
+        std::mutex mutex;
+        std::condition_variable initialized;
+        std::vector<std::filesystem::path> excluded_directories;
+        FileCache files;
+        std::vector<FileChange> changes;
+        std::string error_message;
+        std::vector<std::filesystem::path> initializing_directories;
+    };
+
     namespace {
-
-        using FileCache = std::map<std::string, FileState, std::less<>>;
-
-        struct MonitorState {
-            std::mutex mutex;
-            std::condition_variable initialized;
-            std::vector<std::filesystem::path> excluded_directories;
-            FileCache files;
-            std::vector<FileChange> changes;
-            std::string error_message;
-            std::vector<std::filesystem::path> initializing_directories;
-        };
 
         auto build_file_cache(std::span<FileState const> files) -> FileCache {
             FileCache cache;

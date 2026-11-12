@@ -9,7 +9,7 @@
 #include "Style.hpp"
 #include "Widgets.hpp"
 
-import file_monitor.core.path_text;
+import file_monitor.core;
 
 namespace file_monitor::gui {
     namespace {

@@ -1,5 +1,9 @@
-#include "SdlImGuiBackend.hpp"
+#include <SDL3/SDL_opengl.h>
 
+// SDL_opengl.h stays above the other includes because it includes
+// Windows.h: SdlImGuiBackend.hpp imports file_monitor.core, whose partitions
+// include Windows.h as well, and Clang reports conflicting types for some
+// Windows functions when Windows.h follows such an import.
 #include <cstdio>
 #include <format>
 #include <print>
@@ -7,15 +11,14 @@
 #include <utility>
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_opengl.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
 
+#include "SdlImGuiBackend.hpp"
 #include "Style.hpp"
 
-import file_monitor.core.utils;
-import file_monitor.core.window_layout;
+import file_monitor.core;
 
 namespace file_monitor::gui {
     namespace {

@@ -8,9 +8,9 @@ module;
 #include <string_view>
 #include <utility>
 
-export module file_monitor.core.change_filter;
+export module file_monitor.core:change_filter;
 
-export import file_monitor.core.file_system;
+export import :file_system;
 
 export namespace file_monitor::core {
 
@@ -40,8 +40,6 @@ export namespace file_monitor::core {
     };
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

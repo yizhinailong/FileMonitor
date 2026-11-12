@@ -12,7 +12,7 @@
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 
-import file_monitor.core.file_system;
+import file_monitor.core;
 
 namespace file_monitor::tui {
     namespace {

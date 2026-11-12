@@ -15,7 +15,7 @@ module;
 #endif
 #include <Windows.h>
 
-export module file_monitor.core.utils;
+export module file_monitor.core:utils;
 
 export namespace file_monitor::core::utils {
 
@@ -36,8 +36,6 @@ export namespace file_monitor::core::utils {
     ) -> bool;
 
 } // namespace file_monitor::core::utils
-
-module : private;
 
 namespace file_monitor::core::utils {
     namespace {

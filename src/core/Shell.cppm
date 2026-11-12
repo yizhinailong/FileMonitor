@@ -17,9 +17,9 @@ module;
 #include <Windows.h>
 #include <shellapi.h>
 
-export module file_monitor.core.shell;
+export module file_monitor.core:shell;
 
-import file_monitor.core.utils;
+import :utils;
 
 export namespace file_monitor::core {
 
@@ -28,8 +28,6 @@ export namespace file_monitor::core {
     auto show_in_explorer(std::string_view path) -> bool;
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

@@ -9,7 +9,7 @@
 
 #include "Drop.hpp"
 
-import file_monitor.core.window_layout;
+import file_monitor.core;
 
 struct SDL_GLContextState;
 struct SDL_Window;

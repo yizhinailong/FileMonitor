@@ -20,8 +20,7 @@
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 
-import file_monitor.core.file_system;
-import file_monitor.core.shell;
+import file_monitor.core;
 
 #define FILE_MONITOR_STRINGIFY_IMPL(value) #value
 #define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)

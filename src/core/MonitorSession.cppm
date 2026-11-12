@@ -9,13 +9,13 @@ module;
 #include <utility>
 #include <vector>
 
-export module file_monitor.core.monitor_session;
+export module file_monitor.core:monitor_session;
 
-export import file_monitor.core.configuration;
-export import file_monitor.core.file_system;
-import file_monitor.core.change_logger;
-import file_monitor.core.directory_monitor;
-import file_monitor.core.utils;
+export import :configuration;
+export import :file_system;
+import :change_logger;
+import :directory_monitor;
+import :utils;
 
 export namespace file_monitor::core {
 
@@ -64,8 +64,6 @@ export namespace file_monitor::core {
     };
 
 } // namespace file_monitor::core
-
-module : private;
 
 namespace file_monitor::core {
     namespace {

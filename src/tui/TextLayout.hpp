@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-import file_monitor.core.file_system;
+import file_monitor.core;
 
 namespace file_monitor::tui {
 

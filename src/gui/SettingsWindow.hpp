@@ -10,8 +10,7 @@
 
 #include "Drop.hpp"
 
-import file_monitor.core.configuration;
-import file_monitor.core.monitor_session;
+import file_monitor.core;
 
 struct SDL_Window;
 
