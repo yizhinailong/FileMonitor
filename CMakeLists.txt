@@ -49,12 +49,6 @@ target_sources(
     FILES ${CORE_MODULES}
 )
 
-target_include_directories(
-    ${PROJECT_NAME}Core
-    PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
 target_link_libraries(
     ${PROJECT_NAME}Core
     PRIVATE
@@ -79,6 +73,12 @@ target_compile_definitions(
     FILE_MONITOR_VERSION=${PROJECT_VERSION}
 )
 
+target_include_directories(
+    ${PROJECT_NAME}
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 target_link_libraries(
     ${PROJECT_NAME}
     PRIVATE
@@ -101,6 +101,12 @@ target_compile_definitions(
     ${PROJECT_NAME}Tui
     PRIVATE
     FILE_MONITOR_VERSION=${PROJECT_VERSION}
+)
+
+target_include_directories(
+    ${PROJECT_NAME}Tui
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(
