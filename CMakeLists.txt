@@ -38,10 +38,22 @@ file(GLOB_RECURSE TUI_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/tui/*.hpp"
 )
 
+file(GLOB_RECURSE CORE_MODULES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cppm"
+)
+
 add_library(
     ${PROJECT_NAME}Core
     STATIC
     ${CORE_SOURCES}
+)
+
+target_sources(
+    ${PROJECT_NAME}Core
+    PUBLIC
+    FILE_SET CXX_MODULES
+    FILES ${CORE_MODULES}
 )
 
 target_include_directories(

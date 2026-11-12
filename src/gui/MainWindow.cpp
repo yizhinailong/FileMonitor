@@ -17,8 +17,9 @@
 #include "Style.hpp"
 #include "Widgets.hpp"
 #include "core/FileSystem.hpp"
-#include "core/PathText.hpp"
 #include "core/Shell.hpp"
+
+import file_monitor.core.path_text;
 
 namespace file_monitor::gui {
     namespace {

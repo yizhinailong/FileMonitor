@@ -5,7 +5,7 @@
 
 #include <ftxui/screen/string.hpp>
 
-#include "core/PathText.hpp"
+import file_monitor.core.path_text;
 
 namespace file_monitor::tui {
     namespace {

@@ -8,7 +8,8 @@
 
 #include "Style.hpp"
 #include "Widgets.hpp"
-#include "core/PathText.hpp"
+
+import file_monitor.core.path_text;
 
 namespace file_monitor::gui {
     namespace {
