@@ -12,28 +12,12 @@ export module file_monitor.core:path_text;
 
 export import :file_system;
 
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
     // Returns the width of a text in the unit of the interface, such as
     // terminal columns or pixels.
-    using TextWidth = float (*)(std::string_view text);
+    export using TextWidth = float (*)(std::string_view text);
 
-    // Shortens a path to at most `width` by replacing its middle with "...".
-    // The drive and the first directory stay in front and as many trailing
-    // directories as fit stay at the end, for example
-    // "D:\proj\...\src\main.cpp".
-    auto shorten_path(std::string_view path, float width, TextWidth text_width) -> std::string;
-    // The path of a change in at most `width`. A rename within one directory
-    // names the directory once: "D:\proj\old.txt -> new.txt".
-    auto change_path_text(FileChange const& change, float width, TextWidth text_width) -> std::string;
-    // The directory a path lies in, with its last separator: "D:\a\" for
-    // "D:\a\b.txt". A path that ends with a separator, as the path of a
-    // changed directory does, is returned as it is.
-    auto directory_text(std::string_view path) -> std::string_view;
-
-} // namespace file_monitor::core
-
-namespace file_monitor::core {
     namespace {
 
         constexpr std::string_view ELLIPSIS{ "..." };
@@ -89,7 +73,11 @@ namespace file_monitor::core {
 
     } // namespace
 
-    auto shorten_path(std::string_view path, float width, TextWidth text_width) -> std::string {
+    // Shortens a path to at most `width` by replacing its middle with "...".
+    // The drive and the first directory stay in front and as many trailing
+    // directories as fit stay at the end, for example
+    // "D:\proj\...\src\main.cpp".
+    export auto shorten_path(std::string_view path, float width, TextWidth text_width) -> std::string {
         if (text_width(path) <= width) {
             return std::string{ path };
         }
@@ -117,7 +105,9 @@ namespace file_monitor::core {
         return std::format("{}{}", ELLIPSIS, fitting_end(path, width - ellipsis_width, text_width));
     }
 
-    auto change_path_text(FileChange const& change, float width, TextWidth text_width) -> std::string {
+    // The path of a change in at most `width`. A rename within one directory
+    // names the directory once: "D:\proj\old.txt -> new.txt".
+    export auto change_path_text(FileChange const& change, float width, TextWidth text_width) -> std::string {
         if (change.previous_absolute_path.empty()) {
             return shorten_path(change.absolute_path, width, text_width);
         }
@@ -153,7 +143,10 @@ namespace file_monitor::core {
         );
     }
 
-    auto directory_text(std::string_view path) -> std::string_view {
+    // The directory a path lies in, with its last separator: "D:\a\" for
+    // "D:\a\b.txt". A path that ends with a separator, as the path of a
+    // changed directory does, is returned as it is.
+    export auto directory_text(std::string_view path) -> std::string_view {
         auto const separator{ path.find_last_of("\\/") };
         if (separator == std::string_view::npos) {
             return {};

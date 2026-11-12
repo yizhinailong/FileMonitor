@@ -21,14 +21,6 @@ export module file_monitor.core:shell;
 
 import :utils;
 
-export namespace file_monitor::core {
-
-    // Opens File Explorer with an existing file or directory selected. For a
-    // path that no longer exists, opens its closest existing parent directory.
-    auto show_in_explorer(std::string_view path) -> bool;
-
-} // namespace file_monitor::core
-
 namespace file_monitor::core {
     namespace {
 
@@ -47,7 +39,9 @@ namespace file_monitor::core {
 
     } // namespace
 
-    auto show_in_explorer(std::string_view path_text) -> bool {
+    // Opens File Explorer with an existing file or directory selected. For a
+    // path that no longer exists, opens its closest existing parent directory.
+    export auto show_in_explorer(std::string_view path_text) -> bool {
         auto path{ utils::utf8_to_path(path_text) };
         // Directories in the change list end with a separator.
         if (!path.has_filename()) {

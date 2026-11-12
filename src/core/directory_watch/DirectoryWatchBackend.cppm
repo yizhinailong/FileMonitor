@@ -50,30 +50,8 @@ namespace file_monitor::core::detail {
         std::function<void(std::string)> on_error;
     };
 
-    class DirectoryWatchBackend final {
-    public:
-        explicit DirectoryWatchBackend(DirectoryWatchCallbacks callbacks);
-        ~DirectoryWatchBackend();
-
-        DirectoryWatchBackend(DirectoryWatchBackend const&) = delete;
-        DirectoryWatchBackend(DirectoryWatchBackend&&) = delete;
-        auto operator=(DirectoryWatchBackend const&) -> DirectoryWatchBackend& = delete;
-        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend& = delete;
-
-        auto Start(std::span<std::filesystem::path const> directories) -> void;
-        auto RequestStop() noexcept -> void;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-} // namespace file_monitor::core::detail
-
-namespace file_monitor::core::detail {
-
-    // Not in an anonymous namespace: DirectoryWatchBackend::Impl, which is part
-    // of the module interface, holds DirectoryWatcher objects, and those hold
+    // Not in an anonymous namespace: DirectoryWatchBackend, which is part of
+    // the module interface, holds DirectoryWatcher objects, and those hold
     // UniqueHandle objects.
     class UniqueHandle final {
     public:
@@ -459,42 +437,43 @@ namespace file_monitor::core::detail {
         std::jthread m_thread;
     };
 
-    struct DirectoryWatchBackend::Impl {
-        explicit Impl(DirectoryWatchCallbacks watch_callbacks)
-            : callbacks{ std::move(watch_callbacks) } {
+    class DirectoryWatchBackend final {
+    public:
+        explicit DirectoryWatchBackend(DirectoryWatchCallbacks callbacks)
+            : m_callbacks{ std::move(callbacks) } {
         }
 
-        DirectoryWatchCallbacks callbacks;
-        std::vector<std::unique_ptr<DirectoryWatcher>> watchers;
-    };
+        ~DirectoryWatchBackend() {
+            RequestStop();
+            m_watchers.clear();
+        }
 
-    DirectoryWatchBackend::DirectoryWatchBackend(DirectoryWatchCallbacks callbacks)
-        : m_impl{ std::make_unique<Impl>(std::move(callbacks)) } {
-    }
+        DirectoryWatchBackend(DirectoryWatchBackend const&) = delete;
+        DirectoryWatchBackend(DirectoryWatchBackend&&) = delete;
+        auto operator=(DirectoryWatchBackend const&) -> DirectoryWatchBackend& = delete;
+        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend& = delete;
 
-    DirectoryWatchBackend::~DirectoryWatchBackend() {
-        RequestStop();
-        m_impl->watchers.clear();
-    }
-
-    auto DirectoryWatchBackend::Start(
-        std::span<std::filesystem::path const> directories
-    ) -> void {
-        m_impl->watchers.reserve(directories.size());
-        for (auto const& directory : directories) {
-            auto watcher{
-                std::make_unique<DirectoryWatcher>(directory, m_impl->callbacks)
-            };
-            if (watcher->Start()) {
-                m_impl->watchers.emplace_back(std::move(watcher));
+        auto Start(std::span<std::filesystem::path const> directories) -> void {
+            m_watchers.reserve(directories.size());
+            for (auto const& directory : directories) {
+                auto watcher{
+                    std::make_unique<DirectoryWatcher>(directory, m_callbacks)
+                };
+                if (watcher->Start()) {
+                    m_watchers.emplace_back(std::move(watcher));
+                }
             }
         }
-    }
 
-    auto DirectoryWatchBackend::RequestStop() noexcept -> void {
-        for (auto& watcher : m_impl->watchers) {
-            watcher->RequestStop();
+        auto RequestStop() noexcept -> void {
+            for (auto& watcher : m_watchers) {
+                watcher->RequestStop();
+            }
         }
-    }
+
+    private:
+        DirectoryWatchCallbacks m_callbacks;
+        std::vector<std::unique_ptr<DirectoryWatcher>> m_watchers;
+    };
 
 } // namespace file_monitor::core::detail

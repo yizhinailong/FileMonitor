@@ -20,41 +20,80 @@ export module file_monitor.core:configuration;
 
 import :utils;
 
-export namespace file_monitor::core {
+namespace file_monitor::core {
 
-    struct Configuration {
+    export struct Configuration {
         std::vector<std::filesystem::path> directories;
         std::vector<std::filesystem::path> excluded_directories;
     };
 
-    auto load_configuration(std::filesystem::path const& config_path)
-        -> std::expected<Configuration, std::string>;
-    auto save_configuration(
-        std::filesystem::path const& config_path,
-        Configuration const& configuration
-    ) -> std::expected<void, std::string>;
+    namespace {
 
-    auto add_directory(
+        // Directories are stored as absolute paths without a trailing separator,
+        // so a relative input does not depend on the working directory of a later
+        // run and "C:\a\" is not added next to "C:\a".
+        auto normalize_directory(std::filesystem::path directory) -> std::filesystem::path {
+            std::error_code absolute_error;
+            auto absolute_directory{ std::filesystem::absolute(directory, absolute_error) };
+            if (!absolute_error) {
+                directory = std::move(absolute_directory);
+            }
+            directory = directory.lexically_normal();
+            if (directory.has_relative_path() && !directory.has_filename()) {
+                directory = directory.parent_path();
+            }
+            return directory;
+        }
+
+    } // namespace
+
+    export auto add_directory(
         std::vector<std::filesystem::path>& directories,
         std::filesystem::path directory
-    ) -> bool;
-    auto add_directory_input(
+    ) -> bool {
+        directory = normalize_directory(std::move(directory));
+        auto const is_added{
+            std::ranges::any_of(directories, [&directory](std::filesystem::path const& added) {
+                return utils::paths_equal(added, directory);
+            })
+        };
+        if (is_added) {
+            return false;
+        }
+
+        directories.emplace_back(std::move(directory));
+        return true;
+    }
+
+    export auto add_directory_input(
         std::vector<std::filesystem::path>& directories,
         std::string_view input
-    ) -> std::expected<void, std::string>;
+    ) -> std::expected<void, std::string> {
+        if (input.empty()) {
+            return std::unexpected{ "请输入文件夹路径" };
+        }
 
-    // Why a directory of the configuration has no effect, one entry per
-    // directory; an empty entry means the directory is fine. A monitored
-    // directory has none if it cannot be read as a directory or lies in another
-    // monitored directory, an excluded directory if it lies in no monitored
-    // directory. Both look at the file system, so call them when the
-    // configuration changes rather than for every frame.
-    auto monitored_directory_warnings(Configuration const& configuration) -> std::vector<std::string>;
-    auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string>;
+        std::filesystem::path directory;
+        try {
+            directory = utils::utf8_to_path(input);
+        } catch (std::exception const& error) {
+            return std::unexpected{ "文件夹路径无效：" + std::string{ error.what() } };
+        }
 
-} // namespace file_monitor::core
+        std::error_code check_error;
+        auto const is_directory{ std::filesystem::is_directory(directory, check_error) };
+        if (check_error) {
+            return std::unexpected{ "检查文件夹失败：" + check_error.message() };
+        }
+        if (!is_directory) {
+            return std::unexpected{ "路径不是存在的文件夹" };
+        }
+        if (!add_directory(directories, std::move(directory))) {
+            return std::unexpected{ "该文件夹已添加" };
+        }
+        return {};
+    }
 
-namespace file_monitor::core {
     namespace {
 
         auto config_error(
@@ -106,22 +145,6 @@ namespace file_monitor::core {
             return {};
         }
 
-        // Directories are stored as absolute paths without a trailing separator,
-        // so a relative input does not depend on the working directory of a later
-        // run and "C:\a\" is not added next to "C:\a".
-        auto normalize_directory(std::filesystem::path directory) -> std::filesystem::path {
-            std::error_code absolute_error;
-            auto absolute_directory{ std::filesystem::absolute(directory, absolute_error) };
-            if (!absolute_error) {
-                directory = std::move(absolute_directory);
-            }
-            directory = directory.lexically_normal();
-            if (directory.has_relative_path() && !directory.has_filename()) {
-                directory = directory.parent_path();
-            }
-            return directory;
-        }
-
         auto monitored_directory_warning(
             std::vector<std::filesystem::path> const& directories,
             std::size_t index
@@ -149,7 +172,7 @@ namespace file_monitor::core {
 
     } // namespace
 
-    auto load_configuration(std::filesystem::path const& config_path)
+    export auto load_configuration(std::filesystem::path const& config_path)
         -> std::expected<Configuration, std::string> {
         std::error_code exists_error;
         auto const config_exists{ std::filesystem::exists(config_path, exists_error) };
@@ -208,7 +231,7 @@ namespace file_monitor::core {
         return configuration;
     }
 
-    auto save_configuration(
+    export auto save_configuration(
         std::filesystem::path const& config_path,
         Configuration const& configuration
     ) -> std::expected<void, std::string> {
@@ -244,54 +267,13 @@ namespace file_monitor::core {
         return {};
     }
 
-    auto add_directory(
-        std::vector<std::filesystem::path>& directories,
-        std::filesystem::path directory
-    ) -> bool {
-        directory = normalize_directory(std::move(directory));
-        auto const is_added{
-            std::ranges::any_of(directories, [&directory](std::filesystem::path const& added) {
-                return utils::paths_equal(added, directory);
-            })
-        };
-        if (is_added) {
-            return false;
-        }
-
-        directories.emplace_back(std::move(directory));
-        return true;
-    }
-
-    auto add_directory_input(
-        std::vector<std::filesystem::path>& directories,
-        std::string_view input
-    ) -> std::expected<void, std::string> {
-        if (input.empty()) {
-            return std::unexpected{ "请输入文件夹路径" };
-        }
-
-        std::filesystem::path directory;
-        try {
-            directory = utils::utf8_to_path(input);
-        } catch (std::exception const& error) {
-            return std::unexpected{ "文件夹路径无效：" + std::string{ error.what() } };
-        }
-
-        std::error_code check_error;
-        auto const is_directory{ std::filesystem::is_directory(directory, check_error) };
-        if (check_error) {
-            return std::unexpected{ "检查文件夹失败：" + check_error.message() };
-        }
-        if (!is_directory) {
-            return std::unexpected{ "路径不是存在的文件夹" };
-        }
-        if (!add_directory(directories, std::move(directory))) {
-            return std::unexpected{ "该文件夹已添加" };
-        }
-        return {};
-    }
-
-    auto monitored_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
+    // Why a directory of the configuration has no effect, one entry per
+    // directory; an empty entry means the directory is fine. A monitored
+    // directory has none if it cannot be read as a directory or lies in another
+    // monitored directory, an excluded directory if it lies in no monitored
+    // directory. Both look at the file system, so call them when the
+    // configuration changes rather than for every frame.
+    export auto monitored_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
         auto const& directories{ configuration.directories };
         std::vector<std::string> warnings;
         warnings.reserve(directories.size());
@@ -301,7 +283,7 @@ namespace file_monitor::core {
         return warnings;
     }
 
-    auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
+    export auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string> {
         std::vector<std::string> warnings;
         warnings.reserve(configuration.excluded_directories.size());
         for (auto const& directory : configuration.excluded_directories) {

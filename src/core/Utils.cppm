@@ -17,26 +17,6 @@ module;
 
 export module file_monitor.core:utils;
 
-export namespace file_monitor::core::utils {
-
-    auto path_to_utf8(std::filesystem::path const& path) -> std::string;
-    auto utf8_to_path(std::string_view path) -> std::filesystem::path;
-
-    auto executable_directory() -> std::filesystem::path;
-    // Where the configuration, the log and the window layout of both
-    // interfaces are kept, in the directory of the executable.
-    auto data_directory() -> std::filesystem::path;
-    auto path_is_within(
-        std::filesystem::path const& path,
-        std::filesystem::path const& directory
-    ) -> bool;
-    auto paths_equal(
-        std::filesystem::path const& left,
-        std::filesystem::path const& right
-    ) -> bool;
-
-} // namespace file_monitor::core::utils
-
 namespace file_monitor::core::utils {
     namespace {
 
@@ -59,19 +39,19 @@ namespace file_monitor::core::utils {
 
     } // namespace
 
-    auto path_to_utf8(std::filesystem::path const& path) -> std::string {
+    export auto path_to_utf8(std::filesystem::path const& path) -> std::string {
         auto const utf8_path{ path.u8string() };
         return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
     }
 
-    auto utf8_to_path(std::string_view path) -> std::filesystem::path {
+    export auto utf8_to_path(std::string_view path) -> std::filesystem::path {
         auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
         return std::filesystem::path{
             std::u8string{ begin, begin + path.size() }
         };
     }
 
-    auto executable_directory() -> std::filesystem::path {
+    export auto executable_directory() -> std::filesystem::path {
         std::wstring module_path(MAX_PATH, L'\0');
         while (true) {
             auto const length{
@@ -95,13 +75,15 @@ namespace file_monitor::core::utils {
         }
     }
 
-    auto data_directory() -> std::filesystem::path {
+    // Where the configuration, the log and the window layout of both
+    // interfaces are kept, in the directory of the executable.
+    export auto data_directory() -> std::filesystem::path {
         return executable_directory() / "data" / "FileMonitor";
     }
 
     // Windows file systems treat paths case-insensitively, so path elements are
     // compared the same way; a trailing separator on directory is ignored.
-    auto path_is_within(
+    export auto path_is_within(
         std::filesystem::path const& path,
         std::filesystem::path const& directory
     ) -> bool {
@@ -124,7 +106,7 @@ namespace file_monitor::core::utils {
         return true;
     }
 
-    auto paths_equal(
+    export auto paths_equal(
         std::filesystem::path const& left,
         std::filesystem::path const& right
     ) -> bool {

@@ -20,28 +20,6 @@ export import :file_system;
 import :utils;
 
 namespace file_monitor::core {
-
-    class ChangeLogger final {
-    public:
-        explicit ChangeLogger(std::filesystem::path log_directory);
-        ~ChangeLogger();
-
-        ChangeLogger(ChangeLogger const&) = delete;
-        ChangeLogger(ChangeLogger&&) = delete;
-        auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
-        auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
-
-        auto Write(std::span<FileChange const> changes)
-            -> std::expected<void, std::string>;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-} // namespace file_monitor::core
-
-namespace file_monitor::core {
     namespace {
 
         auto change_event_date(std::string_view event_time) -> std::string {
@@ -75,29 +53,68 @@ namespace file_monitor::core {
 
     } // namespace
 
-    struct ChangeLogger::Impl {
-        explicit Impl(std::filesystem::path directory)
-            : log_directory{ std::move(directory) } {
+    class ChangeLogger final {
+    public:
+        explicit ChangeLogger(std::filesystem::path log_directory)
+            : m_log_directory{ std::move(log_directory) } {
         }
 
+        ChangeLogger(ChangeLogger const&) = delete;
+        ChangeLogger(ChangeLogger&&) = delete;
+        auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
+        auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
+
+        auto Write(std::span<FileChange const> changes)
+            -> std::expected<void, std::string> {
+            for (auto const& change : changes) {
+                auto const date{ change_event_date(file_change_event_time(change)) };
+                auto const logger_result{ ensureLogger(date) };
+                if (!logger_result) {
+                    return logger_result;
+                }
+
+                m_error_message.clear();
+                try {
+                    m_logger->info(
+                        "[{}] [{}] [{}] {}",
+                        change.time,
+                        file_change_status_text(change.status),
+                        change.size,
+                        change_path_text(change)
+                    );
+                } catch (spdlog::spdlog_ex const& exception) {
+                    return std::unexpected{
+                        std::format("写入日志失败：{}", exception.what())
+                    };
+                }
+                if (!m_error_message.empty()) {
+                    return std::unexpected{
+                        std::format("写入日志失败：{}", m_error_message)
+                    };
+                }
+            }
+            return {};
+        }
+
+    private:
         auto ensureLogger(std::string const& date) -> std::expected<void, std::string> {
-            if (logger && current_date == date) {
+            if (m_logger && m_current_date == date) {
                 return {};
             }
 
             std::error_code create_error;
-            std::filesystem::create_directories(log_directory, create_error);
+            std::filesystem::create_directories(m_log_directory, create_error);
             if (create_error) {
                 return std::unexpected{
                     std::format(
                         "创建日志目录失败 {}：{}",
-                        utils::path_to_utf8(log_directory),
+                        utils::path_to_utf8(m_log_directory),
                         create_error.message()
                     )
                 };
             }
 
-            auto const log_path{ log_directory / (date + ".log") };
+            auto const log_path{ m_log_directory / (date + ".log") };
             try {
                 auto sink{
                     std::make_shared<spdlog::sinks::basic_file_sink_mt>(
@@ -111,11 +128,11 @@ namespace file_monitor::core {
                 new_logger->set_pattern("%v");
                 new_logger->flush_on(spdlog::level::info);
                 new_logger->set_error_handler([this](std::string const& message) {
-                    error_message = message;
+                    m_error_message = message;
                 });
 
-                logger = std::move(new_logger);
-                current_date = date;
+                m_logger = std::move(new_logger);
+                m_current_date = date;
             } catch (spdlog::spdlog_ex const& exception) {
                 return std::unexpected{
                     std::format(
@@ -128,48 +145,10 @@ namespace file_monitor::core {
             return {};
         }
 
-        std::filesystem::path log_directory;
-        std::string current_date;
-        std::string error_message;
-        std::shared_ptr<spdlog::logger> logger;
+        std::filesystem::path m_log_directory;
+        std::string m_current_date;
+        std::string m_error_message;
+        std::shared_ptr<spdlog::logger> m_logger;
     };
-
-    ChangeLogger::ChangeLogger(std::filesystem::path log_directory)
-        : m_impl{ std::make_unique<Impl>(std::move(log_directory)) } {
-    }
-
-    ChangeLogger::~ChangeLogger() = default;
-
-    auto ChangeLogger::Write(std::span<FileChange const> changes)
-        -> std::expected<void, std::string> {
-        for (auto const& change : changes) {
-            auto const date{ change_event_date(file_change_event_time(change)) };
-            auto const logger_result{ m_impl->ensureLogger(date) };
-            if (!logger_result) {
-                return logger_result;
-            }
-
-            m_impl->error_message.clear();
-            try {
-                m_impl->logger->info(
-                    "[{}] [{}] [{}] {}",
-                    change.time,
-                    file_change_status_text(change.status),
-                    change.size,
-                    change_path_text(change)
-                );
-            } catch (spdlog::spdlog_ex const& exception) {
-                return std::unexpected{
-                    std::format("写入日志失败：{}", exception.what())
-                };
-            }
-            if (!m_impl->error_message.empty()) {
-                return std::unexpected{
-                    std::format("写入日志失败：{}", m_impl->error_message)
-                };
-            }
-        }
-        return {};
-    }
 
 } // namespace file_monitor::core

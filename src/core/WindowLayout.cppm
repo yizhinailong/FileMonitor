@@ -9,25 +9,6 @@ module;
 
 export module file_monitor.core:window_layout;
 
-export namespace file_monitor::core {
-
-    // The size and position of the desktop window, so that it reopens where
-    // the user left it.
-    struct WindowLayout {
-        int x{ 0 };
-        int y{ 0 };
-        int width{ 0 };
-        int height{ 0 };
-        bool maximized{ false };
-    };
-
-    // The layout stored in `path`, or nothing when there is none or it cannot
-    // be read.
-    auto load_window_layout(std::filesystem::path const& path) -> std::optional<WindowLayout>;
-    auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool;
-
-} // namespace file_monitor::core
-
 namespace file_monitor::core {
     namespace {
 
@@ -42,7 +23,19 @@ namespace file_monitor::core {
 
     } // namespace
 
-    auto load_window_layout(std::filesystem::path const& path) -> std::optional<WindowLayout> {
+    // The size and position of the desktop window, so that it reopens where
+    // the user left it.
+    export struct WindowLayout {
+        int x{ 0 };
+        int y{ 0 };
+        int width{ 0 };
+        int height{ 0 };
+        bool maximized{ false };
+    };
+
+    // The layout stored in `path`, or nothing when there is none or it cannot
+    // be read.
+    export auto load_window_layout(std::filesystem::path const& path) -> std::optional<WindowLayout> {
         std::error_code exists_error;
         if (!std::filesystem::exists(path, exists_error) || exists_error) {
             return std::nullopt;
@@ -72,7 +65,7 @@ namespace file_monitor::core {
         return layout;
     }
 
-    auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool {
+    export auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool {
         auto const parent_path{ path.parent_path() };
         if (!parent_path.empty()) {
             std::error_code create_error;

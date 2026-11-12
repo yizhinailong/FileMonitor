@@ -23,35 +23,8 @@ import :utils;
 
 namespace file_monitor::core {
 
-    class DirectoryMonitor final {
-    public:
-        DirectoryMonitor();
-        ~DirectoryMonitor();
-
-        DirectoryMonitor(DirectoryMonitor const&) = delete;
-        DirectoryMonitor(DirectoryMonitor&&) = delete;
-        auto operator=(DirectoryMonitor const&) -> DirectoryMonitor& = delete;
-        auto operator=(DirectoryMonitor&&) -> DirectoryMonitor& = delete;
-
-        auto Start(
-            std::span<std::filesystem::path const> directories,
-            std::span<std::filesystem::path const> excluded_directories = {}
-        ) -> void;
-        auto Stop() -> void;
-        auto TakeChanges() -> std::vector<FileChange>;
-        auto TakeError() -> std::string;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-} // namespace file_monitor::core
-
-namespace file_monitor::core {
-
-    // Not in the anonymous namespace: DirectoryMonitor::Impl, which is part of
-    // the module interface, holds a MonitorState.
+    // Not in the anonymous namespace: DirectoryMonitor, which is part of the
+    // module interface, holds a MonitorState.
     using FileCache = std::map<std::string, FileState, std::less<>>;
 
     struct MonitorState {
@@ -418,102 +391,106 @@ namespace file_monitor::core {
 
     } // namespace
 
-    struct DirectoryMonitor::Impl {
-        std::shared_ptr<MonitorState> state{
+    class DirectoryMonitor final {
+    public:
+        DirectoryMonitor() = default;
+
+        ~DirectoryMonitor() {
+            Stop();
+        }
+
+        DirectoryMonitor(DirectoryMonitor const&) = delete;
+        DirectoryMonitor(DirectoryMonitor&&) = delete;
+        auto operator=(DirectoryMonitor const&) -> DirectoryMonitor& = delete;
+        auto operator=(DirectoryMonitor&&) -> DirectoryMonitor& = delete;
+
+        auto Start(
+            std::span<std::filesystem::path const> directories,
+            std::span<std::filesystem::path const> excluded_directories = {}
+        ) -> void {
+            Stop();
+
+            auto normalized_directories{
+                directories |
+                std::views::transform(normalize_directory) |
+                std::ranges::to<std::vector<std::filesystem::path>>()
+            };
+            auto normalized_excluded_directories{
+                excluded_directories |
+                std::views::transform(normalize_directory) |
+                std::ranges::to<std::vector<std::filesystem::path>>()
+            };
+
+            {
+                auto const lock{ std::scoped_lock{ m_state->mutex } };
+                m_state->excluded_directories = std::move(normalized_excluded_directories);
+                m_state->files = {};
+                m_state->changes = {};
+                m_state->error_message = {};
+                m_state->initializing_directories = normalized_directories;
+            }
+
+            if (!normalized_directories.empty()) {
+                m_watch_backend = std::make_unique<detail::DirectoryWatchBackend>(
+                    detail::DirectoryWatchCallbacks{
+                        .on_event = [state = m_state](
+                                        detail::DirectoryWatchEvent event,
+                                        std::stop_token stop_token
+                                    ) { handle_directory_watch_event(state, event, stop_token); },
+                        .on_error = [state = m_state](std::string message) { report_error(state, std::move(message)); } }
+                );
+                m_watch_backend->Start(normalized_directories);
+            }
+
+            m_initialization_threads.reserve(normalized_directories.size());
+            for (auto const& directory : normalized_directories) {
+                m_initialization_threads.emplace_back(
+                    [state = m_state, directory](std::stop_token stop_token) mutable {
+                        initialize_directory(state, std::move(directory), stop_token);
+                    }
+                );
+            }
+            if (normalized_directories.empty()) {
+                m_state->initialized.notify_all();
+            }
+        }
+
+        auto Stop() -> void {
+            for (auto& thread : m_initialization_threads) {
+                thread.request_stop();
+            }
+            if (m_watch_backend) {
+                m_watch_backend->RequestStop();
+            }
+            {
+                auto const lock{ std::scoped_lock{ m_state->mutex } };
+                m_state->initializing_directories.clear();
+            }
+            m_state->initialized.notify_all();
+            m_watch_backend.reset();
+            m_initialization_threads.clear();
+        }
+
+        auto TakeChanges() -> std::vector<FileChange> {
+            auto const lock{ std::scoped_lock{ m_state->mutex } };
+            std::vector<FileChange> changes;
+            changes.swap(m_state->changes);
+            return changes;
+        }
+
+        auto TakeError() -> std::string {
+            auto const lock{ std::scoped_lock{ m_state->mutex } };
+            std::string error_message;
+            error_message.swap(m_state->error_message);
+            return error_message;
+        }
+
+    private:
+        std::shared_ptr<MonitorState> m_state{
             std::make_shared<MonitorState>()
         };
-        std::vector<std::jthread> initialization_threads;
-        std::unique_ptr<detail::DirectoryWatchBackend> watch_backend;
+        std::vector<std::jthread> m_initialization_threads;
+        std::unique_ptr<detail::DirectoryWatchBackend> m_watch_backend;
     };
-
-    DirectoryMonitor::DirectoryMonitor()
-        : m_impl{ std::make_unique<Impl>() } {
-    }
-
-    DirectoryMonitor::~DirectoryMonitor() {
-        Stop();
-    }
-
-    auto DirectoryMonitor::Start(
-        std::span<std::filesystem::path const> directories,
-        std::span<std::filesystem::path const> excluded_directories
-    ) -> void {
-        Stop();
-
-        auto normalized_directories{
-            directories |
-            std::views::transform(normalize_directory) |
-            std::ranges::to<std::vector<std::filesystem::path>>()
-        };
-        auto normalized_excluded_directories{
-            excluded_directories |
-            std::views::transform(normalize_directory) |
-            std::ranges::to<std::vector<std::filesystem::path>>()
-        };
-
-        {
-            auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-            m_impl->state->excluded_directories =
-                std::move(normalized_excluded_directories);
-            m_impl->state->files = {};
-            m_impl->state->changes = {};
-            m_impl->state->error_message = {};
-            m_impl->state->initializing_directories = normalized_directories;
-        }
-
-        if (!normalized_directories.empty()) {
-            m_impl->watch_backend = std::make_unique<detail::DirectoryWatchBackend>(
-                detail::DirectoryWatchCallbacks{
-                    .on_event = [state = m_impl->state](
-                                    detail::DirectoryWatchEvent event,
-                                    std::stop_token stop_token
-                                ) { handle_directory_watch_event(state, event, stop_token); },
-                    .on_error = [state = m_impl->state](std::string message) { report_error(state, std::move(message)); } }
-            );
-            m_impl->watch_backend->Start(normalized_directories);
-        }
-
-        m_impl->initialization_threads.reserve(normalized_directories.size());
-        for (auto const& directory : normalized_directories) {
-            m_impl->initialization_threads.emplace_back(
-                [state = m_impl->state, directory](std::stop_token stop_token) mutable {
-                    initialize_directory(state, std::move(directory), stop_token);
-                }
-            );
-        }
-        if (normalized_directories.empty()) {
-            m_impl->state->initialized.notify_all();
-        }
-    }
-
-    auto DirectoryMonitor::Stop() -> void {
-        for (auto& thread : m_impl->initialization_threads) {
-            thread.request_stop();
-        }
-        if (m_impl->watch_backend) {
-            m_impl->watch_backend->RequestStop();
-        }
-        {
-            auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-            m_impl->state->initializing_directories.clear();
-        }
-        m_impl->state->initialized.notify_all();
-        m_impl->watch_backend.reset();
-        m_impl->initialization_threads.clear();
-    }
-
-    auto DirectoryMonitor::TakeChanges() -> std::vector<FileChange> {
-        auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-        std::vector<FileChange> changes;
-        changes.swap(m_impl->state->changes);
-        return changes;
-    }
-
-    auto DirectoryMonitor::TakeError() -> std::string {
-        auto const lock{ std::scoped_lock{ m_impl->state->mutex } };
-        std::string error_message;
-        error_message.swap(m_impl->state->error_message);
-        return error_message;
-    }
 
 } // namespace file_monitor::core
