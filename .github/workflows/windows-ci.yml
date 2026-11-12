@@ -23,6 +23,10 @@ jobs:
       checksum: ${{ steps.package.outputs.checksum }}
     env:
       CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/cpm
+      # The LLVM of the runner image is too old: the clang-cl of Clang 20
+      # cannot compile module partitions that import each other.
+      LLVM_VERSION: 23.1.3
+      LLVM_SHA256: 5153f848ac87553118340f16f8d3cd4351d729bcba6e4785c6a4a9af29676de9
 
     steps:
       - name: Checkout
@@ -35,6 +39,38 @@ jobs:
 
       - name: Set up CMake and Ninja
         uses: lukka/get-cmake@v4.4.5
+
+      - name: Set up LLVM
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP "LLVM-$env:LLVM_VERSION-win64.msi"
+          $toolchain = Join-Path $env:RUNNER_TEMP "llvm"
+          Invoke-WebRequest -UseBasicParsing `
+              -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-$env:LLVM_VERSION/LLVM-$env:LLVM_VERSION-win64.msi" `
+              -OutFile $installer
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $env:LLVM_SHA256) {
+              throw "LLVM installer has SHA-256 $hash, expected $env:LLVM_SHA256"
+          }
+
+          # An administrative installation only extracts the files, so the
+          # LLVM of the runner image stays as it is.
+          $process = Start-Process msiexec.exe -Wait -PassThru -NoNewWindow -ArgumentList @(
+              "/a", "`"$installer`"", "/qn", "TARGETDIR=`"$toolchain`""
+          )
+          if ($process.ExitCode -ne 0) {
+              throw "Extracting LLVM failed with exit code $($process.ExitCode)"
+          }
+          Join-Path $toolchain "LLVM\bin" >> $env:GITHUB_PATH
+
+      - name: Check clang-cl
+        shell: pwsh
+        run: |
+          $version = clang-cl --version | Select-Object -First 1
+          $version
+          if ($version -notmatch "^clang version $([regex]::Escape($env:LLVM_VERSION)) ") {
+              throw "clang-cl on PATH is not LLVM $env:LLVM_VERSION"
+          }
 
       - name: Set up just
         uses: extractions/setup-just@v4
