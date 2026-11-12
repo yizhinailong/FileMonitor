@@ -18,14 +18,25 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 enable_language(RC)
 
 include(cmake/ClangClCcache.cmake)
+include(cmake/Options.cmake)
 include(cmake/Dependencies.cmake)
 
 add_subdirectory(src/core)
-add_subdirectory(src/gui)
-add_subdirectory(src/tui)
+
+set(FILE_MONITOR_APPS)
+
+if(FILE_MONITOR_BUILD_GUI)
+    add_subdirectory(src/gui)
+    list(APPEND FILE_MONITOR_APPS ${PROJECT_NAME})
+endif()
+
+if(FILE_MONITOR_BUILD_TUI)
+    add_subdirectory(src/tui)
+    list(APPEND FILE_MONITOR_APPS ${PROJECT_NAME}Tui)
+endif()
 
 install(
-    TARGETS ${PROJECT_NAME} ${PROJECT_NAME}Tui
+    TARGETS ${FILE_MONITOR_APPS}
     BUNDLE DESTINATION .
     RUNTIME DESTINATION .
 )
