@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <cstddef>
 
-#include <ftxui/screen/string.hpp>
-
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

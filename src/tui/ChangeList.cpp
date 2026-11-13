@@ -6,13 +6,11 @@
 #include <string>
 #include <utility>
 
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/terminal.hpp>
-
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

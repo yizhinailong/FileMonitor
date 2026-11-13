@@ -5,8 +5,7 @@
 #include <stop_token>
 #include <thread>
 
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/event.hpp>
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

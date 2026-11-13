@@ -4,9 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/box.hpp>
+import ftxui;
 
 namespace file_monitor::tui {
 

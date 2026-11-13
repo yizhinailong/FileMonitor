@@ -6,8 +6,7 @@
 #include <ranges>
 #include <utility>
 
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/string.hpp>
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

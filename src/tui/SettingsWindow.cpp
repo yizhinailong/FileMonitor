@@ -6,16 +6,11 @@
 #include <string_view>
 #include <utility>
 
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/component_options.hpp>
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/color.hpp>
-#include <ftxui/screen/string.hpp>
-
 #include "PathCompletion.hpp"
 #include "Widgets.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

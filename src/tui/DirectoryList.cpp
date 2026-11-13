@@ -6,13 +6,10 @@
 #include <ranges>
 #include <utility>
 
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/color.hpp>
-#include <ftxui/screen/string.hpp>
-
 #include "TextLayout.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

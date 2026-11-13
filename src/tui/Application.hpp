@@ -2,12 +2,11 @@
 
 #include <memory>
 
-#include <ftxui/component/app.hpp>
-
 #include "ConsoleCodePageGuard.hpp"
 #include "MainWindow.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
 

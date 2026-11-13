@@ -10,17 +10,12 @@
 #include <utility>
 #include <vector>
 
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/component_options.hpp>
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/color.hpp>
-#include <ftxui/screen/string.hpp>
-
 #include "Clipboard.hpp"
 #include "TextLayout.hpp"
 #include "Widgets.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 #define FILE_MONITOR_STRINGIFY_IMPL(value) #value
 #define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)

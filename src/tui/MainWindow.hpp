@@ -6,16 +6,12 @@
 #include <string>
 #include <vector>
 
-#include <ftxui/component/component_base.hpp>
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/box.hpp>
-
 #include "ChangeList.hpp"
 #include "KeyHintBar.hpp"
 #include "SettingsWindow.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
 

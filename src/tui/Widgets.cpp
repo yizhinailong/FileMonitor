@@ -6,9 +6,7 @@
 #include <string>
 #include <utility>
 
-#include <ftxui/component/mouse.hpp>
-#include <ftxui/screen/color.hpp>
-#include <ftxui/screen/terminal.hpp>
+import ftxui;
 
 namespace file_monitor::tui {
     namespace {

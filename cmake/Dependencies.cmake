@@ -114,10 +114,11 @@ if(FILE_MONITOR_BUILD_TUI)
         "FTXUI_BUILD_TESTS OFF"
         "FTXUI_ENABLE_INSTALL OFF"
         "FTXUI_QUIET ON"
+        "FTXUI_BUILD_MODULES ON"
     )
 
     set(TUI_DEPENDENCIES
-        ftxui::component
+        ftxui::modules
     )
 endif()
 

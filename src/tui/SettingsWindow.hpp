@@ -4,15 +4,11 @@
 #include <string>
 #include <vector>
 
-#include <ftxui/component/component_base.hpp>
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/box.hpp>
-
 #include "DirectoryList.hpp"
 #include "KeyHintBar.hpp"
 
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
 

@@ -2,10 +2,8 @@
 
 #include <string_view>
 
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
-
 import file_monitor.core;
+import ftxui;
 
 namespace file_monitor::tui {
 
