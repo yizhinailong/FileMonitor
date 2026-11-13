@@ -1,8 +1,9 @@
-#include "Clipboard.hpp"
+module;
 
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -12,7 +13,13 @@
 #endif
 #include <Windows.h>
 
+export module file_monitor.tui:clipboard;
+
 namespace file_monitor::tui {
+
+    // Puts UTF-8 text on the Windows clipboard of this machine.
+    export auto copy_to_clipboard(std::string_view text) -> bool;
+
     namespace {
 
         auto to_wide(std::string_view text) -> std::wstring {

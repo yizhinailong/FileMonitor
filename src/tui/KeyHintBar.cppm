@@ -1,14 +1,46 @@
-#include "KeyHintBar.hpp"
+module;
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <ranges>
+#include <string>
 #include <utility>
+#include <vector>
+
+export module file_monitor.tui:key_hint_bar;
 
 import ftxui;
 
 namespace file_monitor::tui {
+
+    export struct KeyHint {
+        std::string key;
+        std::string label;
+        // Runs when the hint is clicked; a hint without an action only
+        // describes its key.
+        std::function<void()> action;
+        // When the line is too narrow, hints with a lower priority are hidden
+        // first.
+        int priority{ 0 };
+        // Hides the hint while it returns false.
+        std::function<bool()> available;
+    };
+
+    // A line of key hints such as "s 设置  q 退出".
+    export class KeyHintBar final {
+    public:
+        explicit KeyHintBar(std::vector<KeyHint> hints);
+
+        auto Render(int width) -> ftxui::Element;
+        // Runs the action of a clicked hint.
+        auto OnEvent(ftxui::Event event) -> bool;
+
+    private:
+        std::vector<KeyHint> m_hints;
+        std::vector<ftxui::Box> m_boxes;
+    };
+
     namespace {
 
         constexpr auto HINT_GAP{ 2 };
@@ -77,8 +109,9 @@ namespace file_monitor::tui {
         if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed) {
             return false;
         }
-        for (auto const& [hint, box] : std::views::zip(m_hints, m_boxes)) {
-            if (hint.action && box.Contain(mouse.x, mouse.y)) {
+        for (auto index{ std::size_t{ 0 } }; index < m_hints.size(); ++index) {
+            auto const& hint{ m_hints[index] };
+            if (hint.action && m_boxes[index].Contain(mouse.x, mouse.y)) {
                 hint.action();
                 return true;
             }

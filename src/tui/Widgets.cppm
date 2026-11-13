@@ -1,14 +1,33 @@
-#include "Widgets.hpp"
+module;
 
 #include <algorithm>
 #include <format>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
 
+export module file_monitor.tui:widgets;
+
+import file_monitor.core;
 import ftxui;
 
 namespace file_monitor::tui {
+
+    // Keys and clicks, as opposed to mouse moves and the redraw requests of
+    // the session poller.
+    export [[nodiscard]] auto is_user_input(ftxui::Event event) -> bool;
+    export auto error_text(std::string_view message) -> ftxui::Element;
+    export auto error_text(std::string_view label, std::string_view message) -> ftxui::Element;
+    export auto session_error_text(core::MonitorSession const& session) -> ftxui::Element;
+    export [[nodiscard]] auto has_session_errors(core::MonitorSession const& session) -> bool;
+    // The status text in its color.
+    export auto file_change_status_element(core::FileChangeStatus status) -> ftxui::Element;
+
+    // A page fills the terminal and keeps one blank column on either side.
+    export [[nodiscard]] auto page_width() -> int;
+    export auto page(ftxui::Element content) -> ftxui::Element;
+
     namespace {
 
         constexpr auto PAGE_MARGIN{ 1 };

@@ -1,12 +1,15 @@
-#include "PathCompletion.hpp"
+module;
 
 #include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <ranges>
+#include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -16,9 +19,28 @@
 #endif
 #include <Windows.h>
 
+export module file_monitor.tui:path_completion;
+
 import file_monitor.core;
 
 namespace file_monitor::tui {
+
+    export struct PathCompletion {
+        // The input with its last segment completed as far as the matching
+        // directories agree; it ends with a separator when one directory
+        // matches.
+        std::string text;
+        // The names of the matching directories, sorted, when more than one
+        // matches.
+        std::vector<std::string> candidates;
+        bool matched{ false };
+    };
+
+    // Completes the last segment of a directory path with the names of the
+    // subdirectories that start with it, ignoring case like Windows does. A
+    // relative path starts from the current working directory.
+    export auto complete_directory_path(std::string_view input) -> PathCompletion;
+
     namespace {
 
         // Keeps a Tab press quick in a directory with very many entries.

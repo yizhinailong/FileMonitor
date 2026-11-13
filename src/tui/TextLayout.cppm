@@ -1,12 +1,26 @@
-#include "TextLayout.hpp"
+module;
 
 #include <algorithm>
 #include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
+
+export module file_monitor.tui:text_layout;
 
 import file_monitor.core;
 import ftxui;
 
 namespace file_monitor::tui {
+
+    // core::shorten_path() for a width in terminal columns.
+    export auto shorten_path(std::string_view path, int width) -> std::string;
+    // core::change_path_text() for a width in terminal columns.
+    export auto change_path_text(core::FileChange const& change, int width) -> std::string;
+    // Splits text into lines of at most `width` columns, preferring to break
+    // after a directory separator.
+    export auto wrap_text(std::string_view text, int width) -> std::vector<std::string>;
+
     namespace {
 
         // One entry per terminal column; a full-width glyph is followed by an

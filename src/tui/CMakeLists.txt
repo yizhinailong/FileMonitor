@@ -1,13 +1,19 @@
-file(GLOB_RECURSE TUI_SOURCES
+file(GLOB_RECURSE TUI_MODULES
     CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cppm"
 )
 
 add_executable(
     ${PROJECT_NAME}Tui
-    ${TUI_SOURCES}
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
     "${PROJECT_SOURCE_DIR}/app.rc"
+)
+
+target_sources(
+    ${PROJECT_NAME}Tui
+    PRIVATE
+    FILE_SET CXX_MODULES
+    FILES ${TUI_MODULES}
 )
 
 set_target_properties(

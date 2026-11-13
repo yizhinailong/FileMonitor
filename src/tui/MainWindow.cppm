@@ -1,26 +1,78 @@
-#include "MainWindow.hpp"
+module;
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <format>
-#include <ranges>
+#include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
-#include "Clipboard.hpp"
-#include "TextLayout.hpp"
-#include "Widgets.hpp"
+export module file_monitor.tui:main_window;
 
 import file_monitor.core;
 import ftxui;
+import :change_list;
+import :clipboard;
+import :key_hint_bar;
+import :settings_window;
+import :text_layout;
+import :widgets;
 
 #define FILE_MONITOR_STRINGIFY_IMPL(value) #value
 #define FILE_MONITOR_STRINGIFY(value)      FILE_MONITOR_STRINGIFY_IMPL(value)
 
 namespace file_monitor::tui {
+
+    export class MainWindow final : public ftxui::ComponentBase {
+    public:
+        MainWindow(core::MonitorSession& session, std::function<void()> on_quit);
+
+        [[nodiscard]]
+        auto Update() -> bool;
+
+        auto OnEvent(ftxui::Event event) -> bool override;
+
+    private:
+        auto onMainEvent(ftxui::Event event) -> bool;
+        auto onFilterEvent(ftxui::Event event) -> bool;
+        auto onStatusClick(ftxui::Event event) -> bool;
+        auto renderMainView() -> ftxui::Element;
+        auto renderHeader(int width) -> ftxui::Element;
+        auto renderFooter(int width) -> ftxui::Element;
+        auto renderFilterFooter(int width) -> ftxui::Element;
+        auto keyHints() -> std::vector<KeyHint>;
+        auto filterHints() -> std::vector<KeyHint>;
+        auto makeFilterInput() -> ftxui::Component;
+        // Clears the path filter and stops editing it.
+        auto cancelFilterEdit() -> void;
+        auto clearFilters() -> void;
+        auto copySelectedPath() -> void;
+        auto showSelectedChange() -> void;
+        auto openSettings() -> void;
+        auto closeSettings() -> void;
+
+        core::MonitorSession& m_session;
+        std::function<void()> m_on_quit;
+        ChangeList m_change_list;
+        KeyHintBar m_key_hints;
+        KeyHintBar m_filter_hints;
+        std::string m_filter_text;
+        ftxui::Component m_filter_input;
+        bool m_editing_filter{ false };
+        // The outcome of copying or showing a path, shown in the footer until
+        // the next key or click.
+        std::string m_notice;
+        bool m_notice_failed{ false };
+        // The status counts of the header, which toggle the status filters.
+        std::array<ftxui::Box, core::FILE_CHANGE_STATUS_COUNT> m_status_boxes{};
+        std::shared_ptr<SettingsWindow> m_settings_window;
+        int m_page{ 0 };
+    };
+
     namespace {
 
         constexpr std::string_view APP_TITLE = "文件监控 v" FILE_MONITOR_STRINGIFY(FILE_MONITOR_VERSION);
@@ -128,9 +180,9 @@ namespace file_monitor::tui {
             clearFilters();
             return true;
         }
-        for (auto const [index, status] : std::views::enumerate(core::FILE_CHANGE_STATUSES)) {
+        for (auto index{ std::size_t{ 0 } }; index < core::FILE_CHANGE_STATUSES.size(); ++index) {
             if (event == ftxui::Event::Character(static_cast<char>('1' + index))) {
-                m_change_list.ToggleStatus(status);
+                m_change_list.ToggleStatus(core::FILE_CHANGE_STATUSES[index]);
                 return true;
             }
         }
@@ -162,9 +214,9 @@ namespace file_monitor::tui {
         if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed) {
             return false;
         }
-        for (auto const [status, box] : std::views::zip(core::FILE_CHANGE_STATUSES, m_status_boxes)) {
-            if (box.Contain(mouse.x, mouse.y)) {
-                m_change_list.ToggleStatus(status);
+        for (auto index{ std::size_t{ 0 } }; index < m_status_boxes.size(); ++index) {
+            if (m_status_boxes[index].Contain(mouse.x, mouse.y)) {
+                m_change_list.ToggleStatus(core::FILE_CHANGE_STATUSES[index]);
                 return true;
             }
         }
@@ -219,7 +271,9 @@ namespace file_monitor::tui {
             ++counts[status_index(change.status)];
         }
         Line count_line;
-        for (auto&& [status, box] : std::views::zip(core::FILE_CHANGE_STATUSES, m_status_boxes)) {
+        for (auto index{ std::size_t{ 0 } }; index < m_status_boxes.size(); ++index) {
+            auto const status{ core::FILE_CHANGE_STATUSES[index] };
+            auto& box{ m_status_boxes[index] };
             box = HIDDEN_BOX;
             auto const label{ std::string{ core::file_change_status_text(status) } };
             auto const count{ std::format(" {}", counts[status_index(status)]) };

@@ -1,13 +1,33 @@
-#include "Application.hpp"
+module;
 
 #include <chrono>
 #include <csignal>
+#include <memory>
 #include <stop_token>
 #include <thread>
 
+export module file_monitor.tui:application;
+
+import file_monitor.core;
 import ftxui;
+import :console_code_page_guard;
+import :main_window;
 
 namespace file_monitor::tui {
+
+    export class Application final {
+    public:
+        Application();
+
+        auto Run() -> int;
+
+    private:
+        ConsoleCodePageGuard m_code_page_guard;
+        ftxui::App m_screen;
+        core::MonitorSession m_session;
+        std::shared_ptr<MainWindow> m_main_window;
+    };
+
     namespace {
 
         constexpr auto POLL_INTERVAL{ std::chrono::milliseconds{ 100 } };

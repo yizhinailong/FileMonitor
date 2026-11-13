@@ -1,4 +1,4 @@
-#include "tui/Application.hpp"
+import file_monitor.tui;
 
 auto main() -> int {
     file_monitor::tui::Application application;
