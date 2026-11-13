@@ -1,15 +1,6 @@
-module;
-
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <utility>
-
 export module file_monitor.core:change_filter;
 
+import std;
 export import :file_system;
 
 namespace file_monitor::core {

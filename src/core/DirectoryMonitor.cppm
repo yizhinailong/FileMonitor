@@ -1,22 +1,6 @@
-module;
-
-#include <algorithm>
-#include <array>
-#include <condition_variable>
-#include <filesystem>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <ranges>
-#include <span>
-#include <stop_token>
-#include <string>
-#include <thread>
-#include <utility>
-#include <vector>
-
 export module file_monitor.core:directory_monitor;
 
+import std;
 export import :file_system;
 import :directory_watch_backend;
 import :utils;

@@ -1,21 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cstddef>
-#include <exception>
-#include <expected>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <utility>
-#include <vector>
-
 export module file_monitor.core:configuration;
 
+import std;
 import nlohmann.json;
 import :utils;
 

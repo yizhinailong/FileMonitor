@@ -39,6 +39,8 @@ jobs:
 
       - name: Set up CMake and Ninja
         uses: lukka/get-cmake@v4.4.5
+        with:
+          cmakeVersion: 4.5.0
 
       - name: Set up LLVM
         shell: pwsh

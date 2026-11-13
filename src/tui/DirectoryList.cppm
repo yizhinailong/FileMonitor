@@ -1,15 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cstddef>
-#include <filesystem>
-#include <format>
-#include <string>
-#include <utility>
-#include <vector>
-
 export module file_monitor.tui:directory_list;
 
+import std;
 import file_monitor.core;
 import ftxui;
 import :text_layout;

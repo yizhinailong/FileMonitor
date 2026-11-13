@@ -1,16 +1,6 @@
-module;
-
-#include <cstddef>
-#include <cstdint>
-#include <filesystem>
-#include <ranges>
-#include <span>
-#include <string>
-#include <utility>
-#include <vector>
-
 export module file_monitor.core:monitor_session;
 
+import std;
 export import :configuration;
 export import :file_system;
 import :change_logger;

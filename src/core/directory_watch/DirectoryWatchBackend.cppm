@@ -1,20 +1,6 @@
 module;
 
-#include <array>
 #include <cstddef>
-#include <filesystem>
-#include <format>
-#include <functional>
-#include <memory>
-#include <optional>
-#include <span>
-#include <stop_token>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <thread>
-#include <utility>
-#include <vector>
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -26,6 +12,7 @@ module;
 
 export module file_monitor.core:directory_watch_backend;
 
+import std;
 import :utils;
 
 namespace file_monitor::core::detail {

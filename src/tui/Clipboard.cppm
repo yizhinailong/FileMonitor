@@ -1,10 +1,5 @@
 module;
 
-#include <algorithm>
-#include <cstddef>
-#include <string>
-#include <string_view>
-
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -14,6 +9,8 @@ module;
 #include <Windows.h>
 
 export module file_monitor.tui:clipboard;
+
+import std;
 
 namespace file_monitor::tui {
 

@@ -1,17 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
 export module file_monitor.tui:change_list;
 
+import std;
 import file_monitor.core;
 import ftxui;
 import :text_layout;

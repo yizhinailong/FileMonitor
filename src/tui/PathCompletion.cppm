@@ -1,16 +1,5 @@
 module;
 
-#include <algorithm>
-#include <cstddef>
-#include <exception>
-#include <filesystem>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <utility>
-#include <vector>
-
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -20,6 +9,8 @@ module;
 #include <Windows.h>
 
 export module file_monitor.tui:path_completion;
+
+import std;
 
 import file_monitor.core;
 

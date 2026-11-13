@@ -1,15 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cstddef>
-#include <functional>
-#include <ranges>
-#include <string>
-#include <utility>
-#include <vector>
-
 export module file_monitor.tui:key_hint_bar;
 
+import std;
 import ftxui;
 
 namespace file_monitor::tui {

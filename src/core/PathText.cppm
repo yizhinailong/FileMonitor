@@ -1,15 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <format>
-#include <string>
-#include <string_view>
-#include <utility>
-
 export module file_monitor.core:path_text;
 
+import std;
 export import :file_system;
 
 namespace file_monitor::core {

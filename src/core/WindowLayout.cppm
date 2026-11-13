@@ -1,12 +1,6 @@
-module;
-
-#include <filesystem>
-#include <fstream>
-#include <optional>
-#include <system_error>
-
 export module file_monitor.core:window_layout;
 
+import std;
 import nlohmann.json;
 
 namespace file_monitor::core {

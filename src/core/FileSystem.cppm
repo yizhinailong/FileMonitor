@@ -1,20 +1,6 @@
 module;
 
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cstdint>
 #include <ctime>
-#include <filesystem>
-#include <format>
-#include <optional>
-#include <ranges>
-#include <span>
-#include <stop_token>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <vector>
 
 #ifndef NOMINMAX
     #define NOMINMAX
@@ -25,6 +11,8 @@ module;
 #include <Windows.h>
 
 export module file_monitor.core:file_system;
+
+import std;
 
 import :utils;
 

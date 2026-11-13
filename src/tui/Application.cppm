@@ -1,13 +1,10 @@
 module;
 
-#include <chrono>
 #include <csignal>
-#include <memory>
-#include <stop_token>
-#include <thread>
 
 export module file_monitor.tui:application;
 
+import std;
 import file_monitor.core;
 import ftxui;
 import :console_code_page_guard;

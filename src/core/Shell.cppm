@@ -1,13 +1,5 @@
 module;
 
-#include <cstdint>
-#include <filesystem>
-#include <format>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <utility>
-
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -19,6 +11,7 @@ module;
 
 export module file_monitor.core:shell;
 
+import std;
 import :utils;
 
 namespace file_monitor::core {

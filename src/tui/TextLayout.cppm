@@ -1,13 +1,6 @@
-module;
-
-#include <algorithm>
-#include <cstddef>
-#include <string>
-#include <string_view>
-#include <vector>
-
 export module file_monitor.tui:text_layout;
 
+import std;
 import file_monitor.core;
 import ftxui;
 

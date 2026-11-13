@@ -1,12 +1,5 @@
 module;
 
-#include <algorithm>
-#include <cstddef>
-#include <filesystem>
-#include <string>
-#include <string_view>
-#include <utility>
-
 #ifndef NOMINMAX
     #define NOMINMAX
 #endif
@@ -16,6 +9,8 @@ module;
 #include <Windows.h>
 
 export module file_monitor.core:utils;
+
+import std;
 
 namespace file_monitor::core::utils {
     namespace {

@@ -1,18 +1,6 @@
-module;
-
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <format>
-#include <functional>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
 export module file_monitor.tui:main_window;
 
+import std;
 import file_monitor.core;
 import ftxui;
 import :change_list;

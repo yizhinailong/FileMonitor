@@ -1,16 +1,6 @@
-module;
-
-#include <algorithm>
-#include <format>
-#include <functional>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
 export module file_monitor.tui:settings_window;
 
+import std;
 import file_monitor.core;
 import ftxui;
 import :directory_list;
