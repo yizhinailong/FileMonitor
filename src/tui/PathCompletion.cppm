@@ -36,11 +36,6 @@ namespace file_monitor::tui {
         bool matched{ false };
     };
 
-    // Completes the last segment of a directory path with the names of the
-    // subdirectories that start with it, ignoring case like Windows does. A
-    // relative path starts from the current working directory.
-    export auto complete_directory_path(std::string_view input) -> PathCompletion;
-
     namespace {
 
         // Keeps a Tab press quick in a directory with very many entries.
@@ -155,7 +150,10 @@ namespace file_monitor::tui {
 
     } // namespace
 
-    auto complete_directory_path(std::string_view input) -> PathCompletion {
+    // Completes the last segment of a directory path with the names of the
+    // subdirectories that start with it, ignoring case like Windows does. A
+    // relative path starts from the current working directory.
+    export auto complete_directory_path(std::string_view input) -> PathCompletion {
         try {
             return complete_valid_directory_path(input);
         } catch (std::exception const&) {

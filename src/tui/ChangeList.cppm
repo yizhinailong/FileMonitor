@@ -19,89 +19,6 @@ import :widgets;
 
 namespace file_monitor::tui {
 
-    // The change table of the main view and the details of its selected
-    // change. While the list follows new changes, the latest one is selected.
-    // The selection and the first visible row are kept by sequence number, so
-    // they stay on the same changes when the session drops older ones.
-    export class ChangeList final {
-    public:
-        explicit ChangeList(core::MonitorSession const& session);
-
-        auto Render(int width) -> ftxui::Element;
-        // The details of the selected change below a separator, or an empty
-        // element when nothing is selected or the details are hidden. Call
-        // after Render().
-        auto RenderDetails(int width) const -> ftxui::Element;
-        auto OnEvent(ftxui::Event event) -> bool;
-
-        auto FollowLatest() -> void;
-        auto ToggleDetails() -> void;
-
-        // Filters, see core::ChangeFilter.
-        auto ToggleStatus(core::FileChangeStatus status) -> void;
-        [[nodiscard]]
-        auto ShowsStatus(core::FileChangeStatus status) const -> bool;
-        auto SetPathFilter(std::string_view text) -> void;
-        auto ClearFilters() -> void;
-        [[nodiscard]]
-        auto IsFiltered() const -> bool;
-
-        // The selected change, or nullptr when no change matches. Brings the
-        // list up to date with the session first.
-        [[nodiscard]]
-        auto SelectedChange() -> core::FileChange const*;
-
-        // The queries below describe the list as of the last Render().
-        [[nodiscard]]
-        auto FollowsLatest() const -> bool;
-        // Matching changes added since the list stopped following new
-        // changes.
-        [[nodiscard]]
-        auto NewChangeCount() const -> std::size_t;
-        // 1-based position of the selected change, or 0 when no change
-        // matches.
-        [[nodiscard]]
-        auto SelectedPosition() const -> std::size_t;
-        // The number of changes that match the filters.
-        [[nodiscard]]
-        auto RowCount() const -> std::size_t;
-
-    private:
-        auto refresh() -> void;
-        auto selectRow(std::size_t row) -> void;
-        auto moveSelection(std::ptrdiff_t row_count) -> void;
-        auto scrollToSelection() -> void;
-        [[nodiscard]]
-        auto selectedChange() const -> core::FileChange const*;
-        [[nodiscard]]
-        auto visibleRowCount() const -> std::size_t;
-        [[nodiscard]]
-        auto rowSequence(std::size_t row) const -> std::uint64_t;
-        [[nodiscard]]
-        auto changeIndex(std::uint64_t sequence) const -> std::size_t;
-        [[nodiscard]]
-        auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t;
-        [[nodiscard]]
-        auto emptyText() const -> std::string_view;
-
-        core::MonitorSession const& m_session;
-        // Indices into m_session.Changes() of the changes that match the
-        // filters, oldest first.
-        std::vector<std::size_t> m_rows;
-        std::size_t m_selected_row{ 0 };
-        std::size_t m_first_visible_row{ 0 };
-        std::uint64_t m_selected_sequence{ 0 };
-        std::uint64_t m_first_visible_sequence{ 0 };
-        // The sequence number after the last change of the last refresh.
-        std::uint64_t m_end_sequence{ 0 };
-        // The first sequence number added after the list stopped following.
-        std::uint64_t m_unseen_sequence{ 0 };
-        bool m_follow_latest{ true };
-        bool m_show_details{ true };
-        core::ChangeFilter m_filter;
-        ftxui::Box m_body_box{ .x_min = 0, .x_max = -1, .y_min = 0, .y_max = -1 };
-    };
-
     namespace {
 
         constexpr auto COLUMN_GAP{ 2 };
@@ -191,298 +108,347 @@ namespace file_monitor::tui {
 
     } // namespace
 
-    ChangeList::ChangeList(core::MonitorSession const& session)
-        : m_session{ session } {}
+    // The change table of the main view and the details of its selected
+    // change. While the list follows new changes, the latest one is selected.
+    // The selection and the first visible row are kept by sequence number, so
+    // they stay on the same changes when the session drops older ones.
+    export class ChangeList final {
+    public:
+        explicit ChangeList(core::MonitorSession const& session) : m_session{ session } {}
 
-    auto ChangeList::Render(int width) -> ftxui::Element {
-        refresh();
+        auto Render(int width) -> ftxui::Element {
+            refresh();
 
-        auto header{
-            make_row(
-                ftxui::text("时间"),
-                ftxui::text("状态"),
-                ftxui::text("大小"),
-                ftxui::text("路径"),
-                width
-            ) |
-            ftxui::bold
-        };
-
-        auto body{ ftxui::text(std::string{ emptyText() }) | ftxui::dim };
-        if (!m_rows.empty()) {
-            // The body box is only known after layout, so render enough rows
-            // to fill the terminal and let the frame clip them; this keeps the
-            // view correct right after the terminal is resized. While
-            // following, the focused last row keeps the frame at the bottom.
-            auto const rendered_row_count{
-                std::max(
-                    visibleRowCount(),
-                    static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0))
-                )
+            auto header{
+                make_row(
+                    ftxui::text("时间"),
+                    ftxui::text("状态"),
+                    ftxui::text("大小"),
+                    ftxui::text("路径"),
+                    width
+                ) |
+                ftxui::bold
             };
-            auto const first_row{
-                m_follow_latest ?
-                    m_rows.size() - std::min(rendered_row_count, m_rows.size()) :
-                    m_first_visible_row
-            };
-            auto const last_row{ std::min(m_rows.size(), first_row + rendered_row_count) };
 
-            auto const changes{ m_session.Changes() };
-            ftxui::Elements rows;
-            rows.reserve(last_row - first_row);
-            for (auto row{ first_row }; row < last_row; ++row) {
-                auto element{ change_row(changes[m_rows[row]], width) };
-                if (row == m_selected_row) {
-                    element |= ftxui::inverted;
-                    if (m_follow_latest) {
-                        element |= ftxui::focus;
-                    }
-                }
-                rows.push_back(std::move(element));
-            }
-            body = ftxui::vbox(std::move(rows));
-        }
-
-        return ftxui::vbox({
-            std::move(header),
-            ftxui::separatorLight(),
-            std::move(body) | ftxui::yframe | ftxui::flex | ftxui::reflect(m_body_box),
-        });
-    }
-
-    auto ChangeList::RenderDetails(int width) const -> ftxui::Element {
-        auto const* selected_change{ selectedChange() };
-        if (!m_show_details || selected_change == nullptr) {
-            return ftxui::emptyElement();
-        }
-
-        auto const& change{ *selected_change };
-        ftxui::Elements lines{
-            ftxui::separatorLight(),
-            ftxui::hbox({
-                file_change_status_element(change.status) | ftxui::bold,
-                gap(),
-                ftxui::text(std::string{ core::file_change_event_time(change) }),
-                gap(),
-                ftxui::text(size_description(change)),
-            }),
-        };
-        if (auto const creation_time{ core::file_change_creation_time(change) }; !creation_time.empty()) {
-            append_labeled_lines(lines, "创建于", creation_time, width);
-        }
-        if (change.previous_absolute_path.empty()) {
-            append_labeled_lines(lines, "路径", change.absolute_path, width);
-        } else {
-            append_labeled_lines(lines, "原路径", change.previous_absolute_path, width);
-            append_labeled_lines(lines, "新路径", change.absolute_path, width);
-        }
-        return ftxui::vbox(std::move(lines));
-    }
-
-    auto ChangeList::OnEvent(ftxui::Event event) -> bool {
-        refresh();
-        auto const page_row_count{
-            static_cast<std::ptrdiff_t>(std::max(visibleRowCount(), std::size_t{ 1 }))
-        };
-        if (event == ftxui::Event::ArrowUp) {
-            moveSelection(-1);
-        } else if (event == ftxui::Event::ArrowDown) {
-            moveSelection(1);
-        } else if (event == ftxui::Event::PageUp) {
-            moveSelection(-page_row_count);
-        } else if (event == ftxui::Event::PageDown) {
-            moveSelection(page_row_count);
-        } else if (event == ftxui::Event::Home) {
-            selectRow(0);
-        } else if (event == ftxui::Event::End) {
-            FollowLatest();
-        } else if (event == ftxui::Event::Return) {
-            ToggleDetails();
-        } else if (!event.is_mouse()) {
-            return false;
-        } else {
-            auto const& mouse{ event.mouse() };
-            auto const clicked{
-                mouse.button == ftxui::Mouse::Left && mouse.motion == ftxui::Mouse::Pressed
-            };
-            if (mouse.button == ftxui::Mouse::WheelUp) {
-                moveSelection(-WHEEL_SCROLL_STEP);
-            } else if (mouse.button == ftxui::Mouse::WheelDown) {
-                moveSelection(WHEEL_SCROLL_STEP);
-            } else if (clicked && m_body_box.Contain(mouse.x, mouse.y)) {
-                auto const row{
-                    m_first_visible_row + static_cast<std::size_t>(mouse.y - m_body_box.y_min)
+            auto body{ ftxui::text(std::string{ emptyText() }) | ftxui::dim };
+            if (!m_rows.empty()) {
+                // The body box is only known after layout, so render enough rows
+                // to fill the terminal and let the frame clip them; this keeps the
+                // view correct right after the terminal is resized. While
+                // following, the focused last row keeps the frame at the bottom.
+                auto const rendered_row_count{
+                    std::max(
+                        visibleRowCount(),
+                        static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0))
+                    )
                 };
-                if (row < m_rows.size()) {
-                    selectRow(row);
+                auto const first_row{
+                    m_follow_latest ?
+                        m_rows.size() - std::min(rendered_row_count, m_rows.size()) :
+                        m_first_visible_row
+                };
+                auto const last_row{ std::min(m_rows.size(), first_row + rendered_row_count) };
+
+                auto const changes{ m_session.Changes() };
+                ftxui::Elements rows;
+                rows.reserve(last_row - first_row);
+                for (auto row{ first_row }; row < last_row; ++row) {
+                    auto element{ change_row(changes[m_rows[row]], width) };
+                    if (row == m_selected_row) {
+                        element |= ftxui::inverted;
+                        if (m_follow_latest) {
+                            element |= ftxui::focus;
+                        }
+                    }
+                    rows.push_back(std::move(element));
                 }
-            } else {
-                return false;
+                body = ftxui::vbox(std::move(rows));
             }
+
+            return ftxui::vbox({
+                std::move(header),
+                ftxui::separatorLight(),
+                std::move(body) | ftxui::yframe | ftxui::flex | ftxui::reflect(m_body_box),
+            });
         }
-        return true;
-    }
 
-    auto ChangeList::FollowLatest() -> void {
-        m_follow_latest = true;
-    }
+        // The details of the selected change below a separator, or an empty
+        // element when nothing is selected or the details are hidden. Call
+        // after Render().
+        auto RenderDetails(int width) const -> ftxui::Element {
+            auto const* selected_change{ selectedChange() };
+            if (!m_show_details || selected_change == nullptr) {
+                return ftxui::emptyElement();
+            }
 
-    auto ChangeList::ToggleDetails() -> void {
-        m_show_details = !m_show_details;
-    }
-
-    auto ChangeList::ToggleStatus(core::FileChangeStatus status) -> void {
-        m_filter.ToggleStatus(status);
-    }
-
-    auto ChangeList::ShowsStatus(core::FileChangeStatus status) const -> bool {
-        return m_filter.ShowsStatus(status);
-    }
-
-    auto ChangeList::SetPathFilter(std::string_view text) -> void {
-        m_filter.SetPathText(text);
-    }
-
-    auto ChangeList::ClearFilters() -> void {
-        m_filter.Clear();
-    }
-
-    auto ChangeList::IsFiltered() const -> bool {
-        return m_filter.IsActive();
-    }
-
-    auto ChangeList::SelectedChange() -> core::FileChange const* {
-        refresh();
-        return selectedChange();
-    }
-
-    auto ChangeList::FollowsLatest() const -> bool {
-        return m_follow_latest;
-    }
-
-    auto ChangeList::NewChangeCount() const -> std::size_t {
-        if (m_follow_latest) {
-            return 0;
+            auto const& change{ *selected_change };
+            ftxui::Elements lines{
+                ftxui::separatorLight(),
+                ftxui::hbox({
+                    file_change_status_element(change.status) | ftxui::bold,
+                    gap(),
+                    ftxui::text(std::string{ core::file_change_event_time(change) }),
+                    gap(),
+                    ftxui::text(size_description(change)),
+                }),
+            };
+            if (auto const creation_time{ core::file_change_creation_time(change) }; !creation_time.empty()) {
+                append_labeled_lines(lines, "创建于", creation_time, width);
+            }
+            if (change.previous_absolute_path.empty()) {
+                append_labeled_lines(lines, "路径", change.absolute_path, width);
+            } else {
+                append_labeled_lines(lines, "原路径", change.previous_absolute_path, width);
+                append_labeled_lines(lines, "新路径", change.absolute_path, width);
+            }
+            return ftxui::vbox(std::move(lines));
         }
-        auto const first_unseen{ std::ranges::lower_bound(m_rows, changeIndex(m_unseen_sequence)) };
-        return static_cast<std::size_t>(m_rows.end() - first_unseen);
-    }
 
-    auto ChangeList::SelectedPosition() const -> std::size_t {
-        return m_rows.empty() ? 0 : m_selected_row + 1;
-    }
+        auto OnEvent(ftxui::Event event) -> bool {
+            refresh();
+            auto const page_row_count{
+                static_cast<std::ptrdiff_t>(std::max(visibleRowCount(), std::size_t{ 1 }))
+            };
+            if (event == ftxui::Event::ArrowUp) {
+                moveSelection(-1);
+            } else if (event == ftxui::Event::ArrowDown) {
+                moveSelection(1);
+            } else if (event == ftxui::Event::PageUp) {
+                moveSelection(-page_row_count);
+            } else if (event == ftxui::Event::PageDown) {
+                moveSelection(page_row_count);
+            } else if (event == ftxui::Event::Home) {
+                selectRow(0);
+            } else if (event == ftxui::Event::End) {
+                FollowLatest();
+            } else if (event == ftxui::Event::Return) {
+                ToggleDetails();
+            } else if (!event.is_mouse()) {
+                return false;
+            } else {
+                auto const& mouse{ event.mouse() };
+                auto const clicked{
+                    mouse.button == ftxui::Mouse::Left && mouse.motion == ftxui::Mouse::Pressed
+                };
+                if (mouse.button == ftxui::Mouse::WheelUp) {
+                    moveSelection(-WHEEL_SCROLL_STEP);
+                } else if (mouse.button == ftxui::Mouse::WheelDown) {
+                    moveSelection(WHEEL_SCROLL_STEP);
+                } else if (clicked && m_body_box.Contain(mouse.x, mouse.y)) {
+                    auto const row{
+                        m_first_visible_row + static_cast<std::size_t>(mouse.y - m_body_box.y_min)
+                    };
+                    if (row < m_rows.size()) {
+                        selectRow(row);
+                    }
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
 
-    auto ChangeList::RowCount() const -> std::size_t {
-        return m_rows.size();
-    }
-
-    auto ChangeList::refresh() -> void {
-        auto const changes{ m_session.Changes() };
-        auto const first_sequence{ m_session.FirstChangeSequence() };
-        // None of the changes of the last refresh is left, for example because
-        // saving the settings cleared the list: follow the new changes.
-        if (first_sequence >= m_end_sequence) {
+        auto FollowLatest() -> void {
             m_follow_latest = true;
         }
-        m_end_sequence = first_sequence + changes.size();
 
-        m_rows = std::views::iota(std::size_t{ 0 }, changes.size()) |
-            std::views::filter([&](std::size_t index) { return m_filter.Matches(changes[index]); }) |
-            std::ranges::to<std::vector<std::size_t>>();
-        if (m_rows.empty()) {
-            m_selected_row = 0;
-            m_first_visible_row = 0;
-            return;
+        auto ToggleDetails() -> void {
+            m_show_details = !m_show_details;
         }
 
-        m_selected_row = m_follow_latest ? m_rows.size() - 1 : rowAtOrAfter(m_selected_sequence);
-        m_selected_sequence = rowSequence(m_selected_row);
-        m_first_visible_row = rowAtOrAfter(m_first_visible_sequence);
-        scrollToSelection();
-    }
-
-    auto ChangeList::selectRow(std::size_t row) -> void {
-        if (m_rows.empty()) {
-            return;
+        // Filters, see core::ChangeFilter.
+        auto ToggleStatus(core::FileChangeStatus status) -> void {
+            m_filter.ToggleStatus(status);
         }
-        auto const last_row{ m_rows.size() - 1 };
-        m_selected_row = std::min(row, last_row);
-        m_selected_sequence = rowSequence(m_selected_row);
 
-        auto const follow_latest{ m_selected_row == last_row };
-        if (m_follow_latest && !follow_latest) {
-            m_unseen_sequence = m_end_sequence;
+        [[nodiscard]]
+        auto ShowsStatus(core::FileChangeStatus status) const -> bool {
+            return m_filter.ShowsStatus(status);
         }
-        m_follow_latest = follow_latest;
-        scrollToSelection();
-    }
 
-    auto ChangeList::moveSelection(std::ptrdiff_t row_count) -> void {
-        if (m_rows.empty()) {
-            return;
+        auto SetPathFilter(std::string_view text) -> void {
+            m_filter.SetPathText(text);
         }
-        auto const row{
-            std::clamp(
-                static_cast<std::ptrdiff_t>(m_selected_row) + row_count,
-                std::ptrdiff_t{ 0 },
-                static_cast<std::ptrdiff_t>(m_rows.size() - 1)
-            )
-        };
-        selectRow(static_cast<std::size_t>(row));
-    }
 
-    auto ChangeList::scrollToSelection() -> void {
-        auto const visible_row_count{ std::max(visibleRowCount(), std::size_t{ 1 }) };
-        auto const last_first_row{
-            m_rows.size() > visible_row_count ? m_rows.size() - visible_row_count : 0
-        };
-        auto first_row{ m_follow_latest ? last_first_row : m_first_visible_row };
-        if (m_selected_row < first_row) {
-            first_row = m_selected_row;
-        } else if (m_selected_row >= first_row + visible_row_count) {
-            first_row = m_selected_row + 1 - visible_row_count;
+        auto ClearFilters() -> void {
+            m_filter.Clear();
         }
-        // Do not leave rows empty below the last change.
-        m_first_visible_row = std::min(first_row, last_first_row);
-        m_first_visible_sequence = rowSequence(m_first_visible_row);
-    }
 
-    auto ChangeList::selectedChange() const -> core::FileChange const* {
-        if (m_rows.empty()) {
-            return nullptr;
+        [[nodiscard]]
+        auto IsFiltered() const -> bool {
+            return m_filter.IsActive();
         }
-        return &m_session.Changes()[m_rows[m_selected_row]];
-    }
 
-    auto ChangeList::visibleRowCount() const -> std::size_t {
-        if (m_body_box.IsEmpty()) {
-            return static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0));
+        // The selected change, or nullptr when no change matches. Brings the
+        // list up to date with the session first.
+        [[nodiscard]]
+        auto SelectedChange() -> core::FileChange const* {
+            refresh();
+            return selectedChange();
         }
-        return static_cast<std::size_t>(m_body_box.y_max - m_body_box.y_min + 1);
-    }
 
-    auto ChangeList::rowSequence(std::size_t row) const -> std::uint64_t {
-        return m_session.FirstChangeSequence() + m_rows[row];
-    }
-
-    auto ChangeList::changeIndex(std::uint64_t sequence) const -> std::size_t {
-        auto const first_sequence{ m_session.FirstChangeSequence() };
-        return sequence > first_sequence ? static_cast<std::size_t>(sequence - first_sequence) : 0;
-    }
-
-    auto ChangeList::rowAtOrAfter(std::uint64_t sequence) const -> std::size_t {
-        auto const row{ std::ranges::lower_bound(m_rows, changeIndex(sequence)) - m_rows.begin() };
-        return std::min(static_cast<std::size_t>(row), m_rows.size() - 1);
-    }
-
-    auto ChangeList::emptyText() const -> std::string_view {
-        if (m_session.CurrentConfiguration().directories.empty()) {
-            return "尚未添加监控文件夹，按 s 打开设置添加";
+        // The queries below describe the list as of the last Render().
+        [[nodiscard]]
+        auto FollowsLatest() const -> bool {
+            return m_follow_latest;
         }
-        if (!m_session.Changes().empty()) {
-            return "没有符合过滤条件的变更，按 0 清除过滤";
+
+        // Matching changes added since the list stopped following new
+        // changes.
+        [[nodiscard]]
+        auto NewChangeCount() const -> std::size_t {
+            if (m_follow_latest) {
+                return 0;
+            }
+            auto const first_unseen{ std::ranges::lower_bound(m_rows, changeIndex(m_unseen_sequence)) };
+            return static_cast<std::size_t>(m_rows.end() - first_unseen);
         }
-        return "正在等待文件变更";
-    }
+
+        // 1-based position of the selected change, or 0 when no change
+        // matches.
+        [[nodiscard]]
+        auto SelectedPosition() const -> std::size_t {
+            return m_rows.empty() ? 0 : m_selected_row + 1;
+        }
+
+        // The number of changes that match the filters.
+        [[nodiscard]]
+        auto RowCount() const -> std::size_t {
+            return m_rows.size();
+        }
+
+    private:
+        core::MonitorSession const& m_session;
+        // Indices into m_session.Changes() of the changes that match the
+        // filters, oldest first.
+        std::vector<std::size_t> m_rows;
+        std::size_t m_selected_row{ 0 };
+        std::size_t m_first_visible_row{ 0 };
+        std::uint64_t m_selected_sequence{ 0 };
+        std::uint64_t m_first_visible_sequence{ 0 };
+        // The sequence number after the last change of the last refresh.
+        std::uint64_t m_end_sequence{ 0 };
+        // The first sequence number added after the list stopped following.
+        std::uint64_t m_unseen_sequence{ 0 };
+        bool m_follow_latest{ true };
+        bool m_show_details{ true };
+        core::ChangeFilter m_filter;
+        ftxui::Box m_body_box{ .x_min = 0, .x_max = -1, .y_min = 0, .y_max = -1 };
+
+        auto refresh() -> void {
+            auto const changes{ m_session.Changes() };
+            auto const first_sequence{ m_session.FirstChangeSequence() };
+            // None of the changes of the last refresh is left, for example because
+            // saving the settings cleared the list: follow the new changes.
+            if (first_sequence >= m_end_sequence) {
+                m_follow_latest = true;
+            }
+            m_end_sequence = first_sequence + changes.size();
+
+            m_rows = std::views::iota(std::size_t{ 0 }, changes.size()) |
+                std::views::filter([&](std::size_t index) { return m_filter.Matches(changes[index]); }) |
+                std::ranges::to<std::vector<std::size_t>>();
+            if (m_rows.empty()) {
+                m_selected_row = 0;
+                m_first_visible_row = 0;
+                return;
+            }
+
+            m_selected_row = m_follow_latest ? m_rows.size() - 1 : rowAtOrAfter(m_selected_sequence);
+            m_selected_sequence = rowSequence(m_selected_row);
+            m_first_visible_row = rowAtOrAfter(m_first_visible_sequence);
+            scrollToSelection();
+        }
+
+        auto selectRow(std::size_t row) -> void {
+            if (m_rows.empty()) {
+                return;
+            }
+            auto const last_row{ m_rows.size() - 1 };
+            m_selected_row = std::min(row, last_row);
+            m_selected_sequence = rowSequence(m_selected_row);
+
+            auto const follow_latest{ m_selected_row == last_row };
+            if (m_follow_latest && !follow_latest) {
+                m_unseen_sequence = m_end_sequence;
+            }
+            m_follow_latest = follow_latest;
+            scrollToSelection();
+        }
+
+        auto moveSelection(std::ptrdiff_t row_count) -> void {
+            if (m_rows.empty()) {
+                return;
+            }
+            auto const row{
+                std::clamp(
+                    static_cast<std::ptrdiff_t>(m_selected_row) + row_count,
+                    std::ptrdiff_t{ 0 },
+                    static_cast<std::ptrdiff_t>(m_rows.size() - 1)
+                )
+            };
+            selectRow(static_cast<std::size_t>(row));
+        }
+
+        auto scrollToSelection() -> void {
+            auto const visible_row_count{ std::max(visibleRowCount(), std::size_t{ 1 }) };
+            auto const last_first_row{
+                m_rows.size() > visible_row_count ? m_rows.size() - visible_row_count : 0
+            };
+            auto first_row{ m_follow_latest ? last_first_row : m_first_visible_row };
+            if (m_selected_row < first_row) {
+                first_row = m_selected_row;
+            } else if (m_selected_row >= first_row + visible_row_count) {
+                first_row = m_selected_row + 1 - visible_row_count;
+            }
+            // Do not leave rows empty below the last change.
+            m_first_visible_row = std::min(first_row, last_first_row);
+            m_first_visible_sequence = rowSequence(m_first_visible_row);
+        }
+
+        [[nodiscard]]
+        auto selectedChange() const -> core::FileChange const* {
+            if (m_rows.empty()) {
+                return nullptr;
+            }
+            return &m_session.Changes()[m_rows[m_selected_row]];
+        }
+
+        [[nodiscard]]
+        auto visibleRowCount() const -> std::size_t {
+            if (m_body_box.IsEmpty()) {
+                return static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0));
+            }
+            return static_cast<std::size_t>(m_body_box.y_max - m_body_box.y_min + 1);
+        }
+
+        [[nodiscard]]
+        auto rowSequence(std::size_t row) const -> std::uint64_t {
+            return m_session.FirstChangeSequence() + m_rows[row];
+        }
+
+        [[nodiscard]]
+        auto changeIndex(std::uint64_t sequence) const -> std::size_t {
+            auto const first_sequence{ m_session.FirstChangeSequence() };
+            return sequence > first_sequence ? static_cast<std::size_t>(sequence - first_sequence) : 0;
+        }
+
+        [[nodiscard]]
+        auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t {
+            auto const row{ std::ranges::lower_bound(m_rows, changeIndex(sequence)) - m_rows.begin() };
+            return std::min(static_cast<std::size_t>(row), m_rows.size() - 1);
+        }
+
+        [[nodiscard]]
+        auto emptyText() const -> std::string_view {
+            if (m_session.CurrentConfiguration().directories.empty()) {
+                return "尚未添加监控文件夹，按 s 打开设置添加";
+            }
+            if (!m_session.Changes().empty()) {
+                return "没有符合过滤条件的变更，按 0 清除过滤";
+            }
+            return "正在等待文件变更";
+        }
+    };
 
 } // namespace file_monitor::tui

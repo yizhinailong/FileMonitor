@@ -13,14 +13,6 @@ import ftxui;
 
 namespace file_monitor::tui {
 
-    // core::shorten_path() for a width in terminal columns.
-    export auto shorten_path(std::string_view path, int width) -> std::string;
-    // core::change_path_text() for a width in terminal columns.
-    export auto change_path_text(core::FileChange const& change, int width) -> std::string;
-    // Splits text into lines of at most `width` columns, preferring to break
-    // after a directory separator.
-    export auto wrap_text(std::string_view text, int width) -> std::vector<std::string>;
-
     namespace {
 
         // One entry per terminal column; a full-width glyph is followed by an
@@ -61,15 +53,19 @@ namespace file_monitor::tui {
 
     } // namespace
 
-    auto shorten_path(std::string_view path, int width) -> std::string {
+    // core::shorten_path() for a width in terminal columns.
+    export auto shorten_path(std::string_view path, int width) -> std::string {
         return core::shorten_path(path, static_cast<float>(width), column_count);
     }
 
-    auto change_path_text(core::FileChange const& change, int width) -> std::string {
+    // core::change_path_text() for a width in terminal columns.
+    export auto change_path_text(core::FileChange const& change, int width) -> std::string {
         return core::change_path_text(change, static_cast<float>(width), column_count);
     }
 
-    auto wrap_text(std::string_view text, int width) -> std::vector<std::string> {
+    // Splits text into lines of at most `width` columns, preferring to break
+    // after a directory separator.
+    export auto wrap_text(std::string_view text, int width) -> std::vector<std::string> {
         auto const cells{ ftxui::Utf8ToGlyphs(text) };
         auto const line_width{ static_cast<std::size_t>(std::max(width, 1)) };
 

@@ -14,8 +14,14 @@ namespace file_monitor::tui {
 
     export class ConsoleCodePageGuard final {
     public:
-        ConsoleCodePageGuard();
-        ~ConsoleCodePageGuard();
+        ConsoleCodePageGuard()
+            : m_input_code_page{ GetConsoleCP() }, m_output_code_page{ GetConsoleOutputCP() } {
+        }
+
+        ~ConsoleCodePageGuard() {
+            SetConsoleCP(m_input_code_page);
+            SetConsoleOutputCP(m_output_code_page);
+        }
 
         ConsoleCodePageGuard(ConsoleCodePageGuard const&) = delete;
         ConsoleCodePageGuard(ConsoleCodePageGuard&&) = delete;
@@ -26,14 +32,5 @@ namespace file_monitor::tui {
         unsigned int m_input_code_page;
         unsigned int m_output_code_page;
     };
-
-    ConsoleCodePageGuard::ConsoleCodePageGuard()
-        : m_input_code_page{ GetConsoleCP() }, m_output_code_page{ GetConsoleOutputCP() } {
-    }
-
-    ConsoleCodePageGuard::~ConsoleCodePageGuard() {
-        SetConsoleCP(m_input_code_page);
-        SetConsoleOutputCP(m_output_code_page);
-    }
 
 } // namespace file_monitor::tui
