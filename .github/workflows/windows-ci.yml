@@ -49,7 +49,7 @@ jobs:
           $archive = Join-Path $env:RUNNER_TEMP "cmake-$env:CMAKE_VERSION-windows-x86_64.zip"
           $toolchain = Join-Path $env:RUNNER_TEMP "cmake"
           Invoke-WebRequest -UseBasicParsing `
-              -Uri "https://cmake.org/files/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" `
+              -Uri "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" `
               -OutFile $archive
           $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($hash -ne $env:CMAKE_SHA256) {
