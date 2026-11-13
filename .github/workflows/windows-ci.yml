@@ -27,6 +27,10 @@ jobs:
       # cannot compile module partitions that import each other.
       LLVM_VERSION: 23.1.3
       LLVM_SHA256: 5153f848ac87553118340f16f8d3cd4351d729bcba6e4785c6a4a9af29676de9
+      # lukka/get-cmake embeds a release catalog in each action tag, and its
+      # latest tag predates the CMake 4.5.0 release, so install it directly.
+      CMAKE_VERSION: 4.5.0
+      CMAKE_SHA256: 301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411
 
     steps:
       - name: Checkout
@@ -37,10 +41,33 @@ jobs:
         with:
           arch: amd64
 
-      - name: Set up CMake and Ninja
-        uses: lukka/get-cmake@v4.4.5
-        with:
-          cmakeVersion: 4.5.0
+      # The runner image provides Ninja; install the CMake that the project
+      # requires on top of it.
+      - name: Set up CMake
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP "cmake-$env:CMAKE_VERSION-windows-x86_64.zip"
+          $toolchain = Join-Path $env:RUNNER_TEMP "cmake"
+          Invoke-WebRequest -UseBasicParsing `
+              -Uri "https://cmake.org/files/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" `
+              -OutFile $archive
+          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $env:CMAKE_SHA256) {
+              throw "CMake archive has SHA-256 $hash, expected $env:CMAKE_SHA256"
+          }
+
+          Expand-Archive -LiteralPath $archive -DestinationPath $toolchain
+          Join-Path $toolchain "cmake-$env:CMAKE_VERSION-windows-x86_64\bin" >> $env:GITHUB_PATH
+
+      - name: Check CMake and Ninja
+        shell: pwsh
+        run: |
+          $version = cmake --version | Select-Object -First 1
+          $version
+          if ($version -ne "cmake version $env:CMAKE_VERSION") {
+              throw "cmake on PATH is not CMake $env:CMAKE_VERSION"
+          }
+          ninja --version
 
       - name: Set up LLVM
         shell: pwsh
