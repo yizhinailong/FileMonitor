@@ -5,9 +5,9 @@ module;
 #include <optional>
 #include <system_error>
 
-#include <nlohmann/json.hpp>
-
 export module file_monitor.core:window_layout;
+
+import nlohmann.json;
 
 namespace file_monitor::core {
     namespace {

@@ -15,15 +15,18 @@ CPMAddPackage(
     "SPDLOG_INSTALL OFF"
 )
 
+# v3.12.0 has no C++ module interface. The experimental "import nlohmann.json;"
+# support is only on develop, so pin a commit instead of the release tag.
 CPMAddPackage(
     NAME json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.12.0
+    GIT_TAG 5bad6c518bf6663b69f505511a19c98c91f77c3a
     EXCLUDE_FROM_ALL YES
     SYSTEM YES
     OPTIONS
     "JSON_BuildTests OFF"
     "JSON_Install OFF"
+    "NLOHMANN_JSON_BUILD_MODULES ON"
 )
 
 if(FILE_MONITOR_BUILD_GUI)
@@ -119,6 +122,6 @@ if(FILE_MONITOR_BUILD_TUI)
 endif()
 
 set(CORE_DEPENDENCIES
-    nlohmann_json::nlohmann_json
+    nlohmann_json_modules
     spdlog::spdlog
 )

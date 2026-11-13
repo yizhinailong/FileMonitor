@@ -14,10 +14,9 @@ module;
 #include <utility>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
 export module file_monitor.core:configuration;
 
+import nlohmann.json;
 import :utils;
 
 namespace file_monitor::core {
