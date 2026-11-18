@@ -30,7 +30,8 @@ namespace file_monitor::tui {
             ftxui::Color background;
         };
 
-        auto monitor_state(core::MonitorSession const& session) -> MonitorState {
+        auto monitor_state(core::MonitorSession const& session) -> MonitorState
+        {
             if (session.CurrentConfiguration().directories.empty()) {
                 return { "未监控", ftxui::Color::Black, ftxui::Color::Yellow };
             }
@@ -40,11 +41,13 @@ namespace file_monitor::tui {
             return { "监控中", ftxui::Color::Black, ftxui::Color::Green };
         }
 
-        auto status_index(core::FileChangeStatus status) -> std::size_t {
+        auto status_index(core::FileChangeStatus status) -> std::size_t
+        {
             return static_cast<std::size_t>(std::to_underlying(status));
         }
 
-        auto gap() -> ftxui::Element {
+        auto gap() -> ftxui::Element
+        {
             return ftxui::text(std::string(GAP, ' '));
         }
 
@@ -53,7 +56,8 @@ namespace file_monitor::tui {
             ftxui::Elements elements;
             int width{ 0 };
 
-            auto Append(ftxui::Element element, std::string_view text) -> void {
+            auto Append(ftxui::Element element, std::string_view text) -> void
+            {
                 if (!elements.empty()) {
                     elements.push_back(gap());
                     width += GAP;
@@ -73,7 +77,8 @@ namespace file_monitor::tui {
               m_change_list{ session },
               m_key_hints{ keyHints() },
               m_filter_hints{ filterHints() },
-              m_filter_input{ makeFilterInput() } {
+              m_filter_input{ makeFilterInput() }
+        {
             m_settings_window = ftxui::Make<SettingsWindow>(m_session, [this] { closeSettings(); });
 
             auto main_view{ ftxui::Renderer([this] { return renderMainView(); }) };
@@ -84,12 +89,14 @@ namespace file_monitor::tui {
         }
 
         [[nodiscard]]
-        auto Update() -> bool {
+        auto Update() -> bool
+        {
             auto const update{ m_session.Update() };
             return update.changes_added || update.errors_changed;
         }
 
-        auto OnEvent(ftxui::Event event) -> bool override {
+        auto OnEvent(ftxui::Event event) -> bool override
+        {
             if (m_page == MAIN_PAGE) {
                 if (is_user_input(event)) {
                     m_notice.clear();
@@ -117,7 +124,8 @@ namespace file_monitor::tui {
         std::shared_ptr<SettingsWindow> m_settings_window;
         int m_page{ 0 };
 
-        auto onMainEvent(ftxui::Event event) -> bool {
+        auto onMainEvent(ftxui::Event event) -> bool
+        {
             if (event == ftxui::Event::Character('q')) {
                 m_on_quit();
                 return true;
@@ -152,7 +160,8 @@ namespace file_monitor::tui {
             return onStatusClick(event) || m_key_hints.OnEvent(event) || m_change_list.OnEvent(event);
         }
 
-        auto onFilterEvent(ftxui::Event event) -> bool {
+        auto onFilterEvent(ftxui::Event event) -> bool
+        {
             if (event == ftxui::Event::Escape) {
                 cancelFilterEdit();
                 return true;
@@ -169,7 +178,8 @@ namespace file_monitor::tui {
             return m_filter_input->OnEvent(event) || m_change_list.OnEvent(event);
         }
 
-        auto onStatusClick(ftxui::Event event) -> bool {
+        auto onStatusClick(ftxui::Event event) -> bool
+        {
             if (!event.is_mouse()) {
                 return false;
             }
@@ -186,7 +196,8 @@ namespace file_monitor::tui {
             return false;
         }
 
-        auto renderMainView() -> ftxui::Element {
+        auto renderMainView() -> ftxui::Element
+        {
             auto const width{ page_width() };
             ftxui::Elements rows{ renderHeader(width), ftxui::separatorLight() };
             if (has_session_errors(m_session)) {
@@ -200,7 +211,8 @@ namespace file_monitor::tui {
             return page(ftxui::vbox(std::move(rows)));
         }
 
-        auto renderHeader(int width) -> ftxui::Element {
+        auto renderHeader(int width) -> ftxui::Element
+        {
             auto const& configuration{ m_session.CurrentConfiguration() };
             auto const state{ monitor_state(m_session) };
             auto const badge{ std::format(" {} ", state.text) };
@@ -260,7 +272,8 @@ namespace file_monitor::tui {
             return ftxui::hbox(make_line(true).elements);
         }
 
-        auto renderFooter(int width) -> ftxui::Element {
+        auto renderFooter(int width) -> ftxui::Element
+        {
             std::string status;
             if (m_change_list.FollowsLatest()) {
                 status = "跟随最新";
@@ -295,7 +308,8 @@ namespace file_monitor::tui {
             return ftxui::hbox(std::move(left.elements));
         }
 
-        auto renderFilterFooter(int width) -> ftxui::Element {
+        auto renderFilterFooter(int width) -> ftxui::Element
+        {
             auto status{ std::format("匹配 {}/{}", m_change_list.RowCount(), m_session.Changes().size()) };
             auto const hints_width{ std::max(width / 2 - ftxui::string_width(status) - GAP, 0) };
             return ftxui::hbox({
@@ -308,7 +322,8 @@ namespace file_monitor::tui {
             });
         }
 
-        auto keyHints() -> std::vector<KeyHint> {
+        auto keyHints() -> std::vector<KeyHint>
+        {
             auto const is_filtered{ [this] { return m_change_list.IsFiltered(); } };
             auto const has_selection{ [this] { return m_change_list.SelectedChange() != nullptr; } };
             return {
@@ -325,14 +340,16 @@ namespace file_monitor::tui {
             };
         }
 
-        auto filterHints() -> std::vector<KeyHint> {
+        auto filterHints() -> std::vector<KeyHint>
+        {
             std::vector<KeyHint> hints;
             hints.push_back({ .key = "Enter", .label = "确定", .action = [this] { m_editing_filter = false; }, .priority = 1 });
             hints.push_back({ .key = "Esc", .label = "清除", .action = [this] { cancelFilterEdit(); }, .priority = 2 });
             return hints;
         }
 
-        auto makeFilterInput() -> ftxui::Component {
+        auto makeFilterInput() -> ftxui::Component
+        {
             ftxui::InputOption option;
             option.placeholder = "输入路径中的文字";
             option.multiline = false;
@@ -351,18 +368,21 @@ namespace file_monitor::tui {
             return ftxui::Input(&m_filter_text, std::move(option));
         }
 
-        auto cancelFilterEdit() -> void {
+        auto cancelFilterEdit() -> void
+        {
             m_filter_text.clear();
             m_change_list.SetPathFilter({});
             m_editing_filter = false;
         }
 
-        auto clearFilters() -> void {
+        auto clearFilters() -> void
+        {
             m_filter_text.clear();
             m_change_list.ClearFilters();
         }
 
-        auto copySelectedPath() -> void {
+        auto copySelectedPath() -> void
+        {
             auto const* change{ m_change_list.SelectedChange() };
             if (change == nullptr) {
                 return;
@@ -371,7 +391,8 @@ namespace file_monitor::tui {
             m_notice = m_notice_failed ? "无法复制路径" : "已复制路径";
         }
 
-        auto showSelectedChange() -> void {
+        auto showSelectedChange() -> void
+        {
             auto const* change{ m_change_list.SelectedChange() };
             if (change == nullptr) {
                 return;
@@ -380,12 +401,14 @@ namespace file_monitor::tui {
             m_notice = m_notice_failed ? "无法打开资源管理器" : "已在资源管理器中打开";
         }
 
-        auto openSettings() -> void {
+        auto openSettings() -> void
+        {
             m_settings_window->Open();
             m_page = SETTINGS_PAGE;
         }
 
-        auto closeSettings() -> void {
+        auto closeSettings() -> void
+        {
             m_page = MAIN_PAGE;
         }
     };

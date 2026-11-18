@@ -27,7 +27,8 @@ namespace file_monitor::gui {
         // the next frame, which hides the last visible row.
         constexpr auto REVEAL_FRAME_COUNT{ 2 };
 
-        auto full_path_text(core::FileChange const& change) -> std::string {
+        auto full_path_text(core::FileChange const& change) -> std::string
+        {
             if (change.previous_absolute_path.empty()) {
                 return change.absolute_path;
             }
@@ -39,11 +40,13 @@ namespace file_monitor::gui {
     ChangeTable::ChangeTable(core::MonitorSession const& session)
         : m_session{ session } {}
 
-    auto ChangeTable::Filter() -> core::ChangeFilter& {
+    auto ChangeTable::Filter() -> core::ChangeFilter&
+    {
         return m_filter;
     }
 
-    auto ChangeTable::Refresh() -> void {
+    auto ChangeTable::Refresh() -> void
+    {
         auto const changes{ m_session.Changes() };
         auto const first_sequence{ m_session.FirstChangeSequence() };
         // None of the changes of the last refresh is left, for example because
@@ -74,7 +77,8 @@ namespace file_monitor::gui {
         }
     }
 
-    auto ChangeTable::Render(ImVec2 size) -> ChangeAction {
+    auto ChangeTable::Render(ImVec2 size) -> ChangeAction
+    {
         auto const changes{ m_session.Changes() };
         auto const first_sequence{ m_session.FirstChangeSequence() };
         auto const row_count{ m_rows.size() };
@@ -152,11 +156,13 @@ namespace file_monitor::gui {
         return action;
     }
 
-    auto ChangeTable::ScrollToLatest() -> void {
+    auto ChangeTable::ScrollToLatest() -> void
+    {
         m_scroll_to_latest = true;
     }
 
-    auto ChangeTable::SelectedChange() const -> core::FileChange const* {
+    auto ChangeTable::SelectedChange() const -> core::FileChange const*
+    {
         auto const first_sequence{ m_session.FirstChangeSequence() };
         if (!m_selected_sequence || *m_selected_sequence < first_sequence || *m_selected_sequence >= m_end_sequence) {
             return nullptr;
@@ -169,15 +175,18 @@ namespace file_monitor::gui {
         return &m_session.Changes()[index];
     }
 
-    auto ChangeTable::RowCount() const -> std::size_t {
+    auto ChangeTable::RowCount() const -> std::size_t
+    {
         return m_rows.size();
     }
 
-    auto ChangeTable::FollowsLatest() const -> bool {
+    auto ChangeTable::FollowsLatest() const -> bool
+    {
         return m_follows_latest;
     }
 
-    auto ChangeTable::NewChangeCount() const -> std::size_t {
+    auto ChangeTable::NewChangeCount() const -> std::size_t
+    {
         if (m_follows_latest) {
             return 0;
         }
@@ -187,7 +196,8 @@ namespace file_monitor::gui {
         return static_cast<std::size_t>(m_rows.end() - first_row);
     }
 
-    auto ChangeTable::renderRow(std::size_t row) -> ChangeAction {
+    auto ChangeTable::renderRow(std::size_t row) -> ChangeAction
+    {
         auto const& change{ m_session.Changes()[m_rows[row]] };
         auto const sequence{ rowSequence(row) };
 
@@ -262,11 +272,13 @@ namespace file_monitor::gui {
         return action;
     }
 
-    auto ChangeTable::selectRow(std::size_t row) -> void {
+    auto ChangeTable::selectRow(std::size_t row) -> void
+    {
         m_selected_sequence = row < m_rows.size() ? std::optional{ rowSequence(row) } : std::nullopt;
     }
 
-    auto ChangeTable::applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void {
+    auto ChangeTable::applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void
+    {
         for (auto const& request : multi_select.Requests) {
             if (request.Type == ImGuiSelectionRequestType_SetAll) {
                 // Selecting all is not possible with a single selection.
@@ -282,7 +294,8 @@ namespace file_monitor::gui {
         }
     }
 
-    auto ChangeTable::updateFollowing(float scroll_y, float scroll_max_y) -> void {
+    auto ChangeTable::updateFollowing(float scroll_y, float scroll_max_y) -> void
+    {
         auto const at_bottom{ scroll_y >= scroll_max_y - SCROLL_TOLERANCE };
         if (m_scroll_to_latest) {
             m_scroll_to_latest = false;
@@ -298,15 +311,18 @@ namespace file_monitor::gui {
         }
     }
 
-    auto ChangeTable::selectedChangeIndex() const -> std::size_t {
+    auto ChangeTable::selectedChangeIndex() const -> std::size_t
+    {
         return static_cast<std::size_t>(*m_selected_sequence - m_session.FirstChangeSequence());
     }
 
-    auto ChangeTable::rowSequence(std::size_t row) const -> std::uint64_t {
+    auto ChangeTable::rowSequence(std::size_t row) const -> std::uint64_t
+    {
         return m_session.FirstChangeSequence() + m_rows[row];
     }
 
-    auto ChangeTable::rowAtOrAfter(std::uint64_t sequence) const -> std::size_t {
+    auto ChangeTable::rowAtOrAfter(std::uint64_t sequence) const -> std::size_t
+    {
         auto const first_sequence{ m_session.FirstChangeSequence() };
         if (sequence <= first_sequence) {
             return 0;

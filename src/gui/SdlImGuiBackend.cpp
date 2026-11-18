@@ -33,15 +33,18 @@ namespace file_monitor::gui {
         // The frame after the one that shows new content scrolls to it.
         constexpr auto CONTENT_FRAME_COUNT{ 2 };
 
-        auto sdl_error(std::string_view message) -> std::string {
+        auto sdl_error(std::string_view message) -> std::string
+        {
             return std::format("{}: {}", message, SDL_GetError());
         }
 
-        auto log_sdl_error(std::string_view message) -> void {
+        auto log_sdl_error(std::string_view message) -> void
+        {
             std::println(stderr, "{}", sdl_error(message));
         }
 
-        auto configure_opengl_attributes() -> bool {
+        auto configure_opengl_attributes() -> bool
+        {
             return SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0) &&
                 SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) &&
                 SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) &&
@@ -49,16 +52,19 @@ namespace file_monitor::gui {
                 SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         }
 
-        auto apply_system_theme() -> void {
+        auto apply_system_theme() -> void
+        {
             apply_theme(SDL_GetSystemTheme() == SDL_SYSTEM_THEME_LIGHT ? Theme::Light : Theme::Dark);
         }
 
-        auto window_layout_path() -> std::filesystem::path {
+        auto window_layout_path() -> std::filesystem::path
+        {
             return core::utils::data_directory() / "window-layout.json";
         }
 
         // The scale Windows reports for the display the window is on.
-        auto display_scale(SDL_Window* window) -> float {
+        auto display_scale(SDL_Window* window) -> float
+        {
             auto const scale{ SDL_GetWindowDisplayScale(window) };
             return scale > 0.0F ? scale : 1.0F;
         }
@@ -66,7 +72,8 @@ namespace file_monitor::gui {
         // Whether the window would at least partly be on one of the displays;
         // a layout saved on a display that is gone would leave it out of
         // reach otherwise.
-        auto is_on_a_display(core::WindowLayout const& layout) -> bool {
+        auto is_on_a_display(core::WindowLayout const& layout) -> bool
+        {
             auto const window{
                 SDL_Rect{ layout.x, layout.y, layout.width, layout.height }
             };
@@ -88,12 +95,14 @@ namespace file_monitor::gui {
 
     } // namespace
 
-    SdlImGuiBackend::~SdlImGuiBackend() {
+    SdlImGuiBackend::~SdlImGuiBackend()
+    {
         shutdown();
     }
 
     auto SdlImGuiBackend::Initialize(std::string_view title, int width, int height)
-        -> std::expected<void, std::string> {
+        -> std::expected<void, std::string>
+    {
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             return std::unexpected{ sdl_error("SDL initialization failed") };
         }
@@ -130,7 +139,8 @@ namespace file_monitor::gui {
         return {};
     }
 
-    auto SdlImGuiBackend::applySavedLayout() -> void {
+    auto SdlImGuiBackend::applySavedLayout() -> void
+    {
         auto const layout{ core::load_window_layout(window_layout_path()) };
         if (!layout) {
             SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -147,13 +157,15 @@ namespace file_monitor::gui {
         }
     }
 
-    auto SdlImGuiBackend::saveLayout() -> void {
+    auto SdlImGuiBackend::saveLayout() -> void
+    {
         core::WindowLayout layout{ m_normal_layout };
         layout.maximized = (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MAXIMIZED) != 0;
         core::save_window_layout(window_layout_path(), layout);
     }
 
-    auto SdlImGuiBackend::NextFrame(bool content_changed) -> FrameAction {
+    auto SdlImGuiBackend::NextFrame(bool content_changed) -> FrameAction
+    {
         if (content_changed) {
             m_content_frame_count = CONTENT_FRAME_COUNT;
         }
@@ -214,17 +226,20 @@ namespace file_monitor::gui {
         return FrameAction::Skip;
     }
 
-    auto SdlImGuiBackend::TakeDroppedFiles() -> std::vector<DroppedFile> {
+    auto SdlImGuiBackend::TakeDroppedFiles() -> std::vector<DroppedFile>
+    {
         return std::exchange(m_dropped_files, {});
     }
 
-    auto SdlImGuiBackend::BeginFrame() -> void {
+    auto SdlImGuiBackend::BeginFrame() -> void
+    {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
     }
 
-    auto SdlImGuiBackend::EndFrame() -> bool {
+    auto SdlImGuiBackend::EndFrame() -> bool
+    {
         ImGui::Render();
 
         int framebuffer_width{ 0 };
@@ -247,11 +262,13 @@ namespace file_monitor::gui {
         return true;
     }
 
-    auto SdlImGuiBackend::NativeWindow() const -> SDL_Window* {
+    auto SdlImGuiBackend::NativeWindow() const -> SDL_Window*
+    {
         return m_window;
     }
 
-    auto SdlImGuiBackend::initializeOpenGl() -> std::expected<void, std::string> {
+    auto SdlImGuiBackend::initializeOpenGl() -> std::expected<void, std::string>
+    {
         m_gl_context = SDL_GL_CreateContext(m_window);
         if (m_gl_context == nullptr) {
             return std::unexpected{ sdl_error("OpenGL context creation failed") };
@@ -267,7 +284,8 @@ namespace file_monitor::gui {
         return {};
     }
 
-    auto SdlImGuiBackend::initializeImGui() -> std::expected<void, std::string> {
+    auto SdlImGuiBackend::initializeImGui() -> std::expected<void, std::string>
+    {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         m_imgui_context_created = true;
@@ -293,11 +311,13 @@ namespace file_monitor::gui {
         return {};
     }
 
-    auto SdlImGuiBackend::isMinimized() const -> bool {
+    auto SdlImGuiBackend::isMinimized() const -> bool
+    {
         return (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED) != 0;
     }
 
-    auto SdlImGuiBackend::shutdown() -> void {
+    auto SdlImGuiBackend::shutdown() -> void
+    {
         if (m_imgui_opengl_initialized) {
             ImGui_ImplOpenGL3_Shutdown();
         }

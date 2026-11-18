@@ -32,7 +32,8 @@ namespace file_monitor::tui {
         // Keeps a Tab press quick in a directory with very many entries.
         constexpr auto MAX_SCANNED_ENTRIES{ 5000 };
 
-        auto compare_ignoring_case(std::wstring_view left, std::wstring_view right) -> int {
+        auto compare_ignoring_case(std::wstring_view left, std::wstring_view right) -> int
+        {
             return CompareStringOrdinal(
                 left.data(),
                 static_cast<int>(left.size()),
@@ -42,13 +43,15 @@ namespace file_monitor::tui {
             );
         }
 
-        auto starts_with_ignoring_case(std::wstring_view name, std::wstring_view prefix) -> bool {
+        auto starts_with_ignoring_case(std::wstring_view name, std::wstring_view prefix) -> bool
+        {
             return name.size() >= prefix.size() &&
                 compare_ignoring_case(name.substr(0, prefix.size()), prefix) == CSTR_EQUAL;
         }
 
         // The length of the start that all names share, ignoring case.
-        auto shared_prefix_length(std::vector<std::wstring> const& names) -> std::size_t {
+        auto shared_prefix_length(std::vector<std::wstring> const& names) -> std::size_t
+        {
             std::wstring_view const first{ names.front() };
             auto length{ first.size() };
             for (std::wstring_view const name : names | std::views::drop(1)) {
@@ -67,12 +70,14 @@ namespace file_monitor::tui {
             return length;
         }
 
-        auto to_utf8(std::wstring const& name) -> std::string {
+        auto to_utf8(std::wstring const& name) -> std::string
+        {
             return core::utils::path_to_utf8(std::filesystem::path{ name });
         }
 
         auto matching_directories(std::filesystem::path const& directory, std::wstring_view prefix)
-            -> std::vector<std::wstring> {
+            -> std::vector<std::wstring>
+        {
             std::vector<std::wstring> names;
             std::error_code error;
             std::filesystem::directory_iterator entry{
@@ -96,7 +101,8 @@ namespace file_monitor::tui {
             return names;
         }
 
-        auto complete_valid_directory_path(std::string_view input) -> PathCompletion {
+        auto complete_valid_directory_path(std::string_view input) -> PathCompletion
+        {
             PathCompletion completion{ .text = std::string{ input } };
 
             std::string base{ input };
@@ -144,7 +150,8 @@ namespace file_monitor::tui {
     // Completes the last segment of a directory path with the names of the
     // subdirectories that start with it, ignoring case like Windows does. A
     // relative path starts from the current working directory.
-    export auto complete_directory_path(std::string_view input) -> PathCompletion {
+    export auto complete_directory_path(std::string_view input) -> PathCompletion
+    {
         try {
             return complete_valid_directory_path(input);
         } catch (std::exception const&) {

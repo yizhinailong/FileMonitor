@@ -12,7 +12,8 @@ import :utils;
 namespace file_monitor::core {
     namespace {
 
-        auto change_event_date(std::string_view event_time) -> std::string {
+        auto change_event_date(std::string_view event_time) -> std::string
+        {
             if (event_time.size() < 10) {
                 return "unknown-date";
             }
@@ -30,7 +31,8 @@ namespace file_monitor::core {
             return std::string{ date };
         }
 
-        auto change_path_text(FileChange const& change) -> std::string {
+        auto change_path_text(FileChange const& change) -> std::string
+        {
             if (change.previous_absolute_path.empty()) {
                 return change.absolute_path;
             }
@@ -46,7 +48,8 @@ namespace file_monitor::core {
     class ChangeLogger final {
     public:
         explicit ChangeLogger(std::filesystem::path log_directory)
-            : m_log_directory{ std::move(log_directory) } {
+            : m_log_directory{ std::move(log_directory) }
+        {
         }
 
         ChangeLogger(ChangeLogger const&) = delete;
@@ -55,7 +58,8 @@ namespace file_monitor::core {
         auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
 
         auto Write(std::span<FileChange const> changes)
-            -> std::expected<void, std::string> {
+            -> std::expected<void, std::string>
+        {
             for (auto const& change : changes) {
                 auto const date{ change_event_date(file_change_event_time(change)) };
                 auto const logger_result{ ensureLogger(date) };
@@ -87,7 +91,8 @@ namespace file_monitor::core {
         }
 
     private:
-        auto ensureLogger(std::string const& date) -> std::expected<void, std::string> {
+        auto ensureLogger(std::string const& date) -> std::expected<void, std::string>
+        {
             if (m_logger && m_current_date == date) {
                 return {};
             }

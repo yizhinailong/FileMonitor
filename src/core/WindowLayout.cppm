@@ -6,7 +6,8 @@ import nlohmann.json;
 namespace file_monitor::core {
     namespace {
 
-        auto read_int(nlohmann::json const& data, char const* key, int& value) -> bool {
+        auto read_int(nlohmann::json const& data, char const* key, int& value) -> bool
+        {
             auto const member{ data.find(key) };
             if (member == data.end() || !member->is_number_integer()) {
                 return false;
@@ -29,7 +30,8 @@ namespace file_monitor::core {
 
     // The layout stored in `path`, or nothing when there is none or it cannot
     // be read.
-    export auto load_window_layout(std::filesystem::path const& path) -> std::optional<WindowLayout> {
+    export auto load_window_layout(std::filesystem::path const& path) -> std::optional<WindowLayout>
+    {
         std::error_code exists_error;
         if (!std::filesystem::exists(path, exists_error) || exists_error) {
             return std::nullopt;
@@ -59,7 +61,8 @@ namespace file_monitor::core {
         return layout;
     }
 
-    export auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool {
+    export auto save_window_layout(std::filesystem::path const& path, WindowLayout const& layout) -> bool
+    {
         auto const parent_path{ path.parent_path() };
         if (!parent_path.empty()) {
             std::error_code create_error;

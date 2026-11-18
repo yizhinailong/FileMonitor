@@ -44,13 +44,15 @@ namespace file_monitor::gui {
         auto current_theme{ Theme::Dark };
         auto current_scale{ 1.0F };
 
-        auto themed(ThemeColor const& color) -> ImVec4 {
+        auto themed(ThemeColor const& color) -> ImVec4
+        {
             return current_theme == Theme::Light ? color.light : color.dark;
         }
 
     } // namespace
 
-    auto load_font() -> bool {
+    auto load_font() -> bool
+    {
         constexpr std::array FONT_PATHS{
             "C:/Windows/Fonts/msyh.ttc",
             "C:/Windows/Fonts/simhei.ttf"
@@ -66,7 +68,8 @@ namespace file_monitor::gui {
         return false;
     }
 
-    auto apply_theme(Theme theme) -> void {
+    auto apply_theme(Theme theme) -> void
+    {
         current_theme = theme;
         if (theme == Theme::Light) {
             ImGui::StyleColorsLight();
@@ -93,12 +96,14 @@ namespace file_monitor::gui {
         style.FontScaleDpi = scale;
     }
 
-    auto set_scale(float scale) -> void {
+    auto set_scale(float scale) -> void
+    {
         current_scale = std::max(scale, 0.5F);
         apply_theme(current_theme);
     }
 
-    auto file_change_status_color(core::FileChangeStatus status) -> ImVec4 {
+    auto file_change_status_color(core::FileChangeStatus status) -> ImVec4
+    {
         switch (status) {
             case core::FileChangeStatus::Added:
                 return themed(GREEN);
@@ -114,27 +119,32 @@ namespace file_monitor::gui {
         return ImGui::GetStyleColorVec4(ImGuiCol_Text);
     }
 
-    auto selected_row_color() -> ImVec4 {
+    auto selected_row_color() -> ImVec4
+    {
         auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
         color.w = SELECTED_ROW_ALPHA;
         return color;
     }
 
-    auto hovered_row_color() -> ImVec4 {
+    auto hovered_row_color() -> ImVec4
+    {
         auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
         color.w = HOVERED_ROW_ALPHA;
         return color;
     }
 
-    auto success_color() -> ImVec4 {
+    auto success_color() -> ImVec4
+    {
         return themed(GREEN);
     }
 
-    auto warning_color() -> ImVec4 {
+    auto warning_color() -> ImVec4
+    {
         return themed(YELLOW);
     }
 
-    auto error_color() -> ImVec4 {
+    auto error_color() -> ImVec4
+    {
         return themed(ERROR_RED);
     }
 

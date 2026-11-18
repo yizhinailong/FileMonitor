@@ -16,7 +16,8 @@ namespace file_monitor::tui {
 
     namespace {
 
-        auto to_wide(std::string_view text) -> std::wstring {
+        auto to_wide(std::string_view text) -> std::wstring
+        {
             if (text.empty()) {
                 return {};
             }
@@ -31,7 +32,8 @@ namespace file_monitor::tui {
     } // namespace
 
     // Puts UTF-8 text on the Windows clipboard of this machine.
-    export auto copy_to_clipboard(std::string_view text) -> bool {
+    export auto copy_to_clipboard(std::string_view text) -> bool
+    {
         auto const wide{ to_wide(text) };
         if (!OpenClipboard(GetConsoleWindow())) {
             return false;

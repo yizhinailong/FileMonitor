@@ -24,7 +24,8 @@ namespace file_monitor::core {
     public:
         MonitorSession()
             : m_data_directory{ utils::data_directory() },
-              m_change_logger{ m_data_directory } {
+              m_change_logger{ m_data_directory }
+        {
             auto configuration{ load_configuration(m_data_directory / CONFIG_FILE_NAME) };
             if (configuration) {
                 m_configuration = std::move(*configuration);
@@ -34,7 +35,8 @@ namespace file_monitor::core {
             restartMonitor();
         }
 
-        auto Update() -> MonitorUpdate {
+        auto Update() -> MonitorUpdate
+        {
             MonitorUpdate update;
 
             auto changes{ m_monitor.TakeChanges() };
@@ -65,7 +67,8 @@ namespace file_monitor::core {
         }
 
         [[nodiscard]]
-        auto SaveConfiguration(Configuration configuration) -> bool {
+        auto SaveConfiguration(Configuration configuration) -> bool
+        {
             auto const save_result{
                 save_configuration(m_data_directory / CONFIG_FILE_NAME, configuration)
             };
@@ -81,12 +84,14 @@ namespace file_monitor::core {
         }
 
         [[nodiscard]]
-        auto CurrentConfiguration() const -> Configuration const& {
+        auto CurrentConfiguration() const -> Configuration const&
+        {
             return m_configuration;
         }
 
         [[nodiscard]]
-        auto Changes() const -> std::span<FileChange const> {
+        auto Changes() const -> std::span<FileChange const>
+        {
             return m_changes;
         }
 
@@ -95,27 +100,32 @@ namespace file_monitor::core {
         // stays in the list, and numbers are never reused, not even after the
         // monitor restarts and clears the list.
         [[nodiscard]]
-        auto FirstChangeSequence() const -> std::uint64_t {
+        auto FirstChangeSequence() const -> std::uint64_t
+        {
             return m_first_change_sequence;
         }
 
         [[nodiscard]]
-        auto ConfigurationError() const -> std::string const& {
+        auto ConfigurationError() const -> std::string const&
+        {
             return m_configuration_error;
         }
 
         [[nodiscard]]
-        auto MonitorError() const -> std::string const& {
+        auto MonitorError() const -> std::string const&
+        {
             return m_monitor_error;
         }
 
         [[nodiscard]]
-        auto LogError() const -> std::string const& {
+        auto LogError() const -> std::string const&
+        {
             return m_log_error;
         }
 
     private:
-        auto restartMonitor() -> void {
+        auto restartMonitor() -> void
+        {
             m_first_change_sequence += m_changes.size();
             m_changes.clear();
             m_monitor_error.clear();

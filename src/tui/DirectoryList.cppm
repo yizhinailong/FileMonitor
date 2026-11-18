@@ -21,7 +21,8 @@ namespace file_monitor::tui {
         DirectoryList(std::vector<std::filesystem::path>& directories, std::string title)
             : m_directories{ directories }, m_title{ std::move(title) } {}
 
-        auto Render(bool focused, int width) -> ftxui::Element {
+        auto Render(bool focused, int width) -> ftxui::Element
+        {
             auto const count{ static_cast<int>(m_directories.size()) };
             m_selected = std::clamp(m_selected, 0, std::max(count - 1, 0));
 
@@ -66,7 +67,8 @@ namespace file_monitor::tui {
             return std::move(list) | ftxui::reflect(m_box);
         }
 
-        auto OnEvent(ftxui::Event event) -> bool {
+        auto OnEvent(ftxui::Event event) -> bool
+        {
             auto const last{ std::max(static_cast<int>(m_directories.size()) - 1, 0) };
             if (event.is_mouse()) {
                 auto const& mouse{ event.mouse() };
@@ -98,7 +100,8 @@ namespace file_monitor::tui {
             return true;
         }
 
-        auto OnClick(int x, int y) -> bool {
+        auto OnClick(int x, int y) -> bool
+        {
             if (!m_box.Contain(x, y)) {
                 return false;
             }
@@ -113,15 +116,18 @@ namespace file_monitor::tui {
             return true;
         }
 
-        auto Reset() -> void {
+        auto Reset() -> void
+        {
             m_selected = 0;
         }
 
-        auto SelectLast() -> void {
+        auto SelectLast() -> void
+        {
             m_selected = std::max(static_cast<int>(m_directories.size()) - 1, 0);
         }
 
-        auto RemoveSelected() -> void {
+        auto RemoveSelected() -> void
+        {
             if (m_directories.empty()) {
                 return;
             }
@@ -132,17 +138,20 @@ namespace file_monitor::tui {
             m_selected = std::min(index, std::max(static_cast<int>(m_directories.size()) - 1, 0));
         }
 
-        auto SetWarnings(std::vector<std::string> warnings) -> void {
+        auto SetWarnings(std::vector<std::string> warnings) -> void
+        {
             m_warnings = std::move(warnings);
         }
 
         [[nodiscard]]
-        auto Title() const -> std::string const& {
+        auto Title() const -> std::string const&
+        {
             return m_title;
         }
 
         [[nodiscard]]
-        auto Directories() const -> std::vector<std::filesystem::path> const& {
+        auto Directories() const -> std::vector<std::filesystem::path> const&
+        {
             return m_directories;
         }
 

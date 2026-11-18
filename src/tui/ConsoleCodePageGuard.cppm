@@ -15,10 +15,12 @@ namespace file_monitor::tui {
     export class ConsoleCodePageGuard final {
     public:
         ConsoleCodePageGuard()
-            : m_input_code_page{ GetConsoleCP() }, m_output_code_page{ GetConsoleOutputCP() } {
+            : m_input_code_page{ GetConsoleCP() }, m_output_code_page{ GetConsoleOutputCP() }
+        {
         }
 
-        ~ConsoleCodePageGuard() {
+        ~ConsoleCodePageGuard()
+        {
             SetConsoleCP(m_input_code_page);
             SetConsoleOutputCP(m_output_code_page);
         }

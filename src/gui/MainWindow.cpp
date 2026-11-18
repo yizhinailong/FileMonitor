@@ -36,7 +36,8 @@ namespace file_monitor::gui {
             ImVec4 color;
         };
 
-        auto monitor_state(core::MonitorSession const& session) -> MonitorState {
+        auto monitor_state(core::MonitorSession const& session) -> MonitorState
+        {
             if (session.CurrentConfiguration().directories.empty()) {
                 return { "未监控", warning_color() };
             }
@@ -46,7 +47,8 @@ namespace file_monitor::gui {
             return { "监控中", success_color() };
         }
 
-        auto directory_summary(core::Configuration const& configuration) -> std::string {
+        auto directory_summary(core::Configuration const& configuration) -> std::string
+        {
             if (configuration.excluded_directories.empty()) {
                 return std::format("{} 个文件夹", configuration.directories.size());
             }
@@ -57,7 +59,8 @@ namespace file_monitor::gui {
             );
         }
 
-        auto size_description(core::FileChange const& change) -> std::string {
+        auto size_description(core::FileChange const& change) -> std::string
+        {
             // Directories have no size.
             if (change.size == "-") {
                 return "文件夹";
@@ -68,7 +71,8 @@ namespace file_monitor::gui {
         // A label and a path that can be selected with the mouse but not
         // edited. A path longer than `width` loses its beginning and is shown
         // in full in a tooltip.
-        auto draw_path_field(char const* id, std::string_view label, std::string const& path, float width) -> void {
+        auto draw_path_field(char const* id, std::string_view label, std::string const& path, float width) -> void
+        {
             auto const& style{ ImGui::GetStyle() };
             ImGui::AlignTextToFramePadding();
             draw_disabled_text(label);
@@ -88,7 +92,8 @@ namespace file_monitor::gui {
         }
 
         // A filled circle as high as a line of text, in place of an icon.
-        auto draw_dot(ImVec4 const& color) -> void {
+        auto draw_dot(ImVec4 const& color) -> void
+        {
             auto const height{ ImGui::GetFrameHeight() };
             auto const radius{ ImGui::GetFontSize() * 0.25F };
             auto const position{ ImGui::GetCursorScreenPos() };
@@ -102,11 +107,13 @@ namespace file_monitor::gui {
 
     } // namespace
 
-    auto MainWindow::Settings() -> SettingsWindow& {
+    auto MainWindow::Settings() -> SettingsWindow&
+    {
         return m_settings_window;
     }
 
-    auto MainWindow::Update() -> bool {
+    auto MainWindow::Update() -> bool
+    {
         auto const update{ m_session.Update() };
         auto const directories_selected{ m_settings_window.Update() };
         auto const notice_ended{ !m_notice.empty() && std::chrono::steady_clock::now() >= m_notice_end };
@@ -116,7 +123,8 @@ namespace file_monitor::gui {
         return update.changes_added || update.errors_changed || directories_selected || notice_ended;
     }
 
-    auto MainWindow::DropFiles(std::vector<DroppedFile> const& files) -> void {
+    auto MainWindow::DropFiles(std::vector<DroppedFile> const& files) -> void
+    {
         if (files.empty()) {
             return;
         }
@@ -140,7 +148,8 @@ namespace file_monitor::gui {
         showNotice("拖入的文件夹已加入监控列表，保存后生效");
     }
 
-    auto MainWindow::Render() -> void {
+    auto MainWindow::Render() -> void
+    {
         m_change_table.Refresh();
 
         auto const* viewport{ ImGui::GetMainViewport() };
@@ -184,7 +193,8 @@ namespace file_monitor::gui {
         ImGui::End();
     }
 
-    auto MainWindow::renderToolbar() -> void {
+    auto MainWindow::renderToolbar() -> void
+    {
         std::array<std::size_t, core::FILE_CHANGE_STATUS_COUNT> counts{};
         for (auto const& change : m_session.Changes()) {
             ++counts[static_cast<std::size_t>(std::to_underlying(change.status))];
@@ -250,7 +260,8 @@ namespace file_monitor::gui {
         }
     }
 
-    auto MainWindow::renderErrors() -> void {
+    auto MainWindow::renderErrors() -> void
+    {
         if (!has_session_errors(m_session)) {
             return;
         }
@@ -260,7 +271,8 @@ namespace file_monitor::gui {
         ImGui::EndChild();
     }
 
-    auto MainWindow::renderEmptyState(ImVec2 size) -> void {
+    auto MainWindow::renderEmptyState(ImVec2 size) -> void
+    {
         if (ImGui::BeginChild("NoChanges", size, ImGuiChildFlags_Borders)) {
             auto const monitoring{ !m_session.CurrentConfiguration().directories.empty() };
             auto const filtered{ !m_session.Changes().empty() };
@@ -294,7 +306,8 @@ namespace file_monitor::gui {
         ImGui::EndChild();
     }
 
-    auto MainWindow::renderDetails(float height) -> void {
+    auto MainWindow::renderDetails(float height) -> void
+    {
         auto const& style{ ImGui::GetStyle() };
         auto const* change{ m_change_table.SelectedChange() };
         if (ImGui::BeginChild("Details", { 0.0F, height }, ImGuiChildFlags_Borders) && change == nullptr) {
@@ -353,7 +366,8 @@ namespace file_monitor::gui {
         ImGui::EndChild();
     }
 
-    auto MainWindow::renderStatusBar() -> void {
+    auto MainWindow::renderStatusBar() -> void
+    {
         auto const& style{ ImGui::GetStyle() };
         auto const state{ monitor_state(m_session) };
         ImGui::AlignTextToFramePadding();
@@ -400,7 +414,8 @@ namespace file_monitor::gui {
         }
     }
 
-    auto MainWindow::handleShortcuts() -> void {
+    auto MainWindow::handleShortcuts() -> void
+    {
         // A letter only counts as a shortcut while no text is being typed;
         // Dear ImGui sees to that.
         if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C) || ImGui::Shortcut(ImGuiKey_Y)) {
@@ -434,18 +449,21 @@ namespace file_monitor::gui {
         }
     }
 
-    auto MainWindow::applyPathFilter() -> void {
+    auto MainWindow::applyPathFilter() -> void
+    {
         m_change_table.Filter().SetPathText(m_filter_text);
         m_change_table.Refresh();
     }
 
-    auto MainWindow::clearFilters() -> void {
+    auto MainWindow::clearFilters() -> void
+    {
         m_filter_text.clear();
         m_change_table.Filter().Clear();
         m_change_table.Refresh();
     }
 
-    auto MainWindow::run(ChangeAction action) -> void {
+    auto MainWindow::run(ChangeAction action) -> void
+    {
         auto const* change{ m_change_table.SelectedChange() };
         if (change == nullptr) {
             return;
@@ -476,13 +494,15 @@ namespace file_monitor::gui {
         }
     }
 
-    auto MainWindow::showNotice(std::string_view text, bool failed) -> void {
+    auto MainWindow::showNotice(std::string_view text, bool failed) -> void
+    {
         m_notice = text;
         m_notice_failed = failed;
         m_notice_end = std::chrono::steady_clock::now() + NOTICE_DURATION;
     }
 
-    auto MainWindow::openSettings() -> void {
+    auto MainWindow::openSettings() -> void
+    {
         m_settings_window.Open(m_session.CurrentConfiguration());
     }
 

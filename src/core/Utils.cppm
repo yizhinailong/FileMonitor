@@ -20,7 +20,8 @@ namespace file_monitor::core::utils {
         auto path_elements_equal(
             std::filesystem::path const& left,
             std::filesystem::path const& right
-        ) -> bool {
+        ) -> bool
+        {
             auto const& left_text{ left.native() };
             auto const& right_text{ right.native() };
             return CompareStringOrdinal(
@@ -34,19 +35,22 @@ namespace file_monitor::core::utils {
 
     } // namespace
 
-    export auto path_to_utf8(std::filesystem::path const& path) -> std::string {
+    export auto path_to_utf8(std::filesystem::path const& path) -> std::string
+    {
         auto const utf8_path{ path.u8string() };
         return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
     }
 
-    export auto utf8_to_path(std::string_view path) -> std::filesystem::path {
+    export auto utf8_to_path(std::string_view path) -> std::filesystem::path
+    {
         auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
         return std::filesystem::path{
             std::u8string{ begin, begin + path.size() }
         };
     }
 
-    export auto executable_directory() -> std::filesystem::path {
+    export auto executable_directory() -> std::filesystem::path
+    {
         std::wstring module_path(MAX_PATH, L'\0');
         while (true) {
             auto const length{
@@ -72,7 +76,8 @@ namespace file_monitor::core::utils {
 
     // Where the configuration, the log and the window layout of both
     // interfaces are kept, in the directory of the executable.
-    export auto data_directory() -> std::filesystem::path {
+    export auto data_directory() -> std::filesystem::path
+    {
         return executable_directory() / "data" / "FileMonitor";
     }
 
@@ -81,7 +86,8 @@ namespace file_monitor::core::utils {
     export auto path_is_within(
         std::filesystem::path const& path,
         std::filesystem::path const& directory
-    ) -> bool {
+    ) -> bool
+    {
         if (directory.empty()) {
             return false;
         }
@@ -104,7 +110,8 @@ namespace file_monitor::core::utils {
     export auto paths_equal(
         std::filesystem::path const& left,
         std::filesystem::path const& right
-    ) -> bool {
+    ) -> bool
+    {
         return path_is_within(left, right) && path_is_within(right, left);
     }
 

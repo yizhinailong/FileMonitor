@@ -23,7 +23,8 @@ namespace file_monitor::core {
 
     namespace {
 
-        auto build_file_cache(std::span<FileState const> files) -> FileCache {
+        auto build_file_cache(std::span<FileState const> files) -> FileCache
+        {
             FileCache cache;
             for (auto const& file : files) {
                 cache.insert_or_assign(file.absolute_path, file);
@@ -31,7 +32,8 @@ namespace file_monitor::core {
             return cache;
         }
 
-        auto path_is_regular_file(std::filesystem::path const& path) -> bool {
+        auto path_is_regular_file(std::filesystem::path const& path) -> bool
+        {
             std::error_code type_error;
             return std::filesystem::is_regular_file(path, type_error) && !type_error;
         }
@@ -39,7 +41,8 @@ namespace file_monitor::core {
         auto path_is_descendant(
             std::filesystem::path const& path,
             std::filesystem::path const& directory
-        ) -> bool {
+        ) -> bool
+        {
             auto const relative_path{ path.lexically_relative(directory) };
             return !relative_path.empty() && relative_path != "." &&
                 !relative_path.is_absolute() && *relative_path.begin() != "..";
@@ -48,7 +51,8 @@ namespace file_monitor::core {
         auto path_is_excluded(
             std::filesystem::path const& path,
             std::span<std::filesystem::path const> excluded_directories
-        ) -> bool {
+        ) -> bool
+        {
             return std::ranges::any_of(
                 excluded_directories,
                 [&path](std::filesystem::path const& excluded_directory) {
@@ -58,7 +62,8 @@ namespace file_monitor::core {
         }
 
         auto normalize_directory(std::filesystem::path const& directory)
-            -> std::filesystem::path {
+            -> std::filesystem::path
+        {
             std::error_code absolute_error;
             auto normalized{ std::filesystem::absolute(directory, absolute_error) };
             if (absolute_error) {
@@ -68,7 +73,8 @@ namespace file_monitor::core {
         }
 
         auto take_descendants(FileCache& files, std::filesystem::path const& directory)
-            -> std::vector<FileState> {
+            -> std::vector<FileState>
+        {
             std::vector<FileState> descendants;
             for (auto file{ files.begin() }; file != files.end();) {
                 if (path_is_descendant(utils::utf8_to_path(file->first), directory)) {
@@ -85,7 +91,8 @@ namespace file_monitor::core {
             FileCache& files,
             std::filesystem::path const& previous_directory,
             std::filesystem::path const& current_directory
-        ) -> void {
+        ) -> void
+        {
             std::vector<FileState> remapped_files;
             for (auto file{ files.begin() }; file != files.end();) {
                 auto const file_path{ utils::utf8_to_path(file->first) };
@@ -112,7 +119,8 @@ namespace file_monitor::core {
         auto report_error(
             std::shared_ptr<MonitorState> const& state,
             std::string message
-        ) -> void {
+        ) -> void
+        {
             auto const lock{ std::scoped_lock{ state->mutex } };
             if (!state->error_message.empty()) {
                 state->error_message += '\n';
@@ -124,7 +132,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const& directory
         )
-            -> std::unique_lock<std::mutex> {
+            -> std::unique_lock<std::mutex>
+        {
             auto lock{ std::unique_lock{ state->mutex } };
             state->initialized.wait(lock, [&state, &directory] {
                 return !std::ranges::contains(state->initializing_directories, directory);
@@ -136,7 +145,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path directory,
             std::stop_token stop_token
-        ) -> void {
+        ) -> void
+        {
             std::array const directories{ directory };
             auto const files{
                 scan_files(directories, state->excluded_directories, stop_token)
@@ -166,7 +176,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const& path,
             std::filesystem::path const& root
-        ) -> void {
+        ) -> void
+        {
             if (path_is_excluded(path, state->excluded_directories)) {
                 return;
             }
@@ -185,7 +196,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const& path,
             std::filesystem::path const& root
-        ) -> void {
+        ) -> void
+        {
             if (path_is_excluded(path, state->excluded_directories)) {
                 return;
             }
@@ -221,7 +233,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const& path,
             std::filesystem::path const& root
-        ) -> void {
+        ) -> void
+        {
             if (path_is_excluded(path, state->excluded_directories) ||
                 !path_is_regular_file(path)) {
                 return;
@@ -248,7 +261,8 @@ namespace file_monitor::core {
             std::filesystem::path const& previous_path,
             std::filesystem::path const& current_path,
             std::filesystem::path const& root
-        ) -> void {
+        ) -> void
+        {
             auto const previous_is_excluded{
                 path_is_excluded(previous_path, state->excluded_directories)
             };
@@ -315,7 +329,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             std::filesystem::path const& root,
             std::stop_token stop_token
-        ) -> void {
+        ) -> void
+        {
             auto lock{ wait_for_initialization(state, root) };
             std::array const directories{ root };
             auto const current_files{
@@ -353,7 +368,8 @@ namespace file_monitor::core {
             std::shared_ptr<MonitorState> const& state,
             detail::DirectoryWatchEvent const& event,
             std::stop_token stop_token
-        ) -> void {
+        ) -> void
+        {
             switch (event.kind) {
                 case detail::DirectoryWatchEventKind::Added:
                     record_added(state, event.path, event.root);
@@ -379,7 +395,8 @@ namespace file_monitor::core {
     public:
         DirectoryMonitor() = default;
 
-        ~DirectoryMonitor() {
+        ~DirectoryMonitor()
+        {
             Stop();
         }
 
@@ -391,7 +408,8 @@ namespace file_monitor::core {
         auto Start(
             std::span<std::filesystem::path const> directories,
             std::span<std::filesystem::path const> excluded_directories = {}
-        ) -> void {
+        ) -> void
+        {
             Stop();
 
             auto normalized_directories{
@@ -439,7 +457,8 @@ namespace file_monitor::core {
             }
         }
 
-        auto Stop() -> void {
+        auto Stop() -> void
+        {
             for (auto& thread : m_initialization_threads) {
                 thread.request_stop();
             }
@@ -455,14 +474,16 @@ namespace file_monitor::core {
             m_initialization_threads.clear();
         }
 
-        auto TakeChanges() -> std::vector<FileChange> {
+        auto TakeChanges() -> std::vector<FileChange>
+        {
             auto const lock{ std::scoped_lock{ m_state->mutex } };
             std::vector<FileChange> changes;
             changes.swap(m_state->changes);
             return changes;
         }
 
-        auto TakeError() -> std::string {
+        auto TakeError() -> std::string
+        {
             auto const lock{ std::scoped_lock{ m_state->mutex } };
             std::string error_message;
             error_message.swap(m_state->error_message);

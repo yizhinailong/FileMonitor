@@ -59,7 +59,8 @@ namespace file_monitor::core {
         constexpr std::string_view TIME_RANGE_SEPARATOR{ " -> " };
 
         auto read_creation_time(std::filesystem::path const& path)
-            -> std::optional<SystemTime> {
+            -> std::optional<SystemTime>
+        {
             WIN32_FILE_ATTRIBUTE_DATA attributes{};
             if (!GetFileAttributesExW(
                     path.c_str(),
@@ -88,7 +89,8 @@ namespace file_monitor::core {
         }
 
         auto read_file_size(std::filesystem::directory_entry const& entry)
-            -> std::optional<std::uintmax_t> {
+            -> std::optional<std::uintmax_t>
+        {
             std::error_code size_error;
             auto const size{ entry.file_size(size_error) };
             if (size_error) {
@@ -98,7 +100,8 @@ namespace file_monitor::core {
         }
 
         auto read_modified_time(std::filesystem::directory_entry const& entry)
-            -> std::optional<std::filesystem::file_time_type> {
+            -> std::optional<std::filesystem::file_time_type>
+        {
             std::error_code time_error;
             auto const modified_time{ entry.last_write_time(time_error) };
             if (time_error) {
@@ -107,7 +110,8 @@ namespace file_monitor::core {
             return modified_time;
         }
 
-        auto format_file_size(std::optional<std::uintmax_t> size) -> std::string {
+        auto format_file_size(std::optional<std::uintmax_t> size) -> std::string
+        {
             if (!size) {
                 return "未知";
             }
@@ -135,7 +139,8 @@ namespace file_monitor::core {
             return std::format("{:.2f} {}", display_size, UNITS[unit_index]);
         }
 
-        auto format_event_time(SystemTime time) -> std::string {
+        auto format_event_time(SystemTime time) -> std::string
+        {
             auto const whole_seconds{ std::chrono::floor<std::chrono::seconds>(time) };
             auto const milliseconds{
                 std::chrono::duration_cast<std::chrono::milliseconds>(time - whole_seconds)
@@ -165,7 +170,8 @@ namespace file_monitor::core {
             FileChangeStatus status,
             std::optional<SystemTime> creation_time,
             SystemTime event_time
-        ) -> std::string {
+        ) -> std::string
+        {
             auto event_time_text{ format_event_time(event_time) };
             if (status != FileChangeStatus::Removed || !creation_time) {
                 return event_time_text;
@@ -178,13 +184,15 @@ namespace file_monitor::core {
             );
         }
 
-        auto absolute_path_to_utf8(std::filesystem::path const& path) -> std::string {
+        auto absolute_path_to_utf8(std::filesystem::path const& path) -> std::string
+        {
             std::error_code absolute_error;
             auto const absolute_path{ std::filesystem::absolute(path, absolute_error) };
             return utils::path_to_utf8(absolute_error ? path : absolute_path);
         }
 
-        auto format_change_path(std::string path, bool is_directory) -> std::string {
+        auto format_change_path(std::string path, bool is_directory) -> std::string
+        {
             if (is_directory && !path.empty()) {
                 if (path.ends_with('/')) {
                     path.back() = '\\';
@@ -197,7 +205,8 @@ namespace file_monitor::core {
 
     } // namespace
 
-    export auto read_file_state(std::filesystem::path const& path) -> FileState {
+    export auto read_file_state(std::filesystem::path const& path) -> FileState
+    {
         std::error_code entry_error;
         std::filesystem::directory_entry entry{ path, entry_error };
         if (entry_error) {
@@ -226,7 +235,8 @@ namespace file_monitor::core {
         std::span<std::filesystem::path const> directories,
         std::span<std::filesystem::path const> excluded_directories,
         std::stop_token stop_token
-    ) -> std::vector<FileState> {
+    ) -> std::vector<FileState>
+    {
         std::vector<FileState> files;
 
         auto const path_is_excluded{
@@ -290,7 +300,8 @@ namespace file_monitor::core {
         FileChangeStatus status,
         FileState const& file,
         std::string previous_absolute_path = {}
-    ) -> FileChange {
+    ) -> FileChange
+    {
         auto const event_time{ std::chrono::system_clock::now() };
         return FileChange{
             .time = format_change_time(status, file.creation_time, event_time),
@@ -307,7 +318,8 @@ namespace file_monitor::core {
     export auto detect_file_changes(
         std::span<FileState const> previous_files,
         std::span<FileState const> current_files
-    ) -> std::vector<FileChange> {
+    ) -> std::vector<FileChange>
+    {
         std::vector<FileChange> changes;
         auto previous_index{ std::size_t{ 0 } };
         auto current_index{ std::size_t{ 0 } };
@@ -351,7 +363,8 @@ namespace file_monitor::core {
         return changes;
     }
 
-    export auto file_change_status_text(FileChangeStatus status) -> std::string_view {
+    export auto file_change_status_text(FileChangeStatus status) -> std::string_view
+    {
         switch (status) {
             case FileChangeStatus::Added:
                 return "创建";
@@ -369,7 +382,8 @@ namespace file_monitor::core {
 
     // A removed file's time reads "created -> removed"; this returns the time of
     // the change itself.
-    export auto file_change_event_time(FileChange const& change) -> std::string_view {
+    export auto file_change_event_time(FileChange const& change) -> std::string_view
+    {
         std::string_view const time{ change.time };
         auto const separator{ time.rfind(TIME_RANGE_SEPARATOR) };
         if (separator == std::string_view::npos) {
@@ -379,7 +393,8 @@ namespace file_monitor::core {
     }
 
     // The time of day of the change itself: "12:34:56.789".
-    export auto file_change_time_of_day(FileChange const& change) -> std::string_view {
+    export auto file_change_time_of_day(FileChange const& change) -> std::string_view
+    {
         auto const time{ file_change_event_time(change) };
         auto const separator{ time.find(' ') };
         if (separator == std::string_view::npos) {
@@ -390,7 +405,8 @@ namespace file_monitor::core {
 
     // The creation time of a removed file, or an empty string when the change
     // has none.
-    export auto file_change_creation_time(FileChange const& change) -> std::string_view {
+    export auto file_change_creation_time(FileChange const& change) -> std::string_view
+    {
         std::string_view const time{ change.time };
         auto const separator{ time.rfind(TIME_RANGE_SEPARATOR) };
         if (separator == std::string_view::npos) {
