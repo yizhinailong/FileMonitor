@@ -16,6 +16,16 @@ local function uninstall_binary(target)
     os.tryrm(path.join(target:installdir(), path.filename(target:targetfile())))
 end
 
+-- clang-cl maps the "smallest" optimize level to /O1, which the compiler turns
+-- into -Os. The published executables statically link SDL3, ImGui, FTXUI and
+-- the C++ runtime, so optimizing the program's own code for size reduces the
+-- binaries without changing behavior. Debug builds keep the default -Od.
+local function optimize_release_for_size()
+    if is_mode("release") then
+        set_optimize("smallest")
+    end
+end
+
 -- `xmake clean` also removes the binaries published by `xmake install`.
 rule("dist_clean", function()
     after_clean(function()
@@ -25,6 +35,7 @@ end)
 
 target("FileMonitorCore", function()
     set_kind("static")
+    optimize_release_for_size()
     -- Internal library: built as a dependency, but not installed by default.
     set_default(false)
     -- Public: the frontends import file_monitor.core, so its module interfaces
@@ -44,6 +55,7 @@ end)
 local function define_frontend(opt)
     target(opt.name, function()
         set_kind("binary")
+        optimize_release_for_size()
         add_deps("FileMonitorCore")
         add_rules("dist_clean")
         for _, file in ipairs(opt.files) do
