@@ -1,6 +1,6 @@
 import file_monitor.tui;
 
-auto main() -> int
+int main()
 {
     file_monitor::tui::Application application;
     return application.Run();

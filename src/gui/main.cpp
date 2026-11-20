@@ -2,7 +2,7 @@
 
 #include "gui/Application.hpp"
 
-auto main(int /*argc*/, char* /*argv*/[]) -> int
+int main(int /*argc*/, char* /*argv*/[])
 {
     file_monitor::gui::Application application;
     return application.Run();

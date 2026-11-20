@@ -27,27 +27,24 @@ namespace file_monitor::gui {
     // and a warning next to a directory that has no effect.
     class SettingsWindow final {
     public:
-        auto SetParentWindow(SDL_Window* window) -> void;
+        void SetParentWindow(SDL_Window* window);
         // Shows the window from the next Render() on. It can be called from
         // anywhere, unlike ImGui::OpenPopup(), which has to run where the
         // popup is drawn.
-        auto Open(core::Configuration const& configuration) -> void;
+        void Open(core::Configuration const& configuration);
         // Opens the window with these directories added to the monitored ones,
         // waiting to be saved.
-        auto OpenWithDirectories(
+        void OpenWithDirectories(
             core::Configuration const& configuration,
-            std::vector<std::filesystem::path> directories
-        ) -> void;
-        [[nodiscard]]
-        auto IsOpen() const -> bool;
+            std::vector<std::filesystem::path> directories);
+        [[nodiscard]] bool IsOpen() const;
         // Adds the dropped folders, which were dropped on the window, to the
         // list they were dropped on.
-        auto DropFiles(std::vector<DroppedFile> const& files) -> void;
+        void DropFiles(std::vector<DroppedFile> const& files);
         // Takes the folders picked in the system dialog, which reports them
         // from another thread; returns whether it had any result.
-        [[nodiscard]]
-        auto Update() -> bool;
-        auto Render(core::MonitorSession& session) -> void;
+        [[nodiscard]] bool Update();
+        void Render(core::MonitorSession& session);
 
     private:
         enum class DirectoryGroup {
@@ -60,23 +57,22 @@ namespace file_monitor::gui {
             std::string error_message;
         };
 
-        auto addManualDirectory(DirectoryGroup group) -> void;
-        auto consumeDirectorySelection() -> bool;
-        auto directoryEditor(DirectoryGroup group) -> DirectoryEditorState&;
-        auto openDirectoryDialog(DirectoryGroup group) -> void;
-        auto pendingDirectories(DirectoryGroup group) -> std::vector<std::filesystem::path>&;
-        auto renderDirectoryGroup(DirectoryGroup group, float height) -> void;
-        auto renderFooter(core::MonitorSession& session) -> void;
-        auto refreshWarnings() -> void;
+        void addManualDirectory(DirectoryGroup group);
+        bool consumeDirectorySelection();
+        DirectoryEditorState& directoryEditor(DirectoryGroup group);
+        void openDirectoryDialog(DirectoryGroup group);
+        std::vector<std::filesystem::path>& pendingDirectories(DirectoryGroup group);
+        void renderDirectoryGroup(DirectoryGroup group, float height);
+        void renderFooter(core::MonitorSession& session);
+        void refreshWarnings();
         // Anything but the first click on the cancel button withdraws the
         // request to discard the changes.
-        auto markChanged() -> void;
-        [[nodiscard]]
-        auto hasUnsavedChanges() const -> bool;
-        auto save(core::MonitorSession& session) -> void;
+        void markChanged();
+        [[nodiscard]] bool hasUnsavedChanges() const;
+        void save(core::MonitorSession& session);
         // Closes the window, or with unsaved changes first asks for a second
         // click.
-        auto cancel() -> void;
+        void cancel();
 
         core::Configuration m_pending_configuration;
         // The configuration when the window opened, which unsaved changes are

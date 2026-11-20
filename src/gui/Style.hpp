@@ -13,30 +13,23 @@ namespace file_monitor::gui {
 
     // Loads the font of the interface, which has the glyphs for Chinese text.
     // Call once after creating the Dear ImGui context.
-    [[nodiscard]]
-    auto load_font() -> bool;
+    [[nodiscard]] bool load_font();
     // Sets the sizes and colors of Dear ImGui and the colors of the functions
     // below.
-    auto apply_theme(Theme theme) -> void;
+    void apply_theme(Theme theme);
     // Scales the sizes and the text of the interface, for a display that
     // reports this scale through Windows; 1 is 100%. The current theme is
     // applied again.
-    auto set_scale(float scale) -> void;
+    void set_scale(float scale);
 
-    [[nodiscard]]
-    auto file_change_status_color(core::FileChangeStatus status) -> ImVec4;
+    [[nodiscard]] ImVec4 file_change_status_color(core::FileChangeStatus status);
     // The backgrounds of the selected row of a list and of the row under the
     // pointer. The pointer does not hide which row is selected, as it does
     // with the colors Dear ImGui uses for both by default.
-    [[nodiscard]]
-    auto selected_row_color() -> ImVec4;
-    [[nodiscard]]
-    auto hovered_row_color() -> ImVec4;
-    [[nodiscard]]
-    auto success_color() -> ImVec4;
-    [[nodiscard]]
-    auto warning_color() -> ImVec4;
-    [[nodiscard]]
-    auto error_color() -> ImVec4;
+    [[nodiscard]] ImVec4 selected_row_color();
+    [[nodiscard]] ImVec4 hovered_row_color();
+    [[nodiscard]] ImVec4 success_color();
+    [[nodiscard]] ImVec4 warning_color();
+    [[nodiscard]] ImVec4 error_color();
 
 } // namespace file_monitor::gui

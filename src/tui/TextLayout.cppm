@@ -12,12 +12,12 @@ namespace file_monitor::tui {
         // empty entry for its second column.
         using Cells = std::vector<std::string>;
 
-        auto is_separator(std::string_view cell) -> bool
+        bool is_separator(std::string_view cell)
         {
             return cell == "\\" || cell == "/";
         }
 
-        auto join_cells(Cells const& cells, std::size_t first, std::size_t last) -> std::string
+        std::string join_cells(Cells const& cells, std::size_t first, std::size_t last)
         {
             std::string text;
             for (auto index{ first }; index < last; ++index) {
@@ -27,7 +27,7 @@ namespace file_monitor::tui {
         }
 
         // Moves a cut that would split a full-width glyph past that glyph.
-        auto skip_glyph_tail(Cells const& cells, std::size_t index) -> std::size_t
+        std::size_t skip_glyph_tail(Cells const& cells, std::size_t index)
         {
             while (index < cells.size() && cells[index].empty()) {
                 ++index;
@@ -36,7 +36,7 @@ namespace file_monitor::tui {
         }
 
         // Moves a cut that would split a full-width glyph before that glyph.
-        auto before_glyph_tail(Cells const& cells, std::size_t index) -> std::size_t
+        std::size_t before_glyph_tail(Cells const& cells, std::size_t index)
         {
             while (index > 0 && index < cells.size() && cells[index].empty()) {
                 --index;
@@ -44,7 +44,7 @@ namespace file_monitor::tui {
             return index;
         }
 
-        auto column_count(std::string_view text) -> float
+        float column_count(std::string_view text)
         {
             return static_cast<float>(ftxui::string_width(text));
         }
@@ -52,20 +52,20 @@ namespace file_monitor::tui {
     } // namespace
 
     // core::shorten_path() for a width in terminal columns.
-    export auto shorten_path(std::string_view path, int width) -> std::string
+    export std::string shorten_path(std::string_view path, int width)
     {
         return core::shorten_path(path, static_cast<float>(width), column_count);
     }
 
     // core::change_path_text() for a width in terminal columns.
-    export auto change_path_text(core::FileChange const& change, int width) -> std::string
+    export std::string change_path_text(core::FileChange const& change, int width)
     {
         return core::change_path_text(change, static_cast<float>(width), column_count);
     }
 
     // Splits text into lines of at most `width` columns, preferring to break
     // after a directory separator.
-    export auto wrap_text(std::string_view text, int width) -> std::vector<std::string>
+    export std::vector<std::string> wrap_text(std::string_view text, int width)
     {
         auto const cells{ ftxui::Utf8ToGlyphs(text) };
         auto const line_width{ static_cast<std::size_t>(std::max(width, 1)) };

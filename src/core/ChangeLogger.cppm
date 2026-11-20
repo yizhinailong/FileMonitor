@@ -12,7 +12,7 @@ import :utils;
 namespace file_monitor::core {
     namespace {
 
-        auto change_event_date(std::string_view event_time) -> std::string
+        std::string change_event_date(std::string_view event_time)
         {
             if (event_time.size() < 10) {
                 return "unknown-date";
@@ -31,7 +31,7 @@ namespace file_monitor::core {
             return std::string{ date };
         }
 
-        auto change_path_text(FileChange const& change) -> std::string
+        std::string change_path_text(FileChange const& change)
         {
             if (change.previous_absolute_path.empty()) {
                 return change.absolute_path;
@@ -39,8 +39,7 @@ namespace file_monitor::core {
             return std::format(
                 "{} -> {}",
                 change.previous_absolute_path,
-                change.absolute_path
-            );
+                change.absolute_path);
         }
 
     } // namespace
@@ -54,11 +53,10 @@ namespace file_monitor::core {
 
         ChangeLogger(ChangeLogger const&) = delete;
         ChangeLogger(ChangeLogger&&) = delete;
-        auto operator=(ChangeLogger const&) -> ChangeLogger& = delete;
-        auto operator=(ChangeLogger&&) -> ChangeLogger& = delete;
+        ChangeLogger& operator=(ChangeLogger const&) = delete;
+        ChangeLogger& operator=(ChangeLogger&&) = delete;
 
-        auto Write(std::span<FileChange const> changes)
-            -> std::expected<void, std::string>
+        std::expected<void, std::string> Write(std::span<FileChange const> changes)
         {
             for (auto const& change : changes) {
                 auto const date{ change_event_date(file_change_event_time(change)) };
@@ -74,8 +72,7 @@ namespace file_monitor::core {
                         change.time,
                         file_change_status_text(change.status),
                         change.size,
-                        change_path_text(change)
-                    );
+                        change_path_text(change));
                 } catch (spdlog::spdlog_ex const& exception) {
                     return std::unexpected{
                         std::format("写入日志失败：{}", exception.what())
@@ -91,7 +88,7 @@ namespace file_monitor::core {
         }
 
     private:
-        auto ensureLogger(std::string const& date) -> std::expected<void, std::string>
+        std::expected<void, std::string> ensureLogger(std::string const& date)
         {
             if (m_logger && m_current_date == date) {
                 return {};
@@ -104,8 +101,7 @@ namespace file_monitor::core {
                     std::format(
                         "创建日志目录失败 {}：{}",
                         utils::path_to_utf8(m_log_directory),
-                        create_error.message()
-                    )
+                        create_error.message())
                 };
             }
 
@@ -114,8 +110,7 @@ namespace file_monitor::core {
                 auto sink{
                     std::make_shared<spdlog::sinks::basic_file_sink_mt>(
                         utils::path_to_utf8(log_path),
-                        false
-                    )
+                        false)
                 };
                 auto new_logger{
                     std::make_shared<spdlog::logger>("file-monitor-change-log", sink)
@@ -133,8 +128,7 @@ namespace file_monitor::core {
                     std::format(
                         "打开日志文件失败 {}：{}",
                         utils::path_to_utf8(log_path),
-                        exception.what()
-                    )
+                        exception.what())
                 };
             }
             return {};

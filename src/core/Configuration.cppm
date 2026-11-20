@@ -16,7 +16,7 @@ namespace file_monitor::core {
         // Directories are stored as absolute paths without a trailing separator,
         // so a relative input does not depend on the working directory of a later
         // run and "C:\a\" is not added next to "C:\a".
-        auto normalize_directory(std::filesystem::path directory) -> std::filesystem::path
+        std::filesystem::path normalize_directory(std::filesystem::path directory)
         {
             std::error_code absolute_error;
             auto absolute_directory{ std::filesystem::absolute(directory, absolute_error) };
@@ -32,10 +32,9 @@ namespace file_monitor::core {
 
     } // namespace
 
-    export auto add_directory(
+    export bool add_directory(
         std::vector<std::filesystem::path>& directories,
-        std::filesystem::path directory
-    ) -> bool
+        std::filesystem::path directory)
     {
         directory = normalize_directory(std::move(directory));
         auto const is_added{
@@ -51,10 +50,9 @@ namespace file_monitor::core {
         return true;
     }
 
-    export auto add_directory_input(
+    export std::expected<void, std::string> add_directory_input(
         std::vector<std::filesystem::path>& directories,
-        std::string_view input
-    ) -> std::expected<void, std::string>
+        std::string_view input)
     {
         if (input.empty()) {
             return std::unexpected{ "请输入文件夹路径" };
@@ -83,26 +81,23 @@ namespace file_monitor::core {
 
     namespace {
 
-        auto config_error(
+        std::string config_error(
             std::string_view operation,
             std::filesystem::path const& config_path,
-            std::string_view detail
-        ) -> std::string
+            std::string_view detail)
         {
             return std::format(
                 "{} {}：{}",
                 operation,
                 utils::path_to_utf8(config_path),
-                detail
-            );
+                detail);
         }
 
-        auto load_directories(
+        std::expected<void, std::string> load_directories(
             nlohmann::json const& config_data,
             std::string_view key,
             std::vector<std::filesystem::path>& directories,
-            bool required
-        ) -> std::expected<void, std::string>
+            bool required)
         {
             auto const directory_values{ config_data.find(key) };
             if (directory_values == config_data.end()) {
@@ -134,10 +129,9 @@ namespace file_monitor::core {
             return {};
         }
 
-        auto monitored_directory_warning(
+        std::string monitored_directory_warning(
             std::vector<std::filesystem::path> const& directories,
-            std::size_t index
-        ) -> std::string
+            std::size_t index)
         {
             auto const& directory{ directories[index] };
             std::error_code status_error;
@@ -162,8 +156,8 @@ namespace file_monitor::core {
 
     } // namespace
 
-    export auto load_configuration(std::filesystem::path const& config_path)
-        -> std::expected<Configuration, std::string>
+    export std::expected<Configuration, std::string> load_configuration(
+        std::filesystem::path const& config_path)
     {
         std::error_code exists_error;
         auto const config_exists{ std::filesystem::exists(config_path, exists_error) };
@@ -207,25 +201,22 @@ namespace file_monitor::core {
                 config_data,
                 "excluded_directories",
                 configuration.excluded_directories,
-                false
-            )
+                false)
         };
         if (!excluded_directories_result) {
             return std::unexpected{
                 config_error(
                     "解析配置文件失败",
                     config_path,
-                    excluded_directories_result.error()
-                )
+                    excluded_directories_result.error())
             };
         }
         return configuration;
     }
 
-    export auto save_configuration(
+    export std::expected<void, std::string> save_configuration(
         std::filesystem::path const& config_path,
-        Configuration const& configuration
-    ) -> std::expected<void, std::string>
+        Configuration const& configuration)
     {
         auto const parent_path{ config_path.parent_path() };
         if (!parent_path.empty()) {
@@ -265,7 +256,8 @@ namespace file_monitor::core {
     // monitored directory, an excluded directory if it lies in no monitored
     // directory. Both look at the file system, so call them when the
     // configuration changes rather than for every frame.
-    export auto monitored_directory_warnings(Configuration const& configuration) -> std::vector<std::string>
+    export std::vector<std::string> monitored_directory_warnings(
+        Configuration const& configuration)
     {
         auto const& directories{ configuration.directories };
         std::vector<std::string> warnings;
@@ -276,7 +268,8 @@ namespace file_monitor::core {
         return warnings;
     }
 
-    export auto excluded_directory_warnings(Configuration const& configuration) -> std::vector<std::string>
+    export std::vector<std::string> excluded_directory_warnings(
+        Configuration const& configuration)
     {
         std::vector<std::string> warnings;
         warnings.reserve(configuration.excluded_directories.size());
@@ -286,8 +279,7 @@ namespace file_monitor::core {
                     configuration.directories,
                     [&directory](std::filesystem::path const& monitored) {
                         return utils::path_is_within(directory, monitored);
-                    }
-                )
+                    })
             };
             warnings.emplace_back(is_monitored ? "" : "不在监控文件夹中，不起作用");
         }

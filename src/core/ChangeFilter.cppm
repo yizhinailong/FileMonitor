@@ -6,12 +6,12 @@ export import :file_system;
 namespace file_monitor::core {
     namespace {
 
-        auto status_index(FileChangeStatus status) -> std::size_t
+        std::size_t status_index(FileChangeStatus status)
         {
             return static_cast<std::size_t>(std::to_underlying(status));
         }
 
-        auto ascii_lower(char character) -> char
+        char ascii_lower(char character)
         {
             if (character >= 'A' && character <= 'Z') {
                 return static_cast<char>(character - 'A' + 'a');
@@ -19,7 +19,7 @@ namespace file_monitor::core {
             return character;
         }
 
-        auto contains_ignoring_case(std::string_view text, std::string_view lowercase_part) -> bool
+        bool contains_ignoring_case(std::string_view text, std::string_view lowercase_part)
         {
             return lowercase_part.empty() ||
                 !std::ranges::search(text, lowercase_part, {}, ascii_lower).empty();
@@ -32,42 +32,39 @@ namespace file_monitor::core {
     export class ChangeFilter final {
     public:
         // Hides or shows the changes with this status.
-        auto ToggleStatus(FileChangeStatus status) -> void
+        void ToggleStatus(FileChangeStatus status)
         {
             auto& hidden{ m_hidden_statuses[status_index(status)] };
             hidden = !hidden;
         }
 
-        [[nodiscard]]
-        auto ShowsStatus(FileChangeStatus status) const -> bool
+        [[nodiscard]] bool ShowsStatus(FileChangeStatus status) const
         {
             return !m_hidden_statuses[status_index(status)];
         }
 
         // The text has to be a part of either path of a change; the case of
         // ASCII letters is ignored. An empty text matches every change.
-        auto SetPathText(std::string_view text) -> void
+        void SetPathText(std::string_view text)
         {
             m_path_text = text |
                 std::views::transform(ascii_lower) |
                 std::ranges::to<std::string>();
         }
 
-        auto Clear() -> void
+        void Clear()
         {
             m_hidden_statuses.fill(false);
             m_path_text.clear();
         }
 
         // Whether the filter can hide a change at all.
-        [[nodiscard]]
-        auto IsActive() const -> bool
+        [[nodiscard]] bool IsActive() const
         {
             return !m_path_text.empty() || std::ranges::contains(m_hidden_statuses, true);
         }
 
-        [[nodiscard]]
-        auto Matches(FileChange const& change) const -> bool
+        [[nodiscard]] bool Matches(FileChange const& change) const
         {
             if (!ShowsStatus(change.status)) {
                 return false;

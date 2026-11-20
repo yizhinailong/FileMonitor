@@ -54,19 +54,19 @@ namespace file_monitor::gui {
             context->state->completed = true;
         }
 
-        auto contains(ImVec2 minimum, ImVec2 maximum, float x, float y) -> bool
+        bool contains(ImVec2 minimum, ImVec2 maximum, float x, float y)
         {
             return x >= minimum.x && x < maximum.x && y >= minimum.y && y < maximum.y;
         }
 
     } // namespace
 
-    auto SettingsWindow::SetParentWindow(SDL_Window* window) -> void
+    void SettingsWindow::SetParentWindow(SDL_Window* window)
     {
         m_parent_window = window;
     }
 
-    auto SettingsWindow::Open(core::Configuration const& configuration) -> void
+    void SettingsWindow::Open(core::Configuration const& configuration)
     {
         m_pending_configuration = configuration;
         m_saved_configuration = configuration;
@@ -79,10 +79,9 @@ namespace file_monitor::gui {
         refreshWarnings();
     }
 
-    auto SettingsWindow::OpenWithDirectories(
+    void SettingsWindow::OpenWithDirectories(
         core::Configuration const& configuration,
-        std::vector<std::filesystem::path> directories
-    ) -> void
+        std::vector<std::filesystem::path> directories)
     {
         Open(configuration);
         for (auto& directory : directories) {
@@ -91,12 +90,12 @@ namespace file_monitor::gui {
         refreshWarnings();
     }
 
-    auto SettingsWindow::IsOpen() const -> bool
+    bool SettingsWindow::IsOpen() const
     {
         return m_open || m_open_requested;
     }
 
-    auto SettingsWindow::DropFiles(std::vector<DroppedFile> const& files) -> void
+    void SettingsWindow::DropFiles(std::vector<DroppedFile> const& files)
     {
         if (!IsOpen()) {
             return;
@@ -123,12 +122,12 @@ namespace file_monitor::gui {
         }
     }
 
-    auto SettingsWindow::Update() -> bool
+    bool SettingsWindow::Update()
     {
         return consumeDirectorySelection();
     }
 
-    auto SettingsWindow::Render(core::MonitorSession& session) -> void
+    void SettingsWindow::Render(core::MonitorSession& session)
     {
         if (m_open_requested) {
             m_open_requested = false;
@@ -189,7 +188,7 @@ namespace file_monitor::gui {
         ImGui::EndPopup();
     }
 
-    auto SettingsWindow::addManualDirectory(DirectoryGroup group) -> void
+    void SettingsWindow::addManualDirectory(DirectoryGroup group)
     {
         auto& editor{ directoryEditor(group) };
         auto const result{
@@ -205,7 +204,7 @@ namespace file_monitor::gui {
         markChanged();
     }
 
-    auto SettingsWindow::consumeDirectorySelection() -> bool
+    bool SettingsWindow::consumeDirectorySelection()
     {
         std::vector<std::filesystem::path> selected_directories;
         std::string error_message;
@@ -232,13 +231,12 @@ namespace file_monitor::gui {
         return true;
     }
 
-    auto SettingsWindow::directoryEditor(DirectoryGroup group)
-        -> DirectoryEditorState&
+    DirectoryEditorState& SettingsWindow::directoryEditor(DirectoryGroup group)
     {
         return group == DirectoryGroup::Monitored ? m_monitored_editor : m_excluded_editor;
     }
 
-    auto SettingsWindow::openDirectoryDialog(DirectoryGroup group) -> void
+    void SettingsWindow::openDirectoryDialog(DirectoryGroup group)
     {
         m_dialog_open = true;
         m_dialog_group = group;
@@ -259,19 +257,17 @@ namespace file_monitor::gui {
             context.release(),
             m_parent_window,
             default_location,
-            true
-        );
+            true);
     }
 
-    auto SettingsWindow::pendingDirectories(DirectoryGroup group)
-        -> std::vector<std::filesystem::path>&
+    std::vector<std::filesystem::path>& SettingsWindow::pendingDirectories(DirectoryGroup group)
     {
         return group == DirectoryGroup::Monitored ?
             m_pending_configuration.directories :
             m_pending_configuration.excluded_directories;
     }
 
-    auto SettingsWindow::renderDirectoryGroup(DirectoryGroup group, float height) -> void
+    void SettingsWindow::renderDirectoryGroup(DirectoryGroup group, float height)
     {
         auto& editor{ directoryEditor(group) };
         auto& directories{ pendingDirectories(group) };
@@ -281,8 +277,7 @@ namespace file_monitor::gui {
         auto const title{ std::format(
             "{}（{}）",
             group == DirectoryGroup::Monitored ? "监控文件夹" : "不监控文件夹",
-            directories.size()
-        ) };
+            directories.size()) };
 
         ImGui::PushID(std::to_underlying(group));
         if (ImGui::BeginChild("Group", { 0.0F, height })) {
@@ -294,9 +289,7 @@ namespace file_monitor::gui {
             ImGui::SetNextItemWidth(
                 std::max(
                     ImGui::GetContentRegionAvail().x - add_width - choose_width - style.ItemSpacing.x * 2.0F,
-                    120.0F
-                )
-            );
+                    120.0F));
             auto const submit{
                 ImGui::InputTextWithHint(
                     "##DirectoryPath",
@@ -304,8 +297,7 @@ namespace file_monitor::gui {
                         "输入或粘贴文件夹路径，按 Enter 添加" :
                         "输入或粘贴不监控的文件夹路径，按 Enter 添加",
                     &editor.input,
-                    ImGuiInputTextFlags_EnterReturnsTrue
-                )
+                    ImGuiInputTextFlags_EnterReturnsTrue)
             };
             if (ImGui::IsItemEdited()) {
                 editor.error_message.clear();
@@ -332,8 +324,7 @@ namespace file_monitor::gui {
             // list is always kept, so the list does not move when one appears.
             auto const table_height{ std::max(
                 ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing(),
-                1.0F
-            ) };
+                1.0F) };
             auto const table_min{ ImGui::GetCursorScreenPos() };
             auto const table_width{ ImGui::GetContentRegionAvail().x };
             constexpr auto TABLE_FLAGS = ImGuiTableFlags_Borders |
@@ -355,8 +346,7 @@ namespace file_monitor::gui {
                     draw_disabled_text(
                         group == DirectoryGroup::Monitored ?
                             "尚未添加监控文件夹" :
-                            "尚未添加不监控文件夹"
-                    );
+                            "尚未添加不监控文件夹");
                 } else {
                     for (auto [directory_index, directory] : std::views::enumerate(directories)) {
                         auto const path_text{ core::utils::path_to_utf8(directory) };
@@ -401,7 +391,7 @@ namespace file_monitor::gui {
         ImGui::PopID();
     }
 
-    auto SettingsWindow::renderFooter(core::MonitorSession& session) -> void
+    void SettingsWindow::renderFooter(core::MonitorSession& session)
     {
         ImGui::Separator();
         auto const& style{ ImGui::GetStyle() };
@@ -423,25 +413,25 @@ namespace file_monitor::gui {
         ImGui::SetItemTooltip("Ctrl+S");
     }
 
-    auto SettingsWindow::refreshWarnings() -> void
+    void SettingsWindow::refreshWarnings()
     {
         m_monitored_warnings = core::monitored_directory_warnings(m_pending_configuration);
         m_excluded_warnings = core::excluded_directory_warnings(m_pending_configuration);
     }
 
-    auto SettingsWindow::markChanged() -> void
+    void SettingsWindow::markChanged()
     {
         m_confirm_discard = false;
         refreshWarnings();
     }
 
-    auto SettingsWindow::hasUnsavedChanges() const -> bool
+    bool SettingsWindow::hasUnsavedChanges() const
     {
         return m_pending_configuration.directories != m_saved_configuration.directories ||
             m_pending_configuration.excluded_directories != m_saved_configuration.excluded_directories;
     }
 
-    auto SettingsWindow::save(core::MonitorSession& session) -> void
+    void SettingsWindow::save(core::MonitorSession& session)
     {
         if (session.SaveConfiguration(m_pending_configuration)) {
             m_saved_configuration = m_pending_configuration;
@@ -452,7 +442,7 @@ namespace file_monitor::gui {
         }
     }
 
-    auto SettingsWindow::cancel() -> void
+    void SettingsWindow::cancel()
     {
         if (hasUnsavedChanges() && !m_confirm_discard) {
             m_confirm_discard = true;

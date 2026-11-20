@@ -14,20 +14,23 @@ namespace file_monitor::core {
         constexpr std::string_view ELLIPSIS{ "..." };
         constexpr std::string_view RENAME_SEPARATOR{ " -> " };
 
-        auto is_separator(char character) -> bool
+        bool is_separator(char character)
         {
             return character == '\\' || character == '/';
         }
 
         // Whether the byte starts a UTF-8 character, so the text can be cut
         // in front of it.
-        auto starts_character(char byte) -> bool
+        bool starts_character(char byte)
         {
             return (static_cast<unsigned char>(byte) & 0xC0U) != 0x80U;
         }
 
         // The longest end of `text` that fits in `width`.
-        auto fitting_end(std::string_view text, float width, TextWidth text_width) -> std::string_view
+        std::string_view fitting_end(
+            std::string_view text,
+            float width,
+            TextWidth text_width)
         {
             for (auto start{ std::size_t{ 0 } }; start < text.size(); ++start) {
                 if (starts_character(text[start]) && text_width(text.substr(start)) <= width) {
@@ -39,7 +42,7 @@ namespace file_monitor::core {
 
         // The end of the head, which is the drive and the first directory,
         // such as "D:\proj\"; 0 for a path without two separators.
-        auto head_size(std::string_view path) -> std::size_t
+        std::size_t head_size(std::string_view path)
         {
             auto separator_count{ 0 };
             for (auto index{ std::size_t{ 0 } }; index < path.size(); ++index) {
@@ -52,7 +55,7 @@ namespace file_monitor::core {
 
         // Splits "D:\a\b.txt" into "D:\a\" and "b.txt". A directory keeps its
         // trailing separator in the name: "D:\a\b\" gives "D:\a\" and "b\".
-        auto split_parent(std::string_view path) -> std::pair<std::string_view, std::string_view>
+        std::pair<std::string_view, std::string_view> split_parent(std::string_view path)
         {
             auto const name_end{
                 path.ends_with('\\') || path.ends_with('/') ? path.size() - 1 : path.size()
@@ -73,7 +76,7 @@ namespace file_monitor::core {
     // The drive and the first directory stay in front and as many trailing
     // directories as fit stay at the end, for example
     // "D:\proj\...\src\main.cpp".
-    export auto shorten_path(std::string_view path, float width, TextWidth text_width) -> std::string
+    export std::string shorten_path(std::string_view path, float width, TextWidth text_width)
     {
         if (text_width(path) <= width) {
             return std::string{ path };
@@ -104,7 +107,10 @@ namespace file_monitor::core {
 
     // The path of a change in at most `width`. A rename within one directory
     // names the directory once: "D:\proj\old.txt -> new.txt".
-    export auto change_path_text(FileChange const& change, float width, TextWidth text_width) -> std::string
+    export std::string change_path_text(
+        FileChange const& change,
+        float width,
+        TextWidth text_width)
     {
         if (change.previous_absolute_path.empty()) {
             return shorten_path(change.absolute_path, width, text_width);
@@ -137,14 +143,13 @@ namespace file_monitor::core {
             "{}{}{}",
             shorten_path(previous, previous_width, text_width),
             RENAME_SEPARATOR,
-            shorten_path(current, current_width, text_width)
-        );
+            shorten_path(current, current_width, text_width));
     }
 
     // The directory a path lies in, with its last separator: "D:\a\" for
     // "D:\a\b.txt". A path that ends with a separator, as the path of a
     // changed directory does, is returned as it is.
-    export auto directory_text(std::string_view path) -> std::string_view
+    export std::string_view directory_text(std::string_view path)
     {
         auto const separator{ path.find_last_of("\\/") };
         if (separator == std::string_view::npos) {

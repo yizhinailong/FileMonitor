@@ -20,34 +20,32 @@ namespace file_monitor::gui {
     // a status bar.
     class MainWindow final {
     public:
-        [[nodiscard]]
-        auto Settings() -> SettingsWindow&;
+        [[nodiscard]] SettingsWindow& Settings();
 
         // Takes the new changes from the monitor and writes them to the log;
         // returns whether Render() has something new to show. Call this also
         // while the window is minimized and Render() is not.
-        [[nodiscard]]
-        auto Update() -> bool;
-        auto Render() -> void;
+        [[nodiscard]] bool Update();
+        void Render();
         // Opens the settings with the dropped folders added to the monitored
         // ones, or adds them to the list of the open settings they fell on.
-        auto DropFiles(std::vector<DroppedFile> const& files) -> void;
+        void DropFiles(std::vector<DroppedFile> const& files);
 
     private:
-        auto renderToolbar() -> void;
-        auto renderErrors() -> void;
+        void renderToolbar();
+        void renderErrors();
         // Takes the place of the change table and the details while the table
         // has no rows.
-        auto renderEmptyState(ImVec2 size) -> void;
-        auto renderDetails(float height) -> void;
-        auto renderStatusBar() -> void;
-        auto handleShortcuts() -> void;
-        auto applyPathFilter() -> void;
-        auto clearFilters() -> void;
+        void renderEmptyState(ImVec2 size);
+        void renderDetails(float height);
+        void renderStatusBar();
+        void handleShortcuts();
+        void applyPathFilter();
+        void clearFilters();
         // Does what was asked for with the selected change, if there is one.
-        auto run(ChangeAction action) -> void;
-        auto showNotice(std::string_view text, bool failed = false) -> void;
-        auto openSettings() -> void;
+        void run(ChangeAction action);
+        void showNotice(std::string_view text, bool failed = false);
+        void openSettings();
 
         core::MonitorSession m_session;
         ChangeTable m_change_table{ m_session };

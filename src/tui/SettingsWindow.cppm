@@ -14,7 +14,7 @@ namespace file_monitor::tui {
 
         constexpr auto GAP{ 2 };
 
-        auto is_click(ftxui::Event event) -> bool
+        bool is_click(ftxui::Event event)
         {
             return event.is_mouse() &&
                 event.mouse().button == ftxui::Mouse::Left &&
@@ -29,16 +29,15 @@ namespace file_monitor::tui {
     public:
         SettingsWindow(
             core::MonitorSession& session,
-            std::function<void()> on_close
-        ) : m_session{ session },
-            m_on_close{ std::move(on_close) },
-            m_monitored_list{ m_pending_configuration.directories, "监控文件夹" },
-            m_excluded_list{ m_pending_configuration.excluded_directories, "不监控文件夹" },
-            m_input_field{ makeInputField() },
-            m_list_hints{ listHints() },
-            m_input_hints{ inputHints() } {}
+            std::function<void()> on_close) : m_session{ session },
+                                              m_on_close{ std::move(on_close) },
+                                              m_monitored_list{ m_pending_configuration.directories, "监控文件夹" },
+                                              m_excluded_list{ m_pending_configuration.excluded_directories, "不监控文件夹" },
+                                              m_input_field{ makeInputField() },
+                                              m_list_hints{ listHints() },
+                                              m_input_hints{ inputHints() } {}
 
-        auto Open() -> void
+        void Open()
         {
             m_pending_configuration = m_session.CurrentConfiguration();
             m_monitored_list.Reset();
@@ -53,7 +52,7 @@ namespace file_monitor::tui {
             refreshWarnings();
         }
 
-        auto OnRender() -> ftxui::Element override
+        ftxui::Element override OnRender()
         {
             auto const width{ page_width() };
             auto title{
@@ -83,8 +82,7 @@ namespace file_monitor::tui {
                         ftxui::text(std::format("{} 个匹配：", m_completions.size())),
                         ftxui::text(candidates),
                     }) |
-                    ftxui::dim
-                );
+                    ftxui::dim);
             }
             rows.push_back(error_text(m_input_error));
             rows.push_back(ftxui::separatorLight());
@@ -92,7 +90,7 @@ namespace file_monitor::tui {
             return page(ftxui::vbox(std::move(rows)));
         }
 
-        auto OnEvent(ftxui::Event event) -> bool override
+        bool override OnEvent(ftxui::Event event)
         {
             m_cancel_requested = false;
             auto const user_input{ is_user_input(event) };
@@ -106,8 +104,7 @@ namespace file_monitor::tui {
 
         // The page handles its keys itself and has no focusable children, so
         // the container of MainWindow only passes it keys if it says so.
-        [[nodiscard]]
-        auto Focusable() const -> bool override
+        [[nodiscard]] bool override Focusable() const
         {
             return true;
         }
@@ -140,7 +137,7 @@ namespace file_monitor::tui {
         KeyHintBar m_list_hints;
         KeyHintBar m_input_hints;
 
-        auto handleEvent(ftxui::Event event) -> bool
+        bool handleEvent(ftxui::Event event)
         {
             if (event == ftxui::Event::CtrlS) {
                 save();
@@ -152,7 +149,7 @@ namespace file_monitor::tui {
             return m_focus == Focus::Input ? onInputEvent(std::move(event)) : onListEvent(std::move(event));
         }
 
-        auto onListEvent(ftxui::Event event) -> bool
+        bool onListEvent(ftxui::Event event)
         {
             if (event == ftxui::Event::Escape) {
                 cancel();
@@ -176,7 +173,7 @@ namespace file_monitor::tui {
             return targetList().OnEvent(std::move(event));
         }
 
-        auto onInputEvent(ftxui::Event event) -> bool
+        bool onInputEvent(ftxui::Event event)
         {
             if (event == ftxui::Event::Escape) {
                 focusList();
@@ -196,7 +193,7 @@ namespace file_monitor::tui {
             return m_input_field->OnEvent(std::move(event));
         }
 
-        auto onClick(ftxui::Event event) -> bool
+        bool onClick(ftxui::Event event)
         {
             auto& hints{ m_focus == Focus::Input ? m_input_hints : m_list_hints };
             if (hints.OnEvent(event)) {
@@ -218,7 +215,7 @@ namespace file_monitor::tui {
             return false;
         }
 
-        auto renderInputLine() -> ftxui::Element
+        ftxui::Element renderInputLine()
         {
             auto label{ ftxui::text(std::format("添加到{} > ", targetList().Title())) | ftxui::bold };
             auto input{
@@ -230,7 +227,7 @@ namespace file_monitor::tui {
                 ftxui::reflect(m_input_box);
         }
 
-        auto renderFooter(int width) -> ftxui::Element
+        ftxui::Element renderFooter(int width)
         {
             std::string_view const status{ m_confirm_discard ? "有未保存的修改，再按 Esc 放弃" : "" };
             auto& hints{ m_focus == Focus::Input ? m_input_hints : m_list_hints };
@@ -242,7 +239,7 @@ namespace file_monitor::tui {
             });
         }
 
-        auto listHints() -> std::vector<KeyHint>
+        std::vector<KeyHint> listHints()
         {
             auto const has_directories{ [this] { return !targetList().Directories().empty(); } };
             return {
@@ -255,7 +252,7 @@ namespace file_monitor::tui {
             };
         }
 
-        auto inputHints() -> std::vector<KeyHint>
+        std::vector<KeyHint> inputHints()
         {
             std::vector<KeyHint> hints;
             hints.push_back({ .key = "Enter", .label = "添加", .action = [this] { addInputDirectory(); }, .priority = 5 });
@@ -265,7 +262,7 @@ namespace file_monitor::tui {
             return hints;
         }
 
-        auto makeInputField() -> ftxui::Component
+        ftxui::Component makeInputField()
         {
             ftxui::InputOption option;
             option.placeholder = "输入文件夹路径，相对路径从当前工作目录算起";
@@ -286,12 +283,12 @@ namespace file_monitor::tui {
             return ftxui::Input(&m_input, std::move(option));
         }
 
-        auto targetList() -> DirectoryList&
+        DirectoryList& targetList()
         {
             return m_target == Focus::Excluded ? m_excluded_list : m_monitored_list;
         }
 
-        auto focusInput() -> void
+        void focusInput()
         {
             if (m_focus != Focus::Input) {
                 m_target = m_focus;
@@ -299,7 +296,7 @@ namespace file_monitor::tui {
             }
         }
 
-        auto focusList() -> void
+        void focusList()
         {
             m_focus = m_target;
             m_input.clear();
@@ -308,7 +305,7 @@ namespace file_monitor::tui {
             m_completions.clear();
         }
 
-        auto switchList() -> void
+        void switchList()
         {
             m_target = m_target == Focus::Monitored ? Focus::Excluded : Focus::Monitored;
             if (m_focus != Focus::Input) {
@@ -316,7 +313,7 @@ namespace file_monitor::tui {
             }
         }
 
-        auto addInputDirectory() -> void
+        void addInputDirectory()
         {
             auto& directories{
                 m_target == Focus::Excluded ?
@@ -337,7 +334,7 @@ namespace file_monitor::tui {
             refreshWarnings();
         }
 
-        auto completeInput() -> void
+        void completeInput()
         {
             auto completion{ complete_directory_path(m_input) };
             if (!completion.matched) {
@@ -353,27 +350,26 @@ namespace file_monitor::tui {
             m_completions = std::move(completion.candidates);
         }
 
-        auto removeSelectedDirectory() -> void
+        void removeSelectedDirectory()
         {
             targetList().RemoveSelected();
             refreshWarnings();
         }
 
-        auto refreshWarnings() -> void
+        void refreshWarnings()
         {
             m_monitored_list.SetWarnings(core::monitored_directory_warnings(m_pending_configuration));
             m_excluded_list.SetWarnings(core::excluded_directory_warnings(m_pending_configuration));
         }
 
-        [[nodiscard]]
-        auto hasUnsavedChanges() const -> bool
+        [[nodiscard]] bool hasUnsavedChanges() const
         {
             auto const& current{ m_session.CurrentConfiguration() };
             return m_pending_configuration.directories != current.directories ||
                 m_pending_configuration.excluded_directories != current.excluded_directories;
         }
 
-        auto save() -> void
+        void save()
         {
             if (m_session.SaveConfiguration(m_pending_configuration)) {
                 m_on_close();
@@ -382,7 +378,7 @@ namespace file_monitor::tui {
 
         // Closes the page, or with unsaved changes first asks to press Esc
         // again.
-        auto cancel() -> void
+        void cancel()
         {
             if (hasUnsavedChanges() && !m_confirm_discard) {
                 m_confirm_discard = true;

@@ -16,7 +16,7 @@ namespace file_monitor::gui {
 
     } // namespace
 
-    auto Application::Run() -> int
+    int Application::Run()
     {
         auto const initialization{
             m_backend.Initialize(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT)

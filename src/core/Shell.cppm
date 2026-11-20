@@ -17,7 +17,7 @@ import :utils;
 namespace file_monitor::core {
     namespace {
 
-        auto run_explorer(std::wstring const& arguments) -> bool
+        bool run_explorer(std::wstring const& arguments)
         {
             auto const result{
                 ShellExecuteW(nullptr, L"open", L"explorer.exe", arguments.c_str(), nullptr, SW_SHOWNORMAL)
@@ -26,7 +26,7 @@ namespace file_monitor::core {
             return reinterpret_cast<std::intptr_t>(result) > 32;
         }
 
-        auto path_exists(std::filesystem::path const& path) -> bool
+        bool path_exists(std::filesystem::path const& path)
         {
             std::error_code error;
             return std::filesystem::exists(path, error);
@@ -36,7 +36,7 @@ namespace file_monitor::core {
 
     // Opens File Explorer with an existing file or directory selected. For a
     // path that no longer exists, opens its closest existing parent directory.
-    export auto show_in_explorer(std::string_view path_text) -> bool
+    export bool show_in_explorer(std::string_view path_text)
     {
         auto path{ utils::utf8_to_path(path_text) };
         // Directories in the change list end with a separator.

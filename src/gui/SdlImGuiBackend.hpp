@@ -28,35 +28,31 @@ namespace file_monitor::gui {
         ~SdlImGuiBackend();
 
         SdlImGuiBackend(SdlImGuiBackend const&) = delete;
-        auto operator=(SdlImGuiBackend const&) -> SdlImGuiBackend& = delete;
+        SdlImGuiBackend& operator=(SdlImGuiBackend const&) = delete;
         SdlImGuiBackend(SdlImGuiBackend&&) = delete;
-        auto operator=(SdlImGuiBackend&&) -> SdlImGuiBackend& = delete;
+        SdlImGuiBackend& operator=(SdlImGuiBackend&&) = delete;
 
-        auto Initialize(std::string_view title, int width, int height)
-            -> std::expected<void, std::string>;
+        std::expected<void, std::string> Initialize(std::string_view title, int width, int height);
         // Handles the pending events and tells what to do with the next
         // frame. Frames are drawn for a moment after an event or after
         // `content_changed`; without either the call waits for an event for a
         // short time and skips the frame, so an idle window costs nothing.
-        auto NextFrame(bool content_changed) -> FrameAction;
+        FrameAction NextFrame(bool content_changed);
         // The files and folders dropped onto the window since the last call.
-        [[nodiscard]]
-        auto TakeDroppedFiles() -> std::vector<DroppedFile>;
-        auto BeginFrame() -> void;
-        auto EndFrame() -> bool;
-        [[nodiscard]]
-        auto NativeWindow() const -> SDL_Window*;
+        [[nodiscard]] std::vector<DroppedFile> TakeDroppedFiles();
+        void BeginFrame();
+        bool EndFrame();
+        [[nodiscard]] SDL_Window* NativeWindow() const;
 
     private:
-        auto initializeOpenGl() -> std::expected<void, std::string>;
-        auto initializeImGui() -> std::expected<void, std::string>;
-        [[nodiscard]]
-        auto isMinimized() const -> bool;
+        std::expected<void, std::string> initializeOpenGl();
+        std::expected<void, std::string> initializeImGui();
+        [[nodiscard]] bool isMinimized() const;
         // Puts the window where it was when it closed last time, or in the
         // middle of the primary display.
-        auto applySavedLayout() -> void;
-        auto saveLayout() -> void;
-        auto shutdown() -> void;
+        void applySavedLayout();
+        void saveLayout();
+        void shutdown();
 
         SDL_Window* m_window{ nullptr };
         SDL_GLContextState* m_gl_context{ nullptr };

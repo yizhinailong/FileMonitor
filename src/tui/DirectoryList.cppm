@@ -21,7 +21,7 @@ namespace file_monitor::tui {
         DirectoryList(std::vector<std::filesystem::path>& directories, std::string title)
             : m_directories{ directories }, m_title{ std::move(title) } {}
 
-        auto Render(bool focused, int width) -> ftxui::Element
+        ftxui::Element Render(bool focused, int width)
         {
             auto const count{ static_cast<int>(m_directories.size()) };
             m_selected = std::clamp(m_selected, 0, std::max(count - 1, 0));
@@ -67,7 +67,7 @@ namespace file_monitor::tui {
             return std::move(list) | ftxui::reflect(m_box);
         }
 
-        auto OnEvent(ftxui::Event event) -> bool
+        bool OnEvent(ftxui::Event event)
         {
             auto const last{ std::max(static_cast<int>(m_directories.size()) - 1, 0) };
             if (event.is_mouse()) {
@@ -100,7 +100,7 @@ namespace file_monitor::tui {
             return true;
         }
 
-        auto OnClick(int x, int y) -> bool
+        bool OnClick(int x, int y)
         {
             if (!m_box.Contain(x, y)) {
                 return false;
@@ -116,17 +116,17 @@ namespace file_monitor::tui {
             return true;
         }
 
-        auto Reset() -> void
+        void Reset()
         {
             m_selected = 0;
         }
 
-        auto SelectLast() -> void
+        void SelectLast()
         {
             m_selected = std::max(static_cast<int>(m_directories.size()) - 1, 0);
         }
 
-        auto RemoveSelected() -> void
+        void RemoveSelected()
         {
             if (m_directories.empty()) {
                 return;
@@ -138,19 +138,17 @@ namespace file_monitor::tui {
             m_selected = std::min(index, std::max(static_cast<int>(m_directories.size()) - 1, 0));
         }
 
-        auto SetWarnings(std::vector<std::string> warnings) -> void
+        void SetWarnings(std::vector<std::string> warnings)
         {
             m_warnings = std::move(warnings);
         }
 
-        [[nodiscard]]
-        auto Title() const -> std::string const&
+        [[nodiscard]] std::string const& Title() const
         {
             return m_title;
         }
 
-        [[nodiscard]]
-        auto Directories() const -> std::vector<std::filesystem::path> const&
+        [[nodiscard]] std::vector<std::filesystem::path> const& Directories() const
         {
             return m_directories;
         }

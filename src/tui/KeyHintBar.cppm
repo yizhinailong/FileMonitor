@@ -23,7 +23,7 @@ namespace file_monitor::tui {
         constexpr auto HINT_GAP{ 2 };
         constexpr ftxui::Box HIDDEN_BOX{ .x_min = 0, .x_max = -1, .y_min = 0, .y_max = -1 };
 
-        auto hint_width(KeyHint const& hint) -> int
+        int hint_width(KeyHint const& hint)
         {
             return ftxui::string_width(hint.key) + 1 + ftxui::string_width(hint.label);
         }
@@ -36,7 +36,7 @@ namespace file_monitor::tui {
         KeyHintBar(std::vector<KeyHint> hints)
             : m_hints{ std::move(hints) }, m_boxes(m_hints.size(), HIDDEN_BOX) {}
 
-        auto Render(int width) -> ftxui::Element
+        ftxui::Element Render(int width)
         {
             // Fill the line by priority, then show the chosen hints in their
             // original order.
@@ -77,13 +77,12 @@ namespace file_monitor::tui {
                         ftxui::text(hint.key) | ftxui::bold,
                         ftxui::text(" " + hint.label) | ftxui::dim,
                     }) |
-                    ftxui::reflect(m_boxes[index])
-                );
+                    ftxui::reflect(m_boxes[index]));
             }
             return ftxui::hbox(std::move(elements));
         }
 
-        auto OnEvent(ftxui::Event event) -> bool
+        bool OnEvent(ftxui::Event event)
         {
             if (!event.is_mouse()) {
                 return false;

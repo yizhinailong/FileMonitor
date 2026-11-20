@@ -55,14 +55,14 @@ namespace file_monitor::core::detail {
         }
 
         UniqueHandle(UniqueHandle const&) = delete;
-        auto operator=(UniqueHandle const&) -> UniqueHandle& = delete;
+        UniqueHandle& operator=(UniqueHandle const&) = delete;
 
         UniqueHandle(UniqueHandle&& other) noexcept
             : m_handle{ std::exchange(other.m_handle, nullptr) }
         {
         }
 
-        auto operator=(UniqueHandle&& other) noexcept -> UniqueHandle&
+        UniqueHandle& operator=(UniqueHandle&& other) noexcept
         {
             if (this != &other) {
                 reset();
@@ -71,7 +71,7 @@ namespace file_monitor::core::detail {
             return *this;
         }
 
-        auto Get() const -> HANDLE
+        HANDLE Get() const
         {
             return m_handle;
         }
@@ -82,7 +82,7 @@ namespace file_monitor::core::detail {
         }
 
     private:
-        auto reset() -> void
+        void reset()
         {
             if (*this) {
                 CloseHandle(m_handle);
@@ -97,8 +97,7 @@ namespace file_monitor::core::detail {
     public:
         DirectoryWatcher(
             std::filesystem::path root,
-            DirectoryWatchCallbacks const& callbacks
-        )
+            DirectoryWatchCallbacks const& callbacks)
             : m_root{ std::move(root) },
               m_callbacks{ callbacks }
         {
@@ -114,10 +113,10 @@ namespace file_monitor::core::detail {
 
         DirectoryWatcher(DirectoryWatcher const&) = delete;
         DirectoryWatcher(DirectoryWatcher&&) = delete;
-        auto operator=(DirectoryWatcher const&) -> DirectoryWatcher& = delete;
-        auto operator=(DirectoryWatcher&&) -> DirectoryWatcher& = delete;
+        DirectoryWatcher& operator=(DirectoryWatcher const&) = delete;
+        DirectoryWatcher& operator=(DirectoryWatcher&&) = delete;
 
-        auto Start() -> bool
+        bool Start()
         {
             if (!initializeHandles()) {
                 return false;
@@ -137,9 +136,7 @@ namespace file_monitor::core::detail {
                     std::format(
                         "无法创建文件夹监控线程 {}：{}",
                         utils::path_to_utf8(m_root),
-                        error.what()
-                    )
-                );
+                        error.what()));
                 return false;
             } catch (...) {
                 cancelPendingRead();
@@ -148,25 +145,23 @@ namespace file_monitor::core::detail {
             return true;
         }
 
-        auto RequestStop() noexcept -> void
+        void RequestStop() noexcept
         {
             m_thread.request_stop();
         }
 
     private:
-        auto reportWindowsError(std::string_view operation, DWORD error) -> void
+        void reportWindowsError(std::string_view operation, DWORD error)
         {
             m_callbacks.on_error(
                 std::format(
                     "{} {}：{}",
                     operation,
                     utils::path_to_utf8(m_root),
-                    std::system_category().message(static_cast<int>(error))
-                )
-            );
+                    std::system_category().message(static_cast<int>(error))));
         }
 
-        auto initializeHandles() -> bool
+        bool initializeHandles()
         {
             m_directory_handle = UniqueHandle{
                 CreateFileW(
@@ -176,8 +171,7 @@ namespace file_monitor::core::detail {
                     nullptr,
                     OPEN_EXISTING,
                     FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-                    nullptr
-                )
+                    nullptr)
             };
             if (!m_directory_handle) {
                 reportWindowsError("无法打开文件夹监控", GetLastError());
@@ -198,7 +192,7 @@ namespace file_monitor::core::detail {
             return true;
         }
 
-        auto beginRead() -> std::optional<DWORD>
+        std::optional<DWORD> beginRead()
         {
             ResetEvent(m_io_event.Get());
             m_overlapped = {};
@@ -215,8 +209,7 @@ namespace file_monitor::core::detail {
                         FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
                     &ignored_bytes,
                     &m_overlapped,
-                    nullptr
-                )
+                    nullptr)
             };
             if (read_started) {
                 return std::nullopt;
@@ -226,7 +219,7 @@ namespace file_monitor::core::detail {
             return error == ERROR_IO_PENDING ? std::nullopt : std::optional{ error };
         }
 
-        auto cancelPendingRead() -> void
+        void cancelPendingRead()
         {
             CancelIoEx(m_directory_handle.Get(), &m_overlapped);
             DWORD ignored_bytes{};
@@ -234,16 +227,14 @@ namespace file_monitor::core::detail {
                 m_directory_handle.Get(),
                 &m_overlapped,
                 &ignored_bytes,
-                TRUE
-            );
+                TRUE);
         }
 
-        auto emitEvent(
+        void emitEvent(
             DirectoryWatchEventKind kind,
             std::filesystem::path path,
             std::stop_token stop_token,
-            std::filesystem::path const& previous_path = {}
-        ) -> void
+            std::filesystem::path const& previous_path = {})
         {
             m_callbacks.on_event(
                 DirectoryWatchEvent{
@@ -251,23 +242,20 @@ namespace file_monitor::core::detail {
                     .root = m_root,
                     .path = std::move(path),
                     .previous_path = previous_path },
-                stop_token
-            );
+                stop_token);
         }
 
-        auto processNotification(
+        void processNotification(
             DWORD action,
             std::filesystem::path const& path,
             std::optional<std::filesystem::path>& pending_rename,
-            std::stop_token stop_token
-        ) -> void
+            std::stop_token stop_token)
         {
             if (pending_rename && action != FILE_ACTION_RENAMED_NEW_NAME) {
                 emitEvent(
                     DirectoryWatchEventKind::Removed,
                     *pending_rename,
-                    stop_token
-                );
+                    stop_token);
                 pending_rename.reset();
             }
 
@@ -290,8 +278,7 @@ namespace file_monitor::core::detail {
                             DirectoryWatchEventKind::PathChanged,
                             path,
                             stop_token,
-                            *pending_rename
-                        );
+                            *pending_rename);
                         pending_rename.reset();
                     } else {
                         emitEvent(DirectoryWatchEventKind::Added, path, stop_token);
@@ -302,11 +289,10 @@ namespace file_monitor::core::detail {
             }
         }
 
-        auto processNotifications(
+        bool processNotifications(
             std::span<std::byte const> bytes,
             std::optional<std::filesystem::path>& pending_rename,
-            std::stop_token stop_token
-        ) -> bool
+            std::stop_token stop_token)
         {
             constexpr auto HEADER_SIZE{ offsetof(FILE_NOTIFY_INFORMATION, FileName) };
             auto offset{ std::size_t{ 0 } };
@@ -335,8 +321,7 @@ namespace file_monitor::core::detail {
                     notification->Action,
                     (m_root / relative_path).lexically_normal(),
                     pending_rename,
-                    stop_token
-                );
+                    stop_token);
 
                 if (notification->NextEntryOffset == 0) {
                     return true;
@@ -350,17 +335,16 @@ namespace file_monitor::core::detail {
             return true;
         }
 
-        auto requestRescan(std::stop_token stop_token) -> void
+        void requestRescan(std::stop_token stop_token)
         {
             m_callbacks.on_event(
                 DirectoryWatchEvent{
                     .kind = DirectoryWatchEventKind::RescanRequired,
                     .root = m_root },
-                stop_token
-            );
+                stop_token);
         }
 
-        auto run(std::stop_token stop_token) -> void
+        void run(std::stop_token stop_token)
         {
             std::stop_callback stop_callback{ stop_token, [stop_event = m_stop_event.Get()] {
                                                  SetEvent(stop_event);
@@ -374,8 +358,7 @@ namespace file_monitor::core::detail {
                         static_cast<DWORD>(wait_handles.size()),
                         wait_handles.data(),
                         FALSE,
-                        INFINITE
-                    )
+                        INFINITE)
                 };
                 if (wait_result == WAIT_OBJECT_0) {
                     cancelPendingRead();
@@ -394,8 +377,7 @@ namespace file_monitor::core::detail {
                         m_directory_handle.Get(),
                         &m_overlapped,
                         &transferred_bytes,
-                        FALSE
-                    )
+                        FALSE)
                 };
                 if (!read_completed) {
                     auto const read_error{ GetLastError() };
@@ -418,8 +400,7 @@ namespace file_monitor::core::detail {
                                    m_buffer.data(),
                                    transferred_bytes },
                                pending_rename,
-                               stop_token
-                           )) {
+                               stop_token)) {
                     pending_rename.reset();
                     requestRescan(stop_token);
                 }
@@ -459,10 +440,10 @@ namespace file_monitor::core::detail {
 
         DirectoryWatchBackend(DirectoryWatchBackend const&) = delete;
         DirectoryWatchBackend(DirectoryWatchBackend&&) = delete;
-        auto operator=(DirectoryWatchBackend const&) -> DirectoryWatchBackend& = delete;
-        auto operator=(DirectoryWatchBackend&&) -> DirectoryWatchBackend& = delete;
+        DirectoryWatchBackend& operator=(DirectoryWatchBackend const&) = delete;
+        DirectoryWatchBackend& operator=(DirectoryWatchBackend&&) = delete;
 
-        auto Start(std::span<std::filesystem::path const> directories) -> void
+        void Start(std::span<std::filesystem::path const> directories)
         {
             m_watchers.reserve(directories.size());
             for (auto const& directory : directories) {
@@ -475,7 +456,7 @@ namespace file_monitor::core::detail {
             }
         }
 
-        auto RequestStop() noexcept -> void
+        void RequestStop() noexcept
         {
             for (auto& watcher : m_watchers) {
                 watcher->RequestStop();

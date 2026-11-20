@@ -20,22 +20,22 @@ namespace file_monitor::tui {
         constexpr auto DETAIL_LABEL_WIDTH{ 8 };
         constexpr auto WHEEL_SCROLL_STEP{ std::ptrdiff_t{ 3 } };
 
-        auto fixed_width(int width) -> ftxui::Decorator
+        ftxui::Decorator fixed_width(int width)
         {
             return ftxui::size(ftxui::WIDTH, ftxui::EQUAL, width);
         }
 
-        auto gap() -> ftxui::Element
+        ftxui::Element gap()
         {
             return ftxui::text(std::string(COLUMN_GAP, ' '));
         }
 
-        auto show_size_column(int width) -> bool
+        bool show_size_column(int width)
         {
             return width >= SIZE_COLUMN_MIN_WIDTH;
         }
 
-        auto path_column_width(int width) -> int
+        int path_column_width(int width)
         {
             auto fixed_columns_width{ TIME_WIDTH + STATUS_WIDTH + 2 * COLUMN_GAP };
             if (show_size_column(width)) {
@@ -44,13 +44,12 @@ namespace file_monitor::tui {
             return std::max(width - fixed_columns_width, 0);
         }
 
-        auto make_row(
+        ftxui::Element make_row(
             ftxui::Element time,
             ftxui::Element status,
             ftxui::Element size,
             ftxui::Element path,
-            int width
-        ) -> ftxui::Element
+            int width)
         {
             ftxui::Elements cells{
                 std::move(time) | fixed_width(TIME_WIDTH + COLUMN_GAP),
@@ -63,18 +62,17 @@ namespace file_monitor::tui {
             return ftxui::hbox(std::move(cells));
         }
 
-        auto change_row(core::FileChange const& change, int width) -> ftxui::Element
+        ftxui::Element change_row(core::FileChange const& change, int width)
         {
             return make_row(
                 ftxui::text(std::string{ core::file_change_time_of_day(change) }),
                 file_change_status_element(change.status),
                 ftxui::text(change.size),
                 ftxui::text(change_path_text(change, path_column_width(width))),
-                width
-            );
+                width);
         }
 
-        auto size_description(core::FileChange const& change) -> std::string
+        std::string size_description(core::FileChange const& change)
         {
             // Directories have no size.
             if (change.size == "-") {
@@ -83,12 +81,11 @@ namespace file_monitor::tui {
             return std::format("大小 {}", change.size);
         }
 
-        auto append_labeled_lines(
+        void append_labeled_lines(
             ftxui::Elements& lines,
             std::string_view label,
             std::string_view text,
-            int width
-        ) -> void
+            int width)
         {
             auto first_line{ true };
             for (auto& line : wrap_text(text, width - DETAIL_LABEL_WIDTH)) {
@@ -97,8 +94,7 @@ namespace file_monitor::tui {
                     ftxui::hbox({
                         std::move(label_text) | ftxui::dim | fixed_width(DETAIL_LABEL_WIDTH),
                         ftxui::text(std::move(line)),
-                    })
-                );
+                    }));
                 first_line = false;
             }
         }
@@ -113,7 +109,7 @@ namespace file_monitor::tui {
     public:
         explicit ChangeList(core::MonitorSession const& session) : m_session{ session } {}
 
-        auto Render(int width) -> ftxui::Element
+        ftxui::Element Render(int width)
         {
             refresh();
 
@@ -123,8 +119,7 @@ namespace file_monitor::tui {
                     ftxui::text("状态"),
                     ftxui::text("大小"),
                     ftxui::text("路径"),
-                    width
-                ) |
+                    width) |
                 ftxui::bold
             };
 
@@ -137,8 +132,7 @@ namespace file_monitor::tui {
                 auto const rendered_row_count{
                     std::max(
                         visibleRowCount(),
-                        static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0))
-                    )
+                        static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0)))
                 };
                 auto const first_row{
                     m_follow_latest ?
@@ -173,7 +167,7 @@ namespace file_monitor::tui {
         // The details of the selected change below a separator, or an empty
         // element when nothing is selected or the details are hidden. Call
         // after Render().
-        auto RenderDetails(int width) const -> ftxui::Element
+        ftxui::Element RenderDetails(int width) const
         {
             auto const* selected_change{ selectedChange() };
             if (!m_show_details || selected_change == nullptr) {
@@ -203,7 +197,7 @@ namespace file_monitor::tui {
             return ftxui::vbox(std::move(lines));
         }
 
-        auto OnEvent(ftxui::Event event) -> bool
+        bool OnEvent(ftxui::Event event)
         {
             refresh();
             auto const page_row_count{
@@ -248,64 +242,59 @@ namespace file_monitor::tui {
             return true;
         }
 
-        auto FollowLatest() -> void
+        void FollowLatest()
         {
             m_follow_latest = true;
         }
 
-        auto ToggleDetails() -> void
+        void ToggleDetails()
         {
             m_show_details = !m_show_details;
         }
 
         // Filters, see core::ChangeFilter.
-        auto ToggleStatus(core::FileChangeStatus status) -> void
+        void ToggleStatus(core::FileChangeStatus status)
         {
             m_filter.ToggleStatus(status);
         }
 
-        [[nodiscard]]
-        auto ShowsStatus(core::FileChangeStatus status) const -> bool
+        [[nodiscard]] bool ShowsStatus(core::FileChangeStatus status) const
         {
             return m_filter.ShowsStatus(status);
         }
 
-        auto SetPathFilter(std::string_view text) -> void
+        void SetPathFilter(std::string_view text)
         {
             m_filter.SetPathText(text);
         }
 
-        auto ClearFilters() -> void
+        void ClearFilters()
         {
             m_filter.Clear();
         }
 
-        [[nodiscard]]
-        auto IsFiltered() const -> bool
+        [[nodiscard]] bool IsFiltered() const
         {
             return m_filter.IsActive();
         }
 
         // The selected change, or nullptr when no change matches. Brings the
         // list up to date with the session first.
-        [[nodiscard]]
-        auto SelectedChange() -> core::FileChange const*
+        [[nodiscard]] core::FileChange const* SelectedChange()
         {
             refresh();
             return selectedChange();
         }
 
         // The queries below describe the list as of the last Render().
-        [[nodiscard]]
-        auto FollowsLatest() const -> bool
+        [[nodiscard]] bool FollowsLatest() const
         {
             return m_follow_latest;
         }
 
         // Matching changes added since the list stopped following new
         // changes.
-        [[nodiscard]]
-        auto NewChangeCount() const -> std::size_t
+        [[nodiscard]] std::size_t NewChangeCount() const
         {
             if (m_follow_latest) {
                 return 0;
@@ -316,15 +305,13 @@ namespace file_monitor::tui {
 
         // 1-based position of the selected change, or 0 when no change
         // matches.
-        [[nodiscard]]
-        auto SelectedPosition() const -> std::size_t
+        [[nodiscard]] std::size_t SelectedPosition() const
         {
             return m_rows.empty() ? 0 : m_selected_row + 1;
         }
 
         // The number of changes that match the filters.
-        [[nodiscard]]
-        auto RowCount() const -> std::size_t
+        [[nodiscard]] std::size_t RowCount() const
         {
             return m_rows.size();
         }
@@ -347,7 +334,7 @@ namespace file_monitor::tui {
         core::ChangeFilter m_filter;
         ftxui::Box m_body_box{ .x_min = 0, .x_max = -1, .y_min = 0, .y_max = -1 };
 
-        auto refresh() -> void
+        void refresh()
         {
             auto const changes{ m_session.Changes() };
             auto const first_sequence{ m_session.FirstChangeSequence() };
@@ -373,7 +360,7 @@ namespace file_monitor::tui {
             scrollToSelection();
         }
 
-        auto selectRow(std::size_t row) -> void
+        void selectRow(std::size_t row)
         {
             if (m_rows.empty()) {
                 return;
@@ -390,7 +377,7 @@ namespace file_monitor::tui {
             scrollToSelection();
         }
 
-        auto moveSelection(std::ptrdiff_t row_count) -> void
+        void moveSelection(std::ptrdiff_t row_count)
         {
             if (m_rows.empty()) {
                 return;
@@ -399,13 +386,12 @@ namespace file_monitor::tui {
                 std::clamp(
                     static_cast<std::ptrdiff_t>(m_selected_row) + row_count,
                     std::ptrdiff_t{ 0 },
-                    static_cast<std::ptrdiff_t>(m_rows.size() - 1)
-                )
+                    static_cast<std::ptrdiff_t>(m_rows.size() - 1))
             };
             selectRow(static_cast<std::size_t>(row));
         }
 
-        auto scrollToSelection() -> void
+        void scrollToSelection()
         {
             auto const visible_row_count{ std::max(visibleRowCount(), std::size_t{ 1 }) };
             auto const last_first_row{
@@ -422,8 +408,7 @@ namespace file_monitor::tui {
             m_first_visible_sequence = rowSequence(m_first_visible_row);
         }
 
-        [[nodiscard]]
-        auto selectedChange() const -> core::FileChange const*
+        [[nodiscard]] core::FileChange const* selectedChange() const
         {
             if (m_rows.empty()) {
                 return nullptr;
@@ -431,8 +416,7 @@ namespace file_monitor::tui {
             return &m_session.Changes()[m_rows[m_selected_row]];
         }
 
-        [[nodiscard]]
-        auto visibleRowCount() const -> std::size_t
+        [[nodiscard]] std::size_t visibleRowCount() const
         {
             if (m_body_box.IsEmpty()) {
                 return static_cast<std::size_t>(std::max(ftxui::Terminal::Size().dimy, 0));
@@ -440,28 +424,24 @@ namespace file_monitor::tui {
             return static_cast<std::size_t>(m_body_box.y_max - m_body_box.y_min + 1);
         }
 
-        [[nodiscard]]
-        auto rowSequence(std::size_t row) const -> std::uint64_t
+        [[nodiscard]] std::uint64_t rowSequence(std::size_t row) const
         {
             return m_session.FirstChangeSequence() + m_rows[row];
         }
 
-        [[nodiscard]]
-        auto changeIndex(std::uint64_t sequence) const -> std::size_t
+        [[nodiscard]] std::size_t changeIndex(std::uint64_t sequence) const
         {
             auto const first_sequence{ m_session.FirstChangeSequence() };
             return sequence > first_sequence ? static_cast<std::size_t>(sequence - first_sequence) : 0;
         }
 
-        [[nodiscard]]
-        auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t
+        [[nodiscard]] std::size_t rowAtOrAfter(std::uint64_t sequence) const
         {
             auto const row{ std::ranges::lower_bound(m_rows, changeIndex(sequence)) - m_rows.begin() };
             return std::min(static_cast<std::size_t>(row), m_rows.size() - 1);
         }
 
-        [[nodiscard]]
-        auto emptyText() const -> std::string_view
+        [[nodiscard]] std::string_view emptyText() const
         {
             if (m_session.CurrentConfiguration().directories.empty()) {
                 return "尚未添加监控文件夹，按 s 打开设置添加";

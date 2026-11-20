@@ -17,10 +17,9 @@ namespace file_monitor::core::utils {
 
         constexpr auto MAX_EXTENDED_PATH_LENGTH{ std::size_t{ 32'767 } };
 
-        auto path_elements_equal(
+        bool path_elements_equal(
             std::filesystem::path const& left,
-            std::filesystem::path const& right
-        ) -> bool
+            std::filesystem::path const& right)
         {
             auto const& left_text{ left.native() };
             auto const& right_text{ right.native() };
@@ -29,19 +28,18 @@ namespace file_monitor::core::utils {
                        static_cast<int>(left_text.size()),
                        right_text.data(),
                        static_cast<int>(right_text.size()),
-                       TRUE
-                   ) == CSTR_EQUAL;
+                       TRUE) == CSTR_EQUAL;
         }
 
     } // namespace
 
-    export auto path_to_utf8(std::filesystem::path const& path) -> std::string
+    export std::string path_to_utf8(std::filesystem::path const& path)
     {
         auto const utf8_path{ path.u8string() };
         return { reinterpret_cast<char const*>(utf8_path.data()), utf8_path.size() };
     }
 
-    export auto utf8_to_path(std::string_view path) -> std::filesystem::path
+    export std::filesystem::path utf8_to_path(std::string_view path)
     {
         auto const* begin{ reinterpret_cast<char8_t const*>(path.data()) };
         return std::filesystem::path{
@@ -49,7 +47,7 @@ namespace file_monitor::core::utils {
         };
     }
 
-    export auto executable_directory() -> std::filesystem::path
+    export std::filesystem::path executable_directory()
     {
         std::wstring module_path(MAX_PATH, L'\0');
         while (true) {
@@ -57,8 +55,7 @@ namespace file_monitor::core::utils {
                 GetModuleFileNameW(
                     nullptr,
                     module_path.data(),
-                    static_cast<DWORD>(module_path.size())
-                )
+                    static_cast<DWORD>(module_path.size()))
             };
             if (length == 0) {
                 return {};
@@ -76,17 +73,16 @@ namespace file_monitor::core::utils {
 
     // Where the configuration, the log and the window layout of both
     // interfaces are kept, in the directory of the executable.
-    export auto data_directory() -> std::filesystem::path
+    export std::filesystem::path data_directory()
     {
         return executable_directory() / "data" / "FileMonitor";
     }
 
     // Windows file systems treat paths case-insensitively, so path elements are
     // compared the same way; a trailing separator on directory is ignored.
-    export auto path_is_within(
+    export bool path_is_within(
         std::filesystem::path const& path,
-        std::filesystem::path const& directory
-    ) -> bool
+        std::filesystem::path const& directory)
     {
         if (directory.empty()) {
             return false;
@@ -107,10 +103,7 @@ namespace file_monitor::core::utils {
         return true;
     }
 
-    export auto paths_equal(
-        std::filesystem::path const& left,
-        std::filesystem::path const& right
-    ) -> bool
+    export bool paths_equal(std::filesystem::path const& left, std::filesystem::path const& right)
     {
         return path_is_within(left, right) && path_is_within(right, left);
     }

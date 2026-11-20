@@ -31,44 +31,36 @@ namespace file_monitor::gui {
         explicit ChangeTable(core::MonitorSession const& session);
 
         // Changing the filter takes effect with the next Refresh().
-        [[nodiscard]]
-        auto Filter() -> core::ChangeFilter&;
+        [[nodiscard]] core::ChangeFilter& Filter();
         // Brings the table up to date with the session and the filter. Call
         // once per frame before the functions below.
-        auto Refresh() -> void;
+        void Refresh();
         // Draws the table, which must have rows. A click or the arrow keys
         // select a change; a double click or the context menu of a change
         // ask for an action.
-        auto Render(ImVec2 size) -> ChangeAction;
+        ChangeAction Render(ImVec2 size);
         // Scrolls to the newest change, which makes the table follow again.
-        auto ScrollToLatest() -> void;
+        void ScrollToLatest();
 
         // The selected change, or nullptr.
-        [[nodiscard]]
-        auto SelectedChange() const -> core::FileChange const*;
+        [[nodiscard]] core::FileChange const* SelectedChange() const;
         // The number of changes that match the filter.
-        [[nodiscard]]
-        auto RowCount() const -> std::size_t;
-        [[nodiscard]]
-        auto FollowsLatest() const -> bool;
+        [[nodiscard]] std::size_t RowCount() const;
+        [[nodiscard]] bool FollowsLatest() const;
         // The matching changes added since the table stopped following new
         // changes.
-        [[nodiscard]]
-        auto NewChangeCount() const -> std::size_t;
+        [[nodiscard]] std::size_t NewChangeCount() const;
 
     private:
-        auto renderRow(std::size_t row) -> ChangeAction;
-        auto selectRow(std::size_t row) -> void;
-        [[nodiscard]]
-        auto selectedChangeIndex() const -> std::size_t;
-        auto applySelectionRequests(ImGuiMultiSelectIO const& multi_select) -> void;
-        auto updateFollowing(float scroll_y, float scroll_max_y) -> void;
-        [[nodiscard]]
-        auto rowSequence(std::size_t row) const -> std::uint64_t;
+        ChangeAction renderRow(std::size_t row);
+        void selectRow(std::size_t row);
+        [[nodiscard]] std::size_t selectedChangeIndex() const;
+        void applySelectionRequests(ImGuiMultiSelectIO const& multi_select);
+        void updateFollowing(float scroll_y, float scroll_max_y);
+        [[nodiscard]] std::uint64_t rowSequence(std::size_t row) const;
         // The first row with this sequence number or a later one; RowCount()
         // if there is none.
-        [[nodiscard]]
-        auto rowAtOrAfter(std::uint64_t sequence) const -> std::size_t;
+        [[nodiscard]] std::size_t rowAtOrAfter(std::uint64_t sequence) const;
 
         core::MonitorSession const& m_session;
         core::ChangeFilter m_filter;

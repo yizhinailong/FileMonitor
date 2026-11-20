@@ -35,7 +35,7 @@ namespace file_monitor::core {
             restartMonitor();
         }
 
-        auto Update() -> MonitorUpdate
+        MonitorUpdate Update()
         {
             MonitorUpdate update;
 
@@ -51,8 +51,7 @@ namespace file_monitor::core {
                     auto const excess_count{ m_changes.size() - MAX_FILE_CHANGES };
                     m_changes.erase(
                         m_changes.begin(),
-                        m_changes.begin() + static_cast<std::ptrdiff_t>(excess_count)
-                    );
+                        m_changes.begin() + static_cast<std::ptrdiff_t>(excess_count));
                     m_first_change_sequence += excess_count;
                 }
                 update.changes_added = true;
@@ -66,8 +65,7 @@ namespace file_monitor::core {
             return update;
         }
 
-        [[nodiscard]]
-        auto SaveConfiguration(Configuration configuration) -> bool
+        [[nodiscard]] bool SaveConfiguration(Configuration configuration)
         {
             auto const save_result{
                 save_configuration(m_data_directory / CONFIG_FILE_NAME, configuration)
@@ -83,14 +81,12 @@ namespace file_monitor::core {
             return true;
         }
 
-        [[nodiscard]]
-        auto CurrentConfiguration() const -> Configuration const&
+        [[nodiscard]] Configuration const& CurrentConfiguration() const
         {
             return m_configuration;
         }
 
-        [[nodiscard]]
-        auto Changes() const -> std::span<FileChange const>
+        [[nodiscard]] std::span<FileChange const> Changes() const
         {
             return m_changes;
         }
@@ -99,32 +95,28 @@ namespace file_monitor::core {
         // number FirstChangeSequence() + i. A change keeps its number while it
         // stays in the list, and numbers are never reused, not even after the
         // monitor restarts and clears the list.
-        [[nodiscard]]
-        auto FirstChangeSequence() const -> std::uint64_t
+        [[nodiscard]] std::uint64_t FirstChangeSequence() const
         {
             return m_first_change_sequence;
         }
 
-        [[nodiscard]]
-        auto ConfigurationError() const -> std::string const&
+        [[nodiscard]] std::string const& ConfigurationError() const
         {
             return m_configuration_error;
         }
 
-        [[nodiscard]]
-        auto MonitorError() const -> std::string const&
+        [[nodiscard]] std::string const& MonitorError() const
         {
             return m_monitor_error;
         }
 
-        [[nodiscard]]
-        auto LogError() const -> std::string const&
+        [[nodiscard]] std::string const& LogError() const
         {
             return m_log_error;
         }
 
     private:
-        auto restartMonitor() -> void
+        void restartMonitor()
         {
             m_first_change_sequence += m_changes.size();
             m_changes.clear();

@@ -44,14 +44,14 @@ namespace file_monitor::gui {
         auto current_theme{ Theme::Dark };
         auto current_scale{ 1.0F };
 
-        auto themed(ThemeColor const& color) -> ImVec4
+        ImVec4 themed(ThemeColor const& color)
         {
             return current_theme == Theme::Light ? color.light : color.dark;
         }
 
     } // namespace
 
-    auto load_font() -> bool
+    bool load_font()
     {
         constexpr std::array FONT_PATHS{
             "C:/Windows/Fonts/msyh.ttc",
@@ -68,7 +68,7 @@ namespace file_monitor::gui {
         return false;
     }
 
-    auto apply_theme(Theme theme) -> void
+    void apply_theme(Theme theme)
     {
         current_theme = theme;
         if (theme == Theme::Light) {
@@ -96,13 +96,13 @@ namespace file_monitor::gui {
         style.FontScaleDpi = scale;
     }
 
-    auto set_scale(float scale) -> void
+    void set_scale(float scale)
     {
         current_scale = std::max(scale, 0.5F);
         apply_theme(current_theme);
     }
 
-    auto file_change_status_color(core::FileChangeStatus status) -> ImVec4
+    ImVec4 file_change_status_color(core::FileChangeStatus status)
     {
         switch (status) {
             case core::FileChangeStatus::Added:
@@ -119,31 +119,31 @@ namespace file_monitor::gui {
         return ImGui::GetStyleColorVec4(ImGuiCol_Text);
     }
 
-    auto selected_row_color() -> ImVec4
+    ImVec4 selected_row_color()
     {
         auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
         color.w = SELECTED_ROW_ALPHA;
         return color;
     }
 
-    auto hovered_row_color() -> ImVec4
+    ImVec4 hovered_row_color()
     {
         auto color{ ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive) };
         color.w = HOVERED_ROW_ALPHA;
         return color;
     }
 
-    auto success_color() -> ImVec4
+    ImVec4 success_color()
     {
         return themed(GREEN);
     }
 
-    auto warning_color() -> ImVec4
+    ImVec4 warning_color()
     {
         return themed(YELLOW);
     }
 
-    auto error_color() -> ImVec4
+    ImVec4 error_color()
     {
         return themed(ERROR_RED);
     }

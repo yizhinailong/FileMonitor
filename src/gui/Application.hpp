@@ -7,7 +7,7 @@ namespace file_monitor::gui {
 
     class Application final {
     public:
-        auto Run() -> int;
+        int Run();
 
     private:
         SdlImGuiBackend m_backend;
