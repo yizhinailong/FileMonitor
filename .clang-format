@@ -134,7 +134,7 @@ BreakAfterReturnType: None
 BreakArrays: false
 BreakBeforeBinaryOperators: None
 BreakBeforeCloseBracketBracedList: true
-BreakBeforeCloseBracketFunction: true
+BreakBeforeCloseBracketFunction: false
 BreakBeforeCloseBracketIf: true
 BreakBeforeCloseBracketLoop: false
 BreakBeforeCloseBracketSwitch: false
