@@ -52,7 +52,7 @@ namespace file_monitor::tui {
             refreshWarnings();
         }
 
-        ftxui::Element override OnRender()
+        ftxui::Element OnRender() override
         {
             auto const width{ page_width() };
             auto title{
@@ -90,7 +90,7 @@ namespace file_monitor::tui {
             return page(ftxui::vbox(std::move(rows)));
         }
 
-        bool override OnEvent(ftxui::Event event)
+        bool OnEvent(ftxui::Event event) override
         {
             m_cancel_requested = false;
             auto const user_input{ is_user_input(event) };
@@ -104,7 +104,7 @@ namespace file_monitor::tui {
 
         // The page handles its keys itself and has no focusable children, so
         // the container of MainWindow only passes it keys if it says so.
-        [[nodiscard]] bool override Focusable() const
+        [[nodiscard]] bool Focusable() const override
         {
             return true;
         }

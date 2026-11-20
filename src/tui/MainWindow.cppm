@@ -94,7 +94,7 @@ namespace file_monitor::tui {
             return update.changes_added || update.errors_changed;
         }
 
-        bool override OnEvent(ftxui::Event event)
+        bool OnEvent(ftxui::Event event) override
         {
             if (m_page == MAIN_PAGE) {
                 if (is_user_input(event)) {
