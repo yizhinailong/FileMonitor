@@ -22,7 +22,7 @@ rule("dist_clean")
         os.tryrm(install_dir)
     end)
 
-target("FileMonitorCore")
+target("FileMonitorCore", function ()
     set_kind("static")
     -- Internal library: built as a dependency, but not installed by default.
     set_default(false)
@@ -36,12 +36,12 @@ target("FileMonitorCore")
     -- show_in_explorer() calls ShellExecuteW; the MSVC linker's default
     -- libraries are not part of xmake's clang-cl link line.
     add_syslinks("shell32", {public = true})
-target_end()
+end)
 
 -- The two front ends share the install, module and version settings; only the
 -- sources, packages, system libraries and linker flags differ.
 local function define_frontend(opt)
-    target(opt.name)
+    target(opt.name, function ()
         set_kind("binary")
         add_deps("FileMonitorCore")
         add_rules("dist_clean")
@@ -60,7 +60,7 @@ local function define_frontend(opt)
         set_installdir(install_dir)
         on_install(install_binary)
         on_uninstall(uninstall_binary)
-    target_end()
+    end)
 end
 
 if has_config("gui") then
