@@ -231,7 +231,7 @@ namespace file_monitor::gui {
         return true;
     }
 
-    DirectoryEditorState& SettingsWindow::directoryEditor(DirectoryGroup group)
+    SettingsWindow::DirectoryEditorState& SettingsWindow::directoryEditor(DirectoryGroup group)
     {
         return group == DirectoryGroup::Monitored ? m_monitored_editor : m_excluded_editor;
     }
