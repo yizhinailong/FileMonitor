@@ -16,57 +16,48 @@ FileMonitor 是一个面向 Windows 的轻量级文件夹监控工具。它通�
 ## 环境要求
 
 - Windows 10 或 Windows 11（x64）
-- CMake 4.5 或更高版本
-- Ninja
+- [xmake](https://xmake.io) 3.1.2 或更高版本
 - LLVM/Clang 23 或更高版本，且 `clang-cl` 和 `clang-scan-deps` 可用
 - Visual Studio Build Tools 和 Windows SDK
-- `ccache`
-- [`just`](https://github.com/casey/just)
+- Git 和网络连接，用于首次构建时下载依赖
 
-首次配置时，CMake 会通过 CPM 自动获取 SDL3、Dear ImGui、FTXUI、spdlog 和 nlohmann/json，因此需要可用的 Git 和网络连接。后续构建可复用 `CPM_SOURCE_CACHE` 中的依赖缓存。
+首次构建时，xmake 会获取 SDL3、Dear ImGui、FTXUI、spdlog 和 nlohmann/json。其中 nlohmann/json、Dear ImGui 和 FTXUI 由 `thirdparty/xmake-repo` 中的本地包定义固定到项目使用的版本。下载并编译好的依赖保存在 xmake 的全局包缓存中，后续构建直接复用。
 
 ## 构建与运行
 
-构建并运行 Debug 版本的桌面界面或终端界面：
+构建 Debug 版本并运行桌面界面或终端界面：
 
 ```powershell
-just run
-just run-tui
+xmake f -m debug
+xmake
+xmake run FileMonitor
+xmake run FileMonitorTui
 ```
 
-仅构建指定配置：
+只构建、不运行：
 
 ```powershell
-just build
-just build release
+xmake
 ```
 
 生成可分发的 Release 程序：
 
 ```powershell
-just publish
+xmake f -m release
+xmake
+xmake install -o dist --bindir=. --libraries=n FileMonitor FileMonitorTui
 ```
 
 发布结果位于 `dist/FileMonitor.exe` 和 `dist/FileMonitorTui.exe`。
 
-清理构建目录 `build/` 和发布目录 `dist/`：
+清理 xmake 生成的构建文件；如需同时删除发布目录，再删除 `dist/`：
 
 ```powershell
-just clean
+xmake clean -a
+Remove-Item -Recurse -Force dist
 ```
 
-清理后下次构建会重新配置并完整编译，依赖仍从 `CPM_SOURCE_CACHE` 缓存中读取。
-
-不使用 `just` 时，可以直接调用 CMake：
-
-```powershell
-cmake --preset windows-debug
-cmake --build --preset windows-debug
-
-cmake --preset windows-release
-cmake --build --preset windows-release
-cmake --install build/windows-release --prefix dist
-```
+清理后下次构建会重新配置并完整编译，依赖仍从 xmake 的包缓存中读取。
 
 ## 使用方法
 
@@ -93,7 +84,7 @@ cmake --install build/windows-release --prefix dist
 
 监控、配置或日志出错时，两个界面都会在主界面顶部显示错误信息。
 
-配置和日志保存在程序所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关；同一目录下的 `FileMonitor.exe` 和 `FileMonitorTui.exe` 共用这份配置和日志。该文件夹始终不会被监控，避免写日志时又产生新的变更事件。通过 `just run` 或 `just run-tui` 启动时，它位于 `build/windows-debug/data/FileMonitor`，执行 `just clean` 会一并删除。
+配置和日志保存在程序所在目录的 `data/FileMonitor` 文件夹中，与启动时的工作目录无关；同一目录下的 `FileMonitor.exe` 和 `FileMonitorTui.exe` 共用这份配置和日志。该文件夹始终不会被监控，避免写日志时又产生新的变更事件。通过 `xmake run FileMonitor` 或 `xmake run FileMonitorTui` 启动时，它位于 `build/windows/x64/debug/data/FileMonitor`，执行 `xmake clean -a` 会一并删除。
 
 ## 常见问题
 

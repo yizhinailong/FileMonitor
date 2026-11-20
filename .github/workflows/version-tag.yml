@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - CMakeLists.txt
+      - xmake.lua
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   tag:
-    name: Tag CMake project version
+    name: Tag xmake project version
     runs-on: windows-2025
     timeout-minutes: 5
 
@@ -28,15 +28,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read CMake project version
+      - name: Read xmake project version
         id: version
         shell: pwsh
         run: |
-          $cmake = Get-Content -Raw -LiteralPath ./CMakeLists.txt
-          $pattern = '(?im)^[\t ]*project[\t\r\n ]*\([\t\r\n ]*FileMonitor[\t\r\n ]+VERSION[\t\r\n ]+([0-9]+\.[0-9]+\.[0-9]+)(?=[\t\r\n )])'
-          $matches = [regex]::Matches($cmake, $pattern)
+          $xmake = Get-Content -Raw -LiteralPath ./xmake.lua
+          $pattern = '(?m)^local project_version = "([0-9]+\.[0-9]+\.[0-9]+)"$'
+          $matches = [regex]::Matches($xmake, $pattern)
           if ($matches.Count -ne 1) {
-              throw "Expected exactly one FileMonitor project version in X.Y.Z format"
+              throw "Expected exactly one project_version in X.Y.Z format in xmake.lua"
           }
 
           $version = $matches[0].Groups[1].Value

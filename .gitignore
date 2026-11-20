@@ -2,3 +2,6 @@ build
 dist
 bin
 data
+.xmake
+.xmake-cache
+compile_commands.json
