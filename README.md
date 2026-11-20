@@ -48,11 +48,10 @@ xmake publish
 
 它依次配置 Release、构建并安装，执行后当前配置为 Release；发布结果位于 `dist/FileMonitor.exe` 和 `dist/FileMonitorTui.exe`。如果只需要按当前配置安装，使用 `xmake install`。
 
-清理 xmake 生成的构建文件；如需同时删除发布目录，再删除 `dist/`：
+清理 xmake 生成的构建文件和 `dist/` 中的发布程序：
 
 ```powershell
 xmake clean -a
-Remove-Item -Recurse -Force dist
 ```
 
 清理后下次构建会重新配置并完整编译，依赖仍从 xmake 的包缓存中读取。

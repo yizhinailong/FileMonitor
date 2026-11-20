@@ -16,6 +16,12 @@ local function uninstall_binary(target)
     os.tryrm(path.join(target:installdir(), path.filename(target:targetfile())))
 end
 
+-- `xmake clean` also removes the binaries published by `xmake install`.
+rule("dist_clean")
+    after_clean(function ()
+        os.tryrm(install_dir)
+    end)
+
 target("FileMonitorCore")
     set_kind("static")
     -- Internal library: built as a dependency, but not installed by default.
@@ -36,6 +42,7 @@ if has_config("gui") then
     target("FileMonitor")
         set_kind("binary")
         add_deps("FileMonitorCore")
+        add_rules("dist_clean")
         add_files(path.join(project_dir, "src/gui/*.cpp"))
         add_files(path.join(project_dir, "app.rc"))
         add_includedirs(path.join(project_dir, "src"))
@@ -53,6 +60,7 @@ if has_config("tui") then
     target("FileMonitorTui")
         set_kind("binary")
         add_deps("FileMonitorCore")
+        add_rules("dist_clean")
         add_files(path.join(project_dir, "src/tui/**.cppm"))
         add_files(path.join(project_dir, "src/tui/main.cpp"))
         add_files(path.join(project_dir, "app.rc"))
