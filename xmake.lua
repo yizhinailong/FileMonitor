@@ -10,7 +10,7 @@ local project_version = "0.6.0"
 set_xmakever("3.1.2")
 set_project("FileMonitor")
 set_version(project_version)
-set_defaultmode("release")
+set_defaultmode("debug")
 set_languages("cxx23")
 set_encodings("utf-8")
 set_toolchains("clang-cl")
