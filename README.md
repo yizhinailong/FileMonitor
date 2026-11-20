@@ -21,7 +21,7 @@ FileMonitor 是一个面向 Windows 的轻量级文件夹监控工具。它通�
 - Visual Studio Build Tools 和 Windows SDK
 - Git 和网络连接，用于首次构建时下载依赖
 
-首次构建时，xmake 会获取 SDL3、Dear ImGui、FTXUI、spdlog 和 nlohmann/json。其中 nlohmann/json、Dear ImGui 和 FTXUI 由 `xmake/xmake-repo` 中的本地包定义固定到项目使用的版本。下载并编译好的依赖保存在 xmake 的全局包缓存中，后续构建直接复用。
+首次构建时，xmake 会获取 SDL3、Dear ImGui、FTXUI、spdlog 和 nlohmann/json。其中 nlohmann/json、Dear ImGui 和 FTXUI 由 `xmake/xmake-repo` 中的本地包定义固定到项目使用的版本；SDL3 也使用本地包定义，以便在编译时关闭桌面界面不使用的音频、手柄、摄像头、GPU 和渲染子系统，减小发布程序体积。下载并编译好的依赖保存在 xmake 的全局包缓存中，后续构建直接复用。
 
 ## 构建与运行
 
