@@ -40,15 +40,13 @@ xmake run FileMonitorTui
 xmake
 ```
 
-生成可分发的 Release 程序：
+生成可分发的 Release 程序（无论当前配置的是 Debug 还是 Release）：
 
 ```powershell
-xmake f -m release
-xmake
-xmake install
+xmake publish
 ```
 
-发布结果位于 `dist/FileMonitor.exe` 和 `dist/FileMonitorTui.exe`。
+它依次配置 Release、构建并安装，执行后当前配置为 Release；发布结果位于 `dist/FileMonitor.exe` 和 `dist/FileMonitorTui.exe`。如果只需要按当前配置安装，使用 `xmake install`。
 
 清理 xmake 生成的构建文件；如需同时删除发布目录，再删除 `dist/`：
 

@@ -10,6 +10,7 @@ local project_version = "0.6.0"
 set_xmakever("3.1.2")
 set_project("FileMonitor")
 set_version(project_version)
+set_defaultmode("release")
 set_languages("cxx23")
 set_encodings("utf-8")
 set_toolchains("clang-cl")
@@ -106,3 +107,18 @@ if has_config("tui") then
         on_uninstall(uninstall_binary)
     target_end()
 end
+
+-- `xmake install` uses the configured mode, which is debug during development.
+-- This task always publishes the release binaries, whatever mode is configured.
+task("publish")
+    set_menu {
+        usage = "xmake publish",
+        description = "Configure, build and install the release binaries into dist."
+    }
+    on_run(function ()
+        local xmake = os.programfile()
+        os.execv(xmake, { "f", "-m", "release", "-y" })
+        os.execv(xmake, { "-y" })
+        os.execv(xmake, { "install", "-y" })
+    end)
+task_end()

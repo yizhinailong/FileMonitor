@@ -80,15 +80,9 @@ jobs:
           package-cache-key: windows-x64-release-${{ hashFiles('thirdparty/xmake-repo/**') }}
           project-path: .
 
-      - name: Build
+      - name: Build and install
         shell: pwsh
-        run: |
-          xmake f -m release -y
-          xmake -y
-
-      - name: Install
-        shell: pwsh
-        run: xmake install
+        run: xmake publish
 
       - name: Verify installation
         shell: pwsh
