@@ -45,7 +45,7 @@ xmake
 ```powershell
 xmake f -m release
 xmake
-xmake install -o dist --bindir=. --libraries=n FileMonitor FileMonitorTui
+xmake install
 ```
 
 发布结果位于 `dist/FileMonitor.exe` 和 `dist/FileMonitorTui.exe`。

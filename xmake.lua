@@ -45,8 +45,24 @@ if has_config("tui") then
     add_requires("ftxui v7.0.3", {configs = {modules = true}})
 end
 
+-- `xmake install` publishes the two front ends side by side in the install
+-- root, without the standard bin/ directory, so a published copy shares one
+-- data/FileMonitor directory.
+local install_dir = "dist"
+
+local function install_binary(target)
+    os.mkdir(target:installdir())
+    os.vcp(target:targetfile(), target:installdir())
+end
+
+local function uninstall_binary(target)
+    os.tryrm(path.join(target:installdir(), path.filename(target:targetfile())))
+end
+
 target("FileMonitorCore")
     set_kind("static")
+    -- Internal library: built as a dependency, but not installed by default.
+    set_default(false)
     -- Public: the frontends import file_monitor.core, so its module interfaces
     -- must be visible in the module graph of every target that depends on this.
     add_files("src/core/**.cppm", {public = true})
@@ -69,6 +85,9 @@ if has_config("gui") then
         add_packages("imgui", "libsdl3")
         add_syslinks("opengl32")
         add_ldflags("/subsystem:windows", {force = true})
+        set_installdir(install_dir)
+        on_install(install_binary)
+        on_uninstall(uninstall_binary)
     target_end()
 end
 
@@ -82,5 +101,8 @@ if has_config("tui") then
         add_packages("ftxui")
         -- copy_to_clipboard() uses the Win32 clipboard API.
         add_syslinks("user32")
+        set_installdir(install_dir)
+        on_install(install_binary)
+        on_uninstall(uninstall_binary)
     target_end()
 end
