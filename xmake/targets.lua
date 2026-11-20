@@ -17,31 +17,32 @@ local function uninstall_binary(target)
 end
 
 -- `xmake clean` also removes the binaries published by `xmake install`.
-rule("dist_clean")
-    after_clean(function ()
+rule("dist_clean", function()
+    after_clean(function()
         os.tryrm(install_dir)
     end)
+end)
 
-target("FileMonitorCore", function ()
+target("FileMonitorCore", function()
     set_kind("static")
     -- Internal library: built as a dependency, but not installed by default.
     set_default(false)
     -- Public: the frontends import file_monitor.core, so its module interfaces
     -- must be visible in the module graph of every target that depends on this.
-    add_files(path.join(project_dir, "src/core/**.cppm"), {public = true})
+    add_files(path.join(project_dir, "src/core/**.cppm"), { public = true })
     -- Public: the module interface of nlohmann_json is part of this target's
     -- module graph, so targets that depend on FileMonitorCore also need the
     -- package's include directories to scan that interface.
-    add_packages("nlohmann_json", "spdlog", {public = true})
+    add_packages("nlohmann_json", "spdlog", { public = true })
     -- show_in_explorer() calls ShellExecuteW; the MSVC linker's default
     -- libraries are not part of xmake's clang-cl link line.
-    add_syslinks("shell32", {public = true})
+    add_syslinks("shell32", { public = true })
 end)
 
 -- The two front ends share the install, module and version settings; only the
 -- sources, packages, system libraries and linker flags differ.
 local function define_frontend(opt)
-    target(opt.name, function ()
+    target(opt.name, function()
         set_kind("binary")
         add_deps("FileMonitorCore")
         add_rules("dist_clean")
@@ -55,7 +56,7 @@ local function define_frontend(opt)
             add_syslinks(link)
         end
         for _, flag in ipairs(opt.ldflags or {}) do
-            add_ldflags(flag, {force = true})
+            add_ldflags(flag, { force = true })
         end
         set_installdir(install_dir)
         on_install(install_binary)
@@ -64,21 +65,21 @@ local function define_frontend(opt)
 end
 
 if has_config("gui") then
-    define_frontend {
+    define_frontend({
         name = "FileMonitor",
         files = { "src/gui/*.cpp", "app.rc" },
         packages = { "imgui", "libsdl3" },
         syslinks = { "opengl32" },
-        ldflags = { "/subsystem:windows" }
-    }
+        ldflags = { "/subsystem:windows" },
+    })
 end
 
 if has_config("tui") then
-    define_frontend {
+    define_frontend({
         name = "FileMonitorTui",
         files = { "src/tui/**.cppm", "src/tui/main.cpp", "app.rc" },
         packages = { "ftxui" },
         -- copy_to_clipboard() uses the Win32 clipboard API.
-        syslinks = { "user32" }
-    }
+        syslinks = { "user32" },
+    })
 end

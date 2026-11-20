@@ -18,7 +18,7 @@ set_runtimes(is_mode("debug") and "MTd" or "MT")
 set_policy("build.c++.modules", true)
 
 add_rules("mode.debug", "mode.release")
-add_rules("plugin.compile_commands.autoupdate", {outputdir = "build"})
+add_rules("plugin.compile_commands.autoupdate", { outputdir = "build" })
 
 includes("xmake/options.lua")
 includes("xmake/packages.lua")
