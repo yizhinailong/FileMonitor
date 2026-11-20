@@ -38,39 +38,47 @@ target("FileMonitorCore")
     add_syslinks("shell32", {public = true})
 target_end()
 
-if has_config("gui") then
-    target("FileMonitor")
+-- The two front ends share the install, module and version settings; only the
+-- sources, packages, system libraries and linker flags differ.
+local function define_frontend(opt)
+    target(opt.name)
         set_kind("binary")
         add_deps("FileMonitorCore")
         add_rules("dist_clean")
-        add_files(path.join(project_dir, "src/gui/*.cpp"))
-        add_files(path.join(project_dir, "app.rc"))
+        for _, file in ipairs(opt.files) do
+            add_files(path.join(project_dir, file))
+        end
         add_includedirs(path.join(project_dir, "src"))
         add_defines("FILE_MONITOR_VERSION=" .. PROJECT_VERSION)
-        add_packages("imgui", "libsdl3")
-        add_syslinks("opengl32")
-        add_ldflags("/subsystem:windows", {force = true})
+        add_packages(table.unpack(opt.packages))
+        for _, link in ipairs(opt.syslinks or {}) do
+            add_syslinks(link)
+        end
+        for _, flag in ipairs(opt.ldflags or {}) do
+            add_ldflags(flag, {force = true})
+        end
         set_installdir(install_dir)
         on_install(install_binary)
         on_uninstall(uninstall_binary)
     target_end()
 end
 
+if has_config("gui") then
+    define_frontend {
+        name = "FileMonitor",
+        files = { "src/gui/*.cpp", "app.rc" },
+        packages = { "imgui", "libsdl3" },
+        syslinks = { "opengl32" },
+        ldflags = { "/subsystem:windows" }
+    }
+end
+
 if has_config("tui") then
-    target("FileMonitorTui")
-        set_kind("binary")
-        add_deps("FileMonitorCore")
-        add_rules("dist_clean")
-        add_files(path.join(project_dir, "src/tui/**.cppm"))
-        add_files(path.join(project_dir, "src/tui/main.cpp"))
-        add_files(path.join(project_dir, "app.rc"))
-        add_includedirs(path.join(project_dir, "src"))
-        add_defines("FILE_MONITOR_VERSION=" .. PROJECT_VERSION)
-        add_packages("ftxui")
+    define_frontend {
+        name = "FileMonitorTui",
+        files = { "src/tui/**.cppm", "src/tui/main.cpp", "app.rc" },
+        packages = { "ftxui" },
         -- copy_to_clipboard() uses the Win32 clipboard API.
-        add_syslinks("user32")
-        set_installdir(install_dir)
-        on_install(install_binary)
-        on_uninstall(uninstall_binary)
-    target_end()
+        syslinks = { "user32" }
+    }
 end
