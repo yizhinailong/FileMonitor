@@ -77,7 +77,7 @@ jobs:
           actions-cache-key: windows-x64-release
           package-cache: true
           # Invalidate the package cache when a local package definition changes.
-          package-cache-key: windows-x64-release-${{ hashFiles('thirdparty/xmake-repo/**') }}
+          package-cache-key: windows-x64-release-${{ hashFiles('xmake/xmake-repo/**') }}
           project-path: .
 
       - name: Build and install

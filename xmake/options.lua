@@ -1,0 +1,11 @@
+option("gui")
+    set_default(true)
+    set_showmenu(true)
+    set_description("Build the SDL3 and Dear ImGui desktop application")
+option_end()
+
+option("tui")
+    set_default(true)
+    set_showmenu(true)
+    set_description("Build the FTXUI terminal application")
+option_end()
