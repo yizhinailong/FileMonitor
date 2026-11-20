@@ -6,7 +6,7 @@
 
 add_repositories("filemonitor-repo xmake/xmake-repo", { rootdir = os.projectdir() })
 
-add_requires("spdlog v1.17.0", { configs = { header_only = false } })
+add_requires("spdlog v1.17.0", { configs = { header_only = false, std_format = true } })
 add_requires("nlohmann_json 3.12.0-modules")
 
 if has_config("gui") then
