@@ -61,10 +61,7 @@ namespace file_monitor::core {
         std::optional<SystemTime> read_creation_time(std::filesystem::path const& path)
         {
             WIN32_FILE_ATTRIBUTE_DATA attributes{};
-            if (!GetFileAttributesExW(
-                    path.c_str(),
-                    GetFileExInfoStandard,
-                    &attributes)) {
+            if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &attributes)) {
                 return std::nullopt;
             }
 
